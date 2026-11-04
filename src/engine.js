@@ -7,6 +7,12 @@ export const MBTI = ['ISTJ','ISFJ','INFJ','INTJ','ISTP','ISFP','INFP','INTP','ES
 export const BLOOD = ['A','B','O','AB'];
 export const COLOR_HEX = ['#E63946','#F4A261','#E9C46A','#2A9D8F','#264653','#6A4C93','#FF7FA8','#8AC926','#1982C4','#F1FAEE','#B08968','#D4AF37'];
 export const CHARMS = ['achieve','noble','health','luck','peace','guard','allwell','ward','wealth','wish'];
+// 가장 좋은 시간·조심할 시간은 깨어 있는 시간대(6시~24시)의 시진에서만 고름: 辰(07~09)부터 亥(21~23)까지
+export const DAY_SIJIN = [4, 5, 6, 7, 8, 9, 10, 11];
+export function pickHour(hours, fn) {
+  const v = fn(...DAY_SIJIN.map(i => hours[i]));
+  return DAY_SIJIN.find(i => hours[i] === v);
+}
 
 // 문자열 → 32비트 시드
 function hash(str) {
@@ -130,8 +136,8 @@ export function daily(p, dateK, turn = 0, lang = 'ko') {
   if (turn > 0) score = Math.max(score, daily(P, dateK, turn - 1, lang).score + 3 + r() * 6);
   score = clamp(score, 38, 99);
   const hours = Array.from({ length: 12 }, (_, i) => clamp(score + (r() - 0.5) * 44 + relation(i, P.animal) * 5, 15, 99));
-  const best = hours.indexOf(Math.max(...hours));
-  const worst = hours.indexOf(Math.min(...hours));
+  const best = pickHour(hours, Math.max);
+  const worst = pickHour(hours, Math.min);
   const dom = () => clamp(score / 20 + (r() - 0.5) * 2.4, 1, 5);
   const helperM = Math.floor(r() * 16);
   let drainM = Math.floor(r() * 16); if (drainM === helperM) drainM = (drainM + 5) % 16;
@@ -172,7 +178,7 @@ export function compat(a, b, dateK) {
   return {
     score, rel, elemMatch: elem > 0,
     band: score >= 85 ? 3 : score >= 70 ? 2 : score >= 55 ? 1 : 0,
-    together, bestHour: together.indexOf(Math.max(...together)),
+    together, bestHour: pickHour(together, Math.max),
     A, B, rolls: Array.from({ length: 16 }, () => r()),
   };
 }
@@ -186,7 +192,7 @@ export function generic(kind, idx, dateK, lang = 'ko') {
     score, band: score >= 85 ? 3 : score >= 70 ? 2 : score >= 55 ? 1 : 0,
     domains: { wealth: dom(), love: dom(), work: dom(), health: dom() },
     color: Math.floor(r() * 12), direction: Math.floor(r() * 8),
-    numbers: luckyNumbers(r, lang), bestHour: Math.floor(r() * 12),
+    numbers: luckyNumbers(r, lang), bestHour: DAY_SIJIN[Math.floor(r() * DAY_SIJIN.length)],
     rolls: Array.from({ length: 40 }, () => r()),
   };
 }
