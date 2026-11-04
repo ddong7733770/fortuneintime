@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import config from './site.config.mjs';
-import { LANGS, FLAG, TZ, SLUG, SIGN_GLYPH, BLOOD_LABEL, fmt, esc, sijinRange, dialLabels, dialSVG, todayIn, genericReading, readingHTML, indexListHTML, fmtDate } from './src/content.js';
+import { LANGS, TZ, SLUG, SIGN_GLYPH, BLOOD_LABEL, fmt, esc, sijinRange, dialLabels, dialSVG, todayIn, genericReading, readingHTML, indexListHTML, fmtDate } from './src/content.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(ROOT, 'dist');
@@ -53,7 +53,9 @@ const SITE = config.siteUrl.replace(/\/$/, '');
 const BRAND = config.brand;
 const ADS = config.adsense || {};
 const VERSION = Date.now().toString(36);
-const flagOf = c => (c === 'es' ? (config.spanishFlag || 'es') : FLAG[c]);
+// 언어 선택은 국기 대신 언어 코드와 이름으로 표시 (특정 나라와 언어를 묶지 않음)
+const LANG_EN = { ko: 'Korean', ja: 'Japanese', zh: 'Chinese', en: 'English', es: 'Spanish', id: 'Indonesian' };
+const GLOBE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg>';
 const HEAD_FONT = { ko: 'Gowun+Batang:wght@700', ja: 'Shippori+Mincho:wght@700', zh: 'Noto+Serif+SC:wght@700', en: 'Gowun+Batang:wght@700', es: 'Gowun+Batang:wght@700', id: 'Gowun+Batang:wght@700' };
 
 // ── 언어 파일 점검: 한국어에 있는 화면 문구가 빠진 언어가 있으면 알려 줌
@@ -125,7 +127,7 @@ function header(c, { edit = false } = {}) {
 <a class="brand" href="/${c}/"><span class="wordmark">${esc(BRAND)}</span><span class="sub">${esc(Lc.subBrand)}</span></a>
 <nav class="top-actions">
 ${edit ? `<a class="txt-btn" href="/${c}/?edit=1">${esc(Lc.ui.edit)}</a>` : ''}
-<a class="flag-btn" href="/?pick=1" aria-label="${esc(Lc.ui.language)}"><img src="/assets/flags/${flagOf(c)}.svg" alt="" width="28" height="21"></a>
+<a class="lang-btn" href="/?pick=1" aria-label="${esc(Lc.ui.language)}" title="${esc(Lc.ui.language)}">${GLOBE}<span>${c.toUpperCase()}</span></a>
 </nav>
 </header>`;
 }
@@ -154,10 +156,10 @@ function langAlts(sub) {
 function addPage(loc, alts) { pages.push({ loc, alts }); }
 const pushAds = `<script>document.querySelectorAll('ins.adsbygoogle').forEach(function(){try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}});</script>`;
 
-// ── 1) 국기 선택 첫 페이지 (/)
+// ── 1) 언어 선택 첫 페이지 (/)
 function buildRoot() {
   const cards = LANGS.map(c => `<a class="lang-card" href="/${c}/" data-lang="${c}" hreflang="${L[c].htmlLang}" lang="${L[c].htmlLang}">
-<img src="/assets/flags/${flagOf(c)}.svg" alt="" width="96" height="72"><span class="lang-name">${esc(L[c].name)}</span><span class="rec" hidden>${esc(L[c].ui.recommended)}</span></a>`).join('\n');
+<span class="lang-name">${esc(L[c].name)}</span>${LANG_EN[c] !== L[c].name ? `<span class="lang-en">${LANG_EN[c]}</span>` : ''}<span class="rec" hidden>${esc(L[c].ui.recommended)}</span></a>`).join('\n');
   const html = `${head({ lang: 'ko', title: `${BRAND} | 시운 時運 – Your fortune, hour by hour`, desc: `${L.ko.siteDesc} ${L.en.siteDesc}`, canonical: '/', alts: langAlts('/') })}
 <body class="page-root">
 <main class="root-wrap">
@@ -253,7 +255,6 @@ function clientData(c, withLines = true) {
     images: config.images,
     ads: { on: !!ADS.client, client: ADS.client || '', slots: ADS.slots || {} },
     rewarded: !!config.rewarded,
-    flag: flagOf(c),
     site: SITE,
     v: VERSION,
     googleMapsKey: config.googleMapsKey || '',
@@ -384,18 +385,14 @@ ${pages.map(p => `<url><loc>${SITE}${p.loc}</loc><lastmod>${today}</lastmod>${p.
   write('_headers', `/assets/*\n  Cache-Control: public, max-age=86400\n/images/*\n  Cache-Control: public, max-age=86400\n/sw.js\n  Cache-Control: no-cache\n/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n`);
   write('404.html', `${head({ lang: 'ko', title: `404 | ${BRAND}`, desc: L.ko.siteDesc, canonical: '/404', noindex: true })}
 <body class="page-root"><main class="root-wrap"><h1 class="root-title"><span class="wordmark">${esc(BRAND)}</span></h1><p class="root-tag">404</p>
-<div class="lang-grid">${LANGS.map(c => `<a class="lang-card" href="/${c}/"><img src="/assets/flags/${flagOf(c)}.svg" alt="" width="96" height="72"><span class="lang-name">${esc(L[c].ui.home)}</span></a>`).join('')}</div></main></body></html>`);
+<div class="lang-grid">${LANGS.map(c => `<a class="lang-card" href="/${c}/"><span class="lang-name">${esc(L[c].ui.home)}</span></a>`).join('')}</div></main></body></html>`);
 }
 
 // ── 실행
 rm(DIST);
 mk(DIST);
 copyDir(path.join(ROOT, 'public'), DIST);
-mk(path.join(DIST, 'assets/flags'));
-for (const c of LANGS) {
-  const f = flagOf(c);
-  fs.copyFileSync(path.join(ROOT, 'node_modules/flag-icons/flags/4x3', `${f}.svg`), path.join(DIST, 'assets/flags', `${f}.svg`));
-}
+mk(path.join(DIST, 'assets'));
 for (const f of ['engine.js', 'content.js', 'countries.js']) fs.copyFileSync(path.join(ROOT, 'src', f), path.join(DIST, 'assets', f));
 copyDir(path.join(ROOT, 'src/client'), path.join(DIST, 'assets'));
 fs.copyFileSync(path.join(ROOT, 'node_modules/korean-lunar-calendar/dist/korean-lunar-calendar.mjs'), path.join(DIST, 'assets/lunar.mjs'));

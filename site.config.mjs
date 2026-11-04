@@ -27,8 +27,6 @@ export default {
   // Google Analytics 4 측정 ID (예: 'G-XXXXXXX'). 비워 두면 넣지 않습니다.
   ga4: '',
 
-  // 스페인어 카드의 국기: 'es'(스페인) 또는 'mx'(멕시코)
-  spanishFlag: 'es',
 
   // 이미지 파일 — 같은 이름으로 덮어쓰면 그대로 반영됩니다.
   images: {

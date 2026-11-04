@@ -1,4 +1,4 @@
-// 국기 선택 첫 페이지: 저장한 언어가 있으면 바로 이동, 없으면 브라우저 언어를 '추천'으로 표시
+// 언어 선택 첫 페이지: 저장한 언어가 있으면 바로 이동, 없으면 브라우저 언어를 '추천'으로 표시
 import { dialSVG, dialLabels, sijinRange, startHands } from './content.js';
 import { sijinIndex } from './engine.js';
 
