@@ -112,6 +112,7 @@ ${alts ? alts.map(a => `<link rel="alternate" hreflang="${a.hl}" href="${SITE}${
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${font}&display=swap">
+${font.includes('Gowun') ? '' : `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&text=${encodeURIComponent(BRAND)}&display=swap">`}
 <link rel="stylesheet" href="/assets/style.css?v=${VERSION}">
 ${client ? `<meta name="google-adsense-account" content="${client}">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}" crossorigin="anonymous"></script>` : ''}
