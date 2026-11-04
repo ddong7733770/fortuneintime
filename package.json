@@ -1,0 +1,31 @@
+{
+  "name": "fortuneintime",
+  "version": "1.0.0",
+  "description": "Fortune in Time 시운 – 시간에 따른 운세 (정적 사이트)",
+  "main": "build.mjs",
+  "scripts": {
+    "build": "node build.mjs",
+    "images": "node scripts/make-images.mjs",
+    "dev": "node build.mjs && npx --yes serve dist -l 4321"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@fontsource/gowun-batang": "^5.3.0",
+    "@fontsource/noto-serif-sc": "^5.3.1",
+    "@fontsource/shippori-mincho": "^5.3.0",
+    "countries-and-timezones": "^3.11.0",
+    "flag-icons": "^7.6.0",
+    "korean-lunar-calendar": "^0.4.0",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2",
+    "world-countries": "^5.1.0"
+  },
+  "type": "module",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ddong7733770/fortuneintime.git"
+  }
+}

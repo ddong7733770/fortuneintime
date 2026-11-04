@@ -1,0 +1,42 @@
+// "The place I need right now" — English
+export default {
+  ui: {
+    placeTitle: "The place I need right now",
+    placeSub: "Tap Go to fly from where you are to a healing spot in the world that tops up today's energy.",
+    placeStart: "Go",
+  },
+  live: {
+    locating: "Finding your starting point…", flying: "Flying to {place}…", from: "From", to: "To",
+    distance: "About {km} km · roughly {h} h by plane", again: "Fly somewhere else", here: "Where you are", error: "We can't take off right now. Please try again in a moment.",
+  },
+  forYou: {
+    wealth: "Your money energy is your weakest today at {n}/5. The open, generous scenery of {place} helps you let go of hurry and gather your flow again.",
+    love: "Your love energy is your weakest today at {n}/5. The gentle mood of {place} softly opens a heart that has closed up.",
+    work: "Your work and study energy is your weakest today at {n}/5. The clear air of {place} pulls scattered focus back into one place.",
+    health: "Your health energy is your weakest today at {n}/5. The nature of {place} gives a tired body deep rest and recovery.",
+    good: "Your energy is well balanced today. {place} is a pause that helps you hold on to that good flow a little longer.",
+  },
+  privacyAdd: ["Approximate location", "When you tap Go in \"The place I need right now\", we use the approximate city estimated from your IP address as the starting point. It is only shown on screen and is never stored."],
+  places: {
+    jeju: { name: "Jeju Olle Trail", region: "Jeju Island, South Korea", intro: "A long walking trail that follows the stone walls and coastline of a volcanic island. Walking slowly with the wind and waves around you clears your thoughts.", boost: "Land and sea energy flow together here, helping you find your center again." },
+    arashiyama: { name: "Arashiyama Bamboo Grove", region: "Kyoto, Japan", intro: "A narrow path winds between bamboo stalks so tall they hide the sky. Each gust of wind makes the grove rustle in a way that quiets the mind.", boost: "The straight, upright bamboo helps line up a cluttered mind." },
+    yakushima: { name: "Yakushima Forest", region: "Kagoshima, Japan", intro: "An island of moss-covered forest and cedar trees thousands of years old. Frequent rain and mist make the whole forest feel like it is breathing.", boost: "The deep life force of an ancient forest slowly refills drained energy." },
+    ubud: { name: "Ubud", region: "Bali, Indonesia", intro: "A village of art and meditation surrounded by rice terraces and jungle. Yoga and traditional rituals are woven naturally into daily life.", boost: "The slow rhythm of the day rests a tired heart and breathes in new energy." },
+    luangprabang: { name: "Luang Prabang", region: "Laos", intro: "A quiet old town where temples and colonial buildings line the Mekong. Every dawn, a procession of monks walks the streets collecting alms.", boost: "Slow, simple days remind you to let go of wanting and feel grateful." },
+    jiuzhaigou: { name: "Jiuzhaigou Valley", region: "Sichuan, China", intro: "A nature reserve of emerald lakes and waterfalls strung along a valley. The water changes color with the seasons, creating a dreamlike landscape.", boost: "Clear water energy cools a heated mind and brings life back to the body." },
+    rishikesh: { name: "Rishikesh", region: "Uttarakhand, India", intro: "A center of yoga and meditation on the Ganges at the foot of the Himalayas. The evening fire ceremony by the river leaves a deep impression.", boost: "The calm energy of practice gathers scattered focus into one point." },
+    paro: { name: "Tiger's Nest Monastery", region: "Paro, Bhutan", intro: "Bhutan's iconic monastery clings to the side of a sheer cliff. The hike leaves you breathless, but the stillness at the top is worth every step.", boost: "The clear energy of high places rebuilds your will to reach your goals." },
+    bled: { name: "Lake Bled", region: "Slovenia", intro: "A tiny island with a church floats in the middle of an Alpine lake. Legend says that ringing its bell after rowing across makes a wish come true.", boost: "The calm lake energy warmly connects you with the people who matter." },
+    santorini: { name: "Santorini", region: "Greece", intro: "White houses and blue domes line the cliffs of this Aegean island. The sunset in Oia is often called one of the most beautiful in the world.", boost: "The warm glow of sunset gives you the courage to say what you feel." },
+    zermatt: { name: "Zermatt", region: "Switzerland", intro: "A car-free mountain village facing the Matterhorn. Hiking trails wind between crisp air and glacier lakes.", boost: "Cold, clear mountain air washes away fatigue that has built up in your body." },
+    bluelagoon: { name: "Blue Lagoon", region: "Iceland", intro: "A milky blue geothermal pool spreads between black lava fields. Sinking into the warm, mineral-rich water melts tension away.", boost: "Warmth from deep within the earth loosens a stiff body and mind." },
+    tromso: { name: "Tromsø", region: "Norway", intro: "A city above the Arctic Circle where the northern lights paint the winter sky. Fjords and snowy peaks create a quiet sense of wonder.", boost: "The light flowing across the sky invites excitement and new connections." },
+    valdorcia: { name: "Val d'Orcia", region: "Tuscany, Italy", intro: "Gentle hills and cypress-lined roads stretch as far as the eye can see. Vineyards and small villages invite long, unhurried meals.", boost: "The energy of fertile land widens both your peace of mind and your money flow." },
+    sedona: { name: "Sedona", region: "Arizona, USA", intro: "A desert town ringed by red rock, known as a place where energy gathers. At sunset the rocks glow fiery red.", boost: "Strong earth energy clears away hesitation and fuels the drive to act." },
+    banff: { name: "Lake Louise", region: "Banff, Canada", intro: "A turquoise lake fed by Rocky Mountain glaciers. Walking the shore or paddling a canoe feels like time has stopped.", boost: "The clear, cold lake settles busy thoughts and offers deep rest." },
+    machupicchu: { name: "Machu Picchu", region: "Cusco, Peru", intro: "The Inca city built above the clouds on an Andean peak. Every stone carries centuries of time and wisdom.", boost: "High energy rich in ancient wisdom opens your eyes to the bigger picture." },
+    uyuni: { name: "Salar de Uyuni", region: "Bolivia", intro: "An endless white salt flat that turns into a giant mirror after rain. With no line between sky and ground, your thoughts become simple.", boost: "The mirror of the sky helps you look at yourself honestly." },
+    chefchaouen: { name: "Chefchaouen", region: "Morocco", intro: "A mountain town where every alley and wall is painted blue. Wandering its markets and workshops reveals the beauty of simple handcraft.", boost: "The calm of the blue town helps you manage spending and invites steady money luck." },
+    milford: { name: "Milford Sound", region: "New Zealand", intro: "A fjord where tall cliffs and waterfalls drop straight into the sea. When it rains, hundreds of waterfalls appear and the scene grows even grander.", boost: "Before such grand nature, small worries wash away and your heart grows wider." },
+  },
+};

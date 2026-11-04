@@ -1,0 +1,1 @@
+{"version": 1, "include": ["/api/*", "/ko/hour", "/ko/hour/*", "/ja/hour", "/ja/hour/*", "/zh/hour", "/zh/hour/*", "/en/hour", "/en/hour/*", "/es/hour", "/es/hour/*", "/id/hour", "/id/hour/*"], "exclude": []}

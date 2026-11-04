@@ -1,0 +1,42 @@
+// "Tempat yang kubutuhkan sekarang" — Bahasa Indonesia
+export default {
+  ui: {
+    placeTitle: "Tempat yang kubutuhkan sekarang?",
+    placeSub: "Ketuk Berangkat untuk terbang dari tempatmu sekarang ke destinasi penyembuhan di dunia yang mengisi energimu hari ini.",
+    placeStart: "Berangkat",
+  },
+  live: {
+    locating: "Mencari titik keberangkatanmu…", flying: "Terbang ke {place}…", from: "Dari", to: "Ke",
+    distance: "Sekitar {km} km · kira-kira {h} jam naik pesawat", again: "Terbang ke tempat lain", here: "Lokasimu sekarang", error: "Belum bisa berangkat sekarang. Coba lagi sebentar lagi.",
+  },
+  forYou: {
+    wealth: "Energi keuanganmu paling lemah hari ini, {n}/5. Pemandangan luas {place} membantumu melepas rasa terburu-buru dan mengumpulkan kembali alirannya.",
+    love: "Energi cintamu paling lemah hari ini, {n}/5. Suasana lembut {place} perlahan membuka hati yang sempat tertutup.",
+    work: "Energi kerja dan belajarmu paling lemah hari ini, {n}/5. Udara jernih {place} mengumpulkan kembali fokusmu yang tercerai.",
+    health: "Energi kesehatanmu paling lemah hari ini, {n}/5. Alam {place} memberi tubuh yang lelah istirahat dan pemulihan yang dalam.",
+    good: "Energimu hari ini seimbang dan baik. {place} menjadi jeda yang membantumu menjaga aliran baik itu lebih lama.",
+  },
+  privacyAdd: ["Perkiraan lokasi", "Saat kamu mengetuk Berangkat di \"Tempat yang kubutuhkan sekarang?\", kami memakai perkiraan kota dari alamat IP-mu sebagai titik keberangkatan. Lokasi ini hanya ditampilkan di layar dan tidak disimpan."],
+  places: {
+    jeju: { name: "Jalur Olle Jeju", region: "Pulau Jeju, Korea Selatan", intro: "Jalur jalan kaki panjang yang menyusuri tembok batu dan pantai pulau vulkanik. Berjalan pelan diiringi angin dan ombak membuat pikiran jernih.", boost: "Energi darat dan laut mengalir bersama di sini dan membantumu menemukan pusat dirimu lagi." },
+    arashiyama: { name: "Hutan Bambu Arashiyama", region: "Kyoto, Jepang", intro: "Jalan setapak berkelok di antara bambu yang begitu tinggi hingga menutupi langit. Setiap embusan angin membuat hutan berdesir dan menenangkan pikiran.", boost: "Energi bambu yang lurus merapikan pikiran yang kusut." },
+    yakushima: { name: "Hutan Yakushima", region: "Kagoshima, Jepang", intro: "Pulau dengan hutan berlumut dan pohon cedar berusia ribuan tahun. Hujan dan kabut yang sering turun membuat seluruh hutan seolah bernapas.", boost: "Daya hidup hutan purba perlahan mengisi kembali energimu yang terkuras." },
+    ubud: { name: "Ubud", region: "Bali, Indonesia", intro: "Desa seni dan meditasi yang dikelilingi sawah terasering dan hutan tropis. Yoga dan upacara adat menyatu alami dalam keseharian.", boost: "Ritme hari yang pelan mengistirahatkan hati yang lelah dan meniupkan energi baru." },
+    luangprabang: { name: "Luang Prabang", region: "Laos", intro: "Kota tua yang tenang dengan kuil dan bangunan lama di tepi Sungai Mekong. Setiap subuh, barisan biksu berjalan menerima sedekah.", boost: "Hari-hari yang pelan dan sederhana mengingatkanmu untuk melepas keinginan dan bersyukur." },
+    jiuzhaigou: { name: "Lembah Jiuzhaigou", region: "Sichuan, Tiongkok", intro: "Kawasan alam dengan danau hijau zamrud dan air terjun di sepanjang lembah. Warna airnya berubah setiap musim dan menciptakan pemandangan seperti mimpi.", boost: "Energi air yang jernih mendinginkan pikiran yang panas dan menghidupkan kembali tubuh." },
+    rishikesh: { name: "Rishikesh", region: "Uttarakhand, India", intro: "Pusat yoga dan meditasi di tepi Sungai Gangga, di kaki Himalaya. Upacara api senja di tepi sungai meninggalkan kesan mendalam.", boost: "Ketenangan latihan spiritual mengumpulkan fokus yang tercerai ke satu titik." },
+    paro: { name: "Biara Sarang Harimau", region: "Paro, Bhutan", intro: "Biara ikonik Bhutan yang menempel di tebing curam. Pendakiannya membuat terengah, tetapi keheningan di puncak sepadan dengan setiap langkah.", boost: "Energi jernih dari tempat tinggi membangun kembali tekadmu meraih tujuan." },
+    bled: { name: "Danau Bled", region: "Slovenia", intro: "Pulau kecil dengan gereja mengapung di tengah danau yang dikelilingi Pegunungan Alpen. Konon membunyikan loncengnya setelah mendayung ke sana akan mengabulkan doa.", boost: "Ketenangan danau menghubungkan kamu dengan orang-orang tersayang secara hangat." },
+    santorini: { name: "Santorini", region: "Yunani", intro: "Rumah putih dan kubah biru berjajar di tebing pulau Laut Aegea ini. Matahari terbenam di Oia sering disebut salah satu yang terindah di dunia.", boost: "Cahaya hangat senja memberimu keberanian mengungkapkan perasaan." },
+    zermatt: { name: "Zermatt", region: "Swiss", intro: "Desa pegunungan bebas mobil yang menghadap Matterhorn. Jalur pendakiannya melintasi udara segar dan danau gletser.", boost: "Udara gunung yang dingin dan bersih membasuh lelah yang menumpuk di tubuh." },
+    bluelagoon: { name: "Blue Lagoon", region: "Islandia", intro: "Kolam air panas biru susu terbentang di antara padang lava hitam. Berendam di airnya yang hangat dan kaya mineral meluruhkan ketegangan.", boost: "Kehangatan dari dalam bumi melemaskan tubuh dan pikiran yang kaku." },
+    tromso: { name: "Tromsø", region: "Norwegia", intro: "Kota di atas Lingkar Arktik tempat aurora menghiasi langit musim dingin. Fjord dan puncak bersalju menciptakan rasa takjub yang hening.", boost: "Cahaya yang mengalir di langit mengundang debaran dan jodoh baru." },
+    valdorcia: { name: "Val d'Orcia", region: "Toskana, Italia", intro: "Bukit landai dan jalan berjajar pohon cemara membentang sejauh mata memandang. Kebun anggur dan desa kecil mengajak menikmati makan yang santai.", boost: "Energi tanah yang subur melapangkan hati sekaligus aliran keuanganmu." },
+    sedona: { name: "Sedona", region: "Arizona, Amerika Serikat", intro: "Kota gurun yang dikelilingi bukit batu merah dan dikenal sebagai tempat berkumpulnya energi. Saat senja, bebatuan menyala merah membara.", boost: "Energi bumi yang kuat menyingkirkan keraguan dan mendorongmu bertindak." },
+    banff: { name: "Danau Louise", region: "Banff, Kanada", intro: "Danau biru kehijauan yang terisi air gletser Pegunungan Rocky. Berjalan di tepiannya atau mendayung kano terasa seperti waktu berhenti.", boost: "Danau yang dingin dan jernih mengendapkan pikiran yang ramai dan memberi istirahat mendalam." },
+    machupicchu: { name: "Machu Picchu", region: "Cusco, Peru", intro: "Kota Inka yang dibangun di atas awan di puncak Andes. Setiap batunya menyimpan berabad-abad waktu dan kearifan.", boost: "Energi tinggi yang sarat kearifan kuno membuka matamu melihat gambaran besar." },
+    uyuni: { name: "Salar de Uyuni", region: "Bolivia", intro: "Dataran garam putih tak berujung yang berubah menjadi cermin raksasa setelah hujan. Tanpa batas antara langit dan tanah, pikiran menjadi sederhana.", boost: "Cermin langit membantumu menatap dirimu sendiri dengan jujur." },
+    chefchaouen: { name: "Chefchaouen", region: "Maroko", intro: "Kota pegunungan yang setiap gang dan dindingnya dicat biru. Menyusuri pasar dan bengkel kerajinannya memperlihatkan indahnya karya tangan sederhana.", boost: "Ketenangan kota biru membantumu mengatur pengeluaran dan mengundang rezeki yang stabil." },
+    milford: { name: "Milford Sound", region: "Selandia Baru", intro: "Fjord tempat tebing tinggi dan air terjun jatuh langsung ke laut. Saat hujan, ratusan air terjun muncul dan pemandangannya makin megah.", boost: "Di hadapan alam yang megah, kekhawatiran kecil luruh dan hati menjadi lapang." },
+  },
+};
