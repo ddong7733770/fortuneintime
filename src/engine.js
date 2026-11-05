@@ -113,14 +113,21 @@ export function profileFrom(p) {
     pillar: dayPillar(p.y, p.m, p.d),
   };
 }
-const profileSeed = p => `${(p.name || '').trim().toLowerCase()}|${p.y}-${p.m}-${p.d}|${p.sijin ?? -1}|${p.gender || ''}`;
+// 계산 기준: 생년월일·시간 입력·태어난 나라·성별만 (이름·기기·IP는 넣지 않음 → 같은 정보면 어디서든 같은 결과)
+const profileSeed = p => `${p.y}-${p.m}-${p.d}|${p.timeMode || ''}|${p.timeMode === 'exact' ? `${p.hh}:${p.mm}` : ''}|${p.sijin ?? -1}|${p.country || ''}|${String(p.gender || '').toUpperCase()}`;
 
-function luckyNumbers(r, lang) {
+// 추천 복권 번호(1~45 중 6개): 용신 오행의 수(하도수: 목 3·8, 화 2·7, 토 5·10, 금 4·9, 수 1·6)로 끝나는 번호를 2개 이상 넣음
+export const EL_DIGITS = [[3, 8], [2, 7], [5, 0], [4, 9], [1, 6]];
+function luckyNumbers(r, lang, yongEl = null) {
   const out = [];
+  const okZh = n => !(lang === 'zh' && String(n).includes('4'));
+  if (yongEl !== null) {
+    const pool = []; for (let n = 1; n <= 45; n++) if (EL_DIGITS[yongEl].includes(n % 10) && okZh(n)) pool.push(n);
+    while (out.length < 2 && pool.length) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+  }
   while (out.length < 6) {
     const n = 1 + Math.floor(r() * 45);
-    if (out.includes(n)) continue;
-    if (lang === 'zh' && String(n).includes('4')) continue;
+    if (out.includes(n) || !okZh(n)) continue;
     out.push(n);
   }
   if (lang === 'zh' && !out.some(n => String(n).includes('8'))) out[5] = [8, 18, 28, 38].find(n => !out.includes(n));
@@ -177,7 +184,7 @@ export function daily(p, dateK, turn = 0, lang = 'ko') {
     hours, best, worst, domains,
     color: pick(EL_COLORS[luckEl]),
     direction: pick(EL_DIRS[luckEl]),
-    numbers: luckyNumbers(r, lang),
+    numbers: luckyNumbers(r, lang, chart.fav.yong),
     helper: { mbti: MBTI[helperM], blood: BLOOD[helperB] },
     drain: { mbti: MBTI[drainM], blood: BLOOD[drainB] },
     charm: CHARMS[Math.floor(r() * CHARMS.length)],

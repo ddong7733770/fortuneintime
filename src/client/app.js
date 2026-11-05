@@ -395,6 +395,7 @@ ${flowHTML(p, today, today, d.score, true)}
 
 <section class="sec nums"><h2>${esc(U.numbersTitle)}</h2><p class="muted">${esc(U.numbersHint)}</p>
 <div class="cards six">${d.numbers.map(n => `<button type="button" class="flip"><span class="f-back" aria-hidden="true">?</span><span class="f-front">${n}</span></button>`).join('')}</div>
+${S ? `<p class="muted small nums-basis">${esc(fmt(S.lottoBasis, { el: S.el[d.saju.chart.fav.yong], digits: E.EL_DIGITS[d.saju.chart.fav.yong].map(n => n || 10).join('·') }))}</p>` : ''}
 <div class="after-flip" hidden>${adSlot('C')}</div>
 </section>
 

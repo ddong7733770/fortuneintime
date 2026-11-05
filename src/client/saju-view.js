@@ -2,7 +2,9 @@
 import { SJ } from './engine.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmt = (s, o = {}) => String(s).replace(/\{(\w+)\}/g, (_, k) => (o[k] ?? ''));
+// {키} 치환 + 한국어 조사 자동 선택: {키:은/는} → 앞말의 받침에 따라 '은' 또는 '는'
+const hasBatchim = w => { const t = String(w).replace(/\([^)]*\)\s*$/, '').trim(); const c = t.charCodeAt(t.length - 1); return c >= 0xAC00 && c <= 0xD7A3 ? (c - 0xAC00) % 28 !== 0 : false; };
+const fmt = (s, o = {}) => String(s).replace(/\{(\w+)(?::([^}/]+)\/([^}]+))?\}/g, (_, k, a, b) => { const v = o[k] ?? ''; return a ? v + (hasBatchim(v) ? a : b) : v; });
 const pickR = (arr, r) => arr[Math.floor((r || 0) * arr.length) % arr.length];
 const EL_CLS = ['el-wood', 'el-fire', 'el-earth', 'el-metal', 'el-water'];
 const gzH = g => SJ.STEM_H[g.stem] + SJ.BRANCH_H[g.branch];
@@ -14,16 +16,25 @@ export function basisLines(S, d) {
   const { chart, ev } = d.saju;
   const out = [];
   const vs = SJ.elValue(chart, SJ.STEM_EL[ev.stem]);
-  out.push(S.tenDay[ev.tgS][vs >= 0 ? 0 : 1]);
+  const ten = S.ten[ev.tgS].split('(')[0];
+  out.push(`${fmt(S.dayIntro, { s: stemName(S, ev.stem), d: stemName(S, chart.dayStem), ten, mean: S.tenMean[ev.tgS] })} ${S.tenDay[ev.tgS][vs >= 0 ? 0 : 1]}`);
   const els = [...new Set([SJ.STEM_EL[ev.stem], SJ.BRANCH_EL[ev.branch]])].map(e => S.el[e]).join('·');
   const mood = ev.val >= 1.5 ? 'good' : ev.val <= -1.5 ? 'bad' : 'mid';
   out.push(fmt(S.yongDay[mood], { yong: S.el[chart.fav.yong], els }));
   const rels = [...ev.rels].sort((a, b) => POS_ORDER.indexOf(a.pos) - POS_ORDER.indexOf(b.pos)).slice(0, 2);
-  rels.forEach(r => out.push(fmt(S.rel[r.type], { b: SJ.BRANCH_H[ev.branch], nb: SJ.BRANCH_H[r.with], pos: S.pos[r.pos] })));
-  if (ev.stemHapDay) out.push(fmt(S.rel.stemHap, { s: SJ.STEM_H[ev.stem] }));
-  else if (ev.stemChungDay) out.push(fmt(S.rel.stemChung, { s: SJ.STEM_H[ev.stem] }));
+  rels.forEach(r => out.push(fmt(S.rel[r.type], { b: branchName(S, ev.branch), nb: branchName(S, r.with), pos: S.pos[r.pos] })));
+  if (ev.stemHapDay) out.push(fmt(S.rel.stemHap, { s: stemName(S, ev.stem) }));
+  else if (ev.stemChungDay) out.push(fmt(S.rel.stemChung, { s: stemName(S, ev.stem) }));
   if (d.saju.kai) out.push(fmt(S.ui.kai, { el: S.el[chart.fav.yong] }));
   return out;
+}
+// 한국어 이름: 계(癸·물), 미(未·양)
+export const stemName = (S, s) => `${SJ.STEM_K[s]}(${SJ.STEM_H[s]}·${S.elShort[SJ.STEM_EL[s]]})`;
+export const branchName = (S, b) => `${SJ.BRANCH_K[b]}(${SJ.BRANCH_H[b]}·${S.animal[b]})`;
+function basisChipsKo(S, d) {
+  const { chart, ev, gz } = d.saju;
+  return [fmt(S.chip.day, { gz: gzK(gz) }), S.ten[ev.tgS].split('(')[0], fmt(S.chip.yong, { el: S.el[chart.fav.yong] }),
+    ...ev.rels.slice(0, 2).map(r => fmt(S.chip.rel[r.type], { a: SJ.BRANCH_K[ev.branch], b: SJ.BRANCH_K[r.with] }))];
 }
 export function basisChips(d) {
   const { chart, ev, gz } = d.saju;
@@ -31,12 +42,12 @@ export function basisChips(d) {
   return [`${gzH(gz)}日`, SJ.TEN_H[ev.tgS], `用神 ${SJ.EL_H[chart.fav.yong]}`, ...rel.slice(0, 2)];
 }
 export function basisHTML(S, d, link) {
-  const chips = basisChips(d).map(c => `<span>${esc(c)}</span>`).join('');
+  const chips = (S ? basisChipsKo(S, d) : basisChips(d)).map(c => `<span>${esc(c)}</span>`).join('');
   if (!S) return `<section class="sec basis"><p class="basis-chips">${chips}</p></section>`;
   const { gz } = d.saju;
   return `<section class="sec basis"><h2>${esc(S.ui.todayBasis)}</h2>
 <p class="basis-chips">${chips}</p>
-<p class="muted basis-note">${esc(fmt(S.ui.basisNote, { gz: `${gzH(gz)} ${gzK(gz)}` }))}</p>
+<p class="muted basis-note">${esc(fmt(S.ui.basisNote, { gz: `${gzK(gz)}(${gzH(gz)})` }))}</p>
 <ul class="basis-list">${basisLines(S, d).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
 ${link ? `<a class="txt-link" href="${link}">${esc(S.ui.seeSaju)} →</a>` : ''}</section>`;
 }
@@ -59,6 +70,66 @@ export function domainReason(S, d, k) {
   const ex = els.find(e => chart.count[e] >= 3 && SJ.elValue(chart, e) < 0); if (ex !== undefined) return fmt(D.excess, { el: S.el[ex], organ: S.organ[ex] });
   const lk = els.find(e => chart.count[e] === 0); if (lk !== undefined) return fmt(D.lack, { el: S.el[lk] });
   if (relAt('day', 'chung')) return D.chung; if (ev.rels.some(x => x.type === 'hyeong')) return D.hyeong; return pickR(D.plain, r);
+}
+
+// ── 타고난 분야별 운: 원국의 십신 무게·위치·용신·신살로 문장을 고름
+export function lifeTexts(S, chart) {
+  const T = S.life, ds = chart.dayStem, gw = chart.gw, tg = chart.tgCount, P = chart.pillars;
+  const fav = g => SJ.elValue(chart, SJ.elOfGroup(ds, g)) >= 0;
+  const posOf = g => ['year', 'month', 'day', 'hour'].filter(pos => chart.tens[pos] && ((chart.tens[pos].stem !== null && SJ.groupOf(chart.tens[pos].stem) === g) || SJ.groupOf(chart.tens[pos].branch) === g));
+  const Y = S.yong[chart.fav.yong], yEl = S.el[chart.fav.yong];
+  const out = {};
+  // 재물운
+  const w = [];
+  if (gw[2] >= 2) w.push(fav(2) && chart.strength >= 0 ? T.wealth.strongFav : chart.strength < 0 ? T.wealth.strongUnfav : T.wealth.strongFav);
+  else if (gw[1] >= 1.5) w.push(T.wealth.output); else w.push(T.wealth.weak);
+  if (tg[4] + tg[5] > 0) w.push(tg[4] > tg[5] ? T.wealth.pyeon : T.wealth.jeong);
+  const wp = posOf(2); if (wp.length) w.push(T.wealth.where[wp.includes('month') ? 'month' : wp[0]]);
+  if (gw[0] >= 3 && chart.strength > 0) w.push(T.wealth.rob);
+  w.push(fmt(T.wealth.tip, { el: yEl, act: Y.act }));
+  out.wealth = w;
+  // 직장·사업운
+  const k = [];
+  if (gw[3] >= 1.5) k.push(fav(3) ? T.work.kwanFav : T.work.kwanUnfav); else k.push(T.work.noKwan);
+  if (tg[6] + tg[7] > 0) k.push(tg[7] >= tg[6] ? T.work.jeong : T.work.pyeon);
+  if (gw[1] >= 2) k.push(T.work.output); else if (gw[4] >= 2.5) k.push(T.work.insung);
+  if (gw[0] >= 3) k.push(T.work.bigup);
+  if (chart.sal.yeokma) k.push(T.work.yeokma);
+  k.push(fmt(T.work.field, { el: yEl, fields: T.work.fields[chart.fav.yong] }));
+  out.work = k;
+  // 이성·대인관계
+  const l = [], g = chart.male === false ? 3 : 2;
+  const starN = chart.male === false ? tg[6] + tg[7] : tg[4] + tg[5];
+  if (starN >= 3) l.push(T.love.many);
+  else if (gw[g] >= 1.5) l.push(fav(g) ? (chart.male === false ? T.love.strongF : T.love.strongM) : T.love.unfav);
+  else l.push(T.love.none);
+  l.push(T.love.palace[SJ.groupOf(chart.tens.day.branch)]);
+  if (SJ.branchRel(P.day.branch, P.month.branch) === 'chung') l.push(T.love.palaceChung);
+  if (chart.sal.dohwa) l.push(T.love.dohwa);
+  const top = [0, 1, 2, 3, 4].reduce((a, b) => (gw[b] > gw[a] ? b : a), 0);
+  l.push(T.love.people[top]);
+  out.love = l;
+  // 가정·건강
+  const h = [];
+  const earlyIn = ['year', 'month'].some(pos => chart.tens[pos] && ((chart.tens[pos].stem !== null && SJ.groupOf(chart.tens[pos].stem) === 4) || SJ.groupOf(chart.tens[pos].branch) === 4));
+  h.push(earlyIn ? T.home.parents : T.home.self);
+  if (SJ.branchRel(P.day.branch, P.month.branch) === 'hap') h.push(T.home.harmony);
+  if (P.hour) {
+    const hg = [SJ.groupOf(chart.tens.hour.stem), SJ.groupOf(chart.tens.hour.branch)];
+    const childG = chart.male === false ? 1 : 3;
+    h.push(hg.includes(childG) ? T.home.child : T.home.late[hg[0]]);
+  }
+  const lackE = chart.count.findIndex(c => c === 0);
+  const excE = chart.count.findIndex((c, e) => c >= 3 && SJ.elValue(chart, e) < 0);
+  if (lackE >= 0) h.push(fmt(T.home.lack, { el: S.el[lackE], organ: S.organ[lackE] }));
+  if (excE >= 0) h.push(fmt(T.home.excess, { el: S.el[excE], organ: S.organ[excE] }));
+  h.push(chart.strength < 0 ? T.home.weak : chart.strength > 0 ? T.home.strong : T.home.mid);
+  out.home = h;
+  return out;
+}
+function lifeHTML(S, chart) {
+  const t = lifeTexts(S, chart);
+  return ['wealth', 'work', 'love', 'home'].map(k => `<section class="sec life life-${k}"><h2>${esc(S.life.titles[k])}</h2><p class="lead-s">${t[k].map(esc).join(' ')}</p></section>`).join('');
 }
 
 // ── 사주 탭
@@ -116,6 +187,7 @@ ${many.map(i => `<p class="lead-s">${esc(S.many[i])}</p>`).join('')}${none.map(i
 <h3>${esc(U.luckyTitle)}</h3><dl class="kw"><div><dt>색</dt><dd>${esc(Y.color)}</dd></div><div><dt>방향</dt><dd>${esc(Y.dir)}</dd></div><div><dt>숫자</dt><dd>${esc(Y.num)}</dd></div><div><dt>활동</dt><dd>${esc(Y.act)}</dd></div></dl></section>
 <section class="sec"><h2>${esc(U.tenGods)}</h2>${topTen.map(i => `<p class="lead-s"><b>${esc(S.ten[i])}</b> ${esc(S.tenTrait[i])}</p>`).join('')}</section>
 ${sal.length ? `<section class="sec"><h2>${esc(U.sinsal)}</h2>${sal.map(([n, t]) => `<p class="lead-s"><b>${esc(n)}</b> ${esc(t)}</p>`).join('')}</section>` : ''}
+${lifeHTML(S, chart)}
 ${dae ? `<section class="sec"><h2>${esc(U.daeun)}</h2><ol class="daeun">${dae}</ol></section>` : ''}
 <section class="sec"><p class="disc-inline">${esc(U.disclaimer)}</p></section>`;
 }
