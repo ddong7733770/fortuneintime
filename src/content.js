@@ -92,10 +92,11 @@ ${needle}</svg>`;
 // rolls 위치: 0 총평, 1~12 분야별(3개씩), 13~15 좋은 시간, 16~18 조심할 시간, 19 행운 아이템, 20~27 宜/忌, 28~29 타임머신 덧붙임
 const P = (arr, r) => arr[Math.floor(r * arr.length) % arr.length];
 export const joiner = L => (['ja', 'zh'].includes(L.code) ? '' : ' ');
-export function domainText(L, k, v, rolls, i, tense = 'now') {
+// reason: 사주 근거 문장(있으면 첫 문장을 대신함)
+export function domainText(L, k, v, rolls, i, tense = 'now', reason = null) {
   const D = L.lines.domains[k], lv = levelOf(v), j = joiner(L);
   if (tense === 'past') return [P(D.pastState[lv], rolls[1 + 3 * i]), P(D.pastReflect, rolls[2 + 3 * i])].join(j);
-  return [P(D.state[lv], rolls[1 + 3 * i]), P(D.advice[lv], rolls[2 + 3 * i]), P(D.tip, rolls[3 + 3 * i])].join(j);
+  return [reason || P(D.state[lv], rolls[1 + 3 * i]), P(D.advice[lv], rolls[2 + 3 * i]), P(D.tip, rolls[3 + 3 * i])].join(j);
 }
 export function hourText(L, kind, hLabel, rolls) {
   const H = L.lines[kind === 'best' ? 'hourBest' : 'hourWorst'], o = kind === 'best' ? 13 : 16;

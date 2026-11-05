@@ -1,0 +1,244 @@
+// 사주(四柱) 계산 — 명리학의 정해진 규칙으로 계산합니다(무작위 없음). 브라우저와 빌드(Node)에서 같이 씁니다.
+// - 년주: 입춘 시각 기준, 월주: 12절(절입 시각) 기준 — 절기 시각은 src/jieqi.js(천문 계산 표)
+// - 일주: 진태양시 기준 날짜, 23시(자시)부터 다음 날로 봄
+// - 시주: 진태양시 기준 시진 + 일간에 따른 시간(五鼠遁)
+// - 태어난 나라의 표준시·서머타임 이력(예: 한국 1954~61년 UTC+8:30, 1987~88년 서머타임)을 반영
+import { JIE_FIRST, JIE_MIN } from './jieqi.js';
+import { COUNTRY_SOLAR, COUNTRY_ZONE } from './countries.js';
+
+export const STEM_H = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+export const BRANCH_H = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+export const STEM_K = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+export const BRANCH_K = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+export const EL_H = ['木', '火', '土', '金', '水'];
+export const TEN_H = ['比肩', '劫財', '食神', '傷官', '偏財', '正財', '偏官', '正官', '偏印', '正印'];
+export const STEM_EL = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4];
+export const BRANCH_EL = [4, 2, 0, 0, 2, 1, 1, 2, 3, 3, 2, 4];
+const BRANCH_MAIN = [9, 5, 0, 1, 4, 2, 3, 5, 6, 7, 4, 8]; // 지지의 본기(정기) 천간
+const yang = s => s % 2 === 0;
+
+// 십신: 일간 d 기준 천간 x의 관계 (0 비견 1 겁재 2 식신 3 상관 4 편재 5 정재 6 편관 7 정관 8 편인 9 정인)
+export function tenGod(d, x) {
+  const diff = (STEM_EL[x] - STEM_EL[d] + 5) % 5; // 0 같음 1 내가 생함 2 내가 극함 3 나를 극함 4 나를 생함
+  return diff * 2 + (yang(d) === yang(x) ? 0 : 1);
+}
+export const tenGodOfBranch = (d, b) => tenGod(d, BRANCH_MAIN[b]);
+export const groupOf = tg => Math.floor(tg / 2); // 0 비겁 1 식상 2 재성 3 관성 4 인성
+export const elOfGroup = (dayStem, g) => (STEM_EL[dayStem] + g) % 5; // 그 십신 그룹에 해당하는 오행
+
+// ── 시간대: 나라 시간대의 실제 UTC 오프셋(분). 서머타임·과거 변경 포함
+function zoneOffset(zone, ms) {
+  try {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: zone, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' })
+      .formatToParts(new Date(ms)).filter(x => x.type !== 'literal').map(x => [x.type, +x.value]));
+    return Math.round((Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) - Math.floor(ms / 60000) * 60000) / 60000);
+  } catch { return 540; }
+}
+// 그 나라 시계로 y-m-d hh:mm 이었던 순간의 UTC(ms)
+export function localToUTC(y, m, d, hh, mm, zone) {
+  const naive = Date.UTC(y, m - 1, d, hh, mm);
+  let ms = naive - zoneOffset(zone, naive) * 60000;
+  ms = naive - zoneOffset(zone, ms) * 60000;
+  return ms;
+}
+const stdOffsetNow = zone => Math.min(zoneOffset(zone, Date.UTC(2026, 0, 15)), zoneOffset(zone, Date.UTC(2026, 6, 15)));
+
+// 60갑자 번호 → 천간·지지
+const gz = i => ({ idx: ((i % 60) + 60) % 60, stem: (((i % 10) + 10) % 10), branch: (((i % 12) + 12) % 12) });
+const gzOf = (stem, branch) => { for (let i = 0; i < 60; i++) if (i % 10 === stem && i % 12 === branch) return i; return 0; };
+// 일주 (1949-10-01이 갑자일)
+export function dayGZ(y, m, d) { return gz(Math.round((Date.UTC(y, m - 1, d) - Date.UTC(1949, 9, 1)) / 864e5)); }
+
+const JBASE = Date.UTC(1900, 0, 1);
+function jieIndexAt(ms) { // ms 이전의 마지막 절 위치
+  const t = (ms - JBASE) / 60000;
+  let lo = 0, hi = JIE_MIN.length - 1;
+  if (t < JIE_MIN[0]) return 0;
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (JIE_MIN[mid] <= t) lo = mid; else hi = mid - 1; }
+  return lo;
+}
+const jieNo = i => (JIE_FIRST + i) % 12; // 0 소한 1 입춘 …
+const jieMs = i => JBASE + JIE_MIN[i] * 60000;
+
+// 년주·월주 (순간 ms 기준)
+export function yearMonthGZ(ms) {
+  const i = jieIndexAt(ms);
+  const mb = (jieNo(i) + 1) % 12; // 월지: 입춘→寅
+  let k = i; while (jieNo(k) !== 1) k--; // 직전 입춘
+  const yy = new Date(jieMs(k)).getUTCFullYear();
+  const year = gz(yy - 4);
+  const start = ((year.stem % 5) * 2 + 2) % 10; // 五虎遁: 寅월의 천간
+  const ms_ = (start + (mb - 2 + 12) % 12) % 10;
+  return { year, month: gz(gzOf(ms_, mb)), jieIdx: i };
+}
+const hourStem = (dayStem, h) => ((dayStem % 5) * 2 + h) % 10; // 五鼠遁
+
+// ── 사주 원국
+const cache = new Map();
+export function chartOf(p) {
+  const key = `${p.y}-${p.m}-${p.d}|${p.timeMode}|${p.hh}|${p.mm}|${p.sijin}|${p.country}|${p.gender}`;
+  if (cache.has(key)) return cache.get(key);
+  const zone = p.country === '__CN8' ? 'Etc/GMT-8' /* 검증용 */ : (COUNTRY_ZONE[p.country] || 'Asia/Seoul');
+  const solarOff = COUNTRY_SOLAR[p.country] ?? 0;
+  let ms, dY = p.y, dM = p.m, dD = p.d, hb = null, solarHM = null;
+  if (p.timeMode === 'exact' && p.hh != null) {
+    ms = localToUTC(p.y, p.m, p.d, +p.hh, +p.mm || 0, zone);
+    const ts = new Date(ms + (stdOffsetNow(zone) + solarOff) * 60000); // 진태양시
+    solarHM = [ts.getUTCHours(), ts.getUTCMinutes()];
+    const dayStart = new Date(ts.getTime() + 60 * 60000); // 23시부터 다음 날
+    dY = dayStart.getUTCFullYear(); dM = dayStart.getUTCMonth() + 1; dD = dayStart.getUTCDate();
+    hb = Math.floor(((ts.getUTCHours() * 60 + ts.getUTCMinutes() + 60) % 1440) / 120);
+  } else if (p.timeMode === 'sijin' && p.sijin != null) {
+    hb = +p.sijin;
+    ms = localToUTC(p.y, p.m, p.d, hb === 0 ? 0 : hb * 2, 0, zone);
+  } else {
+    ms = localToUTC(p.y, p.m, p.d, 12, 0, zone);
+  }
+  const { year, month, jieIdx } = yearMonthGZ(ms);
+  const day = dayGZ(dY, dM, dD);
+  const hour = hb === null ? null : gz(gzOf(hourStem(day.stem, hb), hb));
+  const pillars = { year, month, day, hour };
+  const ds = day.stem;
+
+  // 오행 분포(가중치: 월지 3, 일지 1.5, 나머지 1 — 일간 제외 강약 계산용 / 표시용은 개수)
+  const count = [0, 0, 0, 0, 0];
+  const items = [];
+  for (const [pos, pl] of Object.entries(pillars)) {
+    if (!pl) continue;
+    items.push({ pos, kind: 'stem', v: pl.stem, el: STEM_EL[pl.stem], w: pos === 'day' ? 0 : 1 });
+    items.push({ pos, kind: 'branch', v: pl.branch, el: BRANCH_EL[pl.branch], w: pos === 'month' ? 3 : pos === 'day' ? 1.5 : 1 });
+  }
+  items.forEach(it => { count[it.el]++; });
+  const me = STEM_EL[ds];
+  let sup = 0, tot = 0;
+  const gw = [0, 0, 0, 0, 0]; // 십신 그룹별 무게
+  items.forEach(it => {
+    if (!it.w) return;
+    const g = (it.el - me + 5) % 5; // 0 비겁 1 식상 2 재성 3 관성 4 인성
+    gw[g] += it.w; tot += it.w;
+    if (g === 0 || g === 4) sup += it.w;
+  });
+  const ratio = tot ? sup / tot : 0.5;
+  const strength = ratio >= 0.7 ? 2 : ratio >= 0.55 ? 1 : ratio > 0.45 ? 0 : ratio > 0.3 ? -1 : -2; // 극신강…극신약
+  // 억부용신(간단): 강하면 덜어 주는 기운, 약하면 돕는 기운
+  let yongG;
+  if (strength > 0) yongG = gw[4] > gw[0] ? 2 : (gw[3] < 1 ? 1 : 3);        // 인성 과다 → 재성 / 비겁 과다 → 관성(없으면 식상)
+  else if (strength < 0) yongG = gw[2] > gw[3] + gw[1] ? 0 : 4;              // 재성 과다 → 비겁 / 그 외 → 인성
+  else yongG = [0, 1, 2, 3, 4].reduce((a, g) => (gw[g] < gw[a] ? g : a), 1); // 중화 → 가장 부족한 기운
+  const yong = (me + yongG) % 5;
+  const fav = { yong, hee: (yong + 4) % 5, gi: (yong + 3) % 5, gu: (yong + 2) % 5, han: (yong + 1) % 5 };
+  // 조후: 한여름생(巳午未월)에 수 부족, 한겨울생(亥子丑월)에 화 부족
+  const season = [4, 2, 0, 0, 2, 1, 1, 2, 3, 3, 2, 4][month.branch];
+  const johu = [5, 6, 7].includes(month.branch) && count[4] === 0 ? 4 : [11, 0, 1].includes(month.branch) && count[1] === 0 ? 1 : null;
+
+  // 십신 배치
+  const tens = {};
+  for (const [pos, pl] of Object.entries(pillars)) {
+    if (!pl) continue;
+    tens[pos] = { stem: pos === 'day' ? null : tenGod(ds, pl.stem), branch: tenGodOfBranch(ds, pl.branch) };
+  }
+  const tgCount = Array(10).fill(0);
+  Object.values(tens).forEach(t => { if (t.stem !== null) tgCount[t.stem]++; tgCount[t.branch]++; });
+
+  // 신살
+  const branches = Object.values(pillars).filter(Boolean).map(x => x.branch);
+  const trineOf = b => [[8, 0, 4], [2, 6, 10], [5, 9, 1], [11, 3, 7]].findIndex(g => g.includes(b));
+  const SAL = { dohwa: [9, 3, 6, 0], yeokma: [2, 8, 11, 5], hwagae: [4, 10, 1, 7] };
+  const sal = {};
+  for (const [k, arr] of Object.entries(SAL)) {
+    const targets = new Set([arr[trineOf(day.branch)], arr[trineOf(year.branch)]]);
+    sal[k] = branches.filter((b, i) => targets.has(b)).length > 0;
+  }
+  const GUI = [[1, 7], [0, 8], [11, 9], [11, 9], [1, 7], [0, 8], [1, 7], [2, 6], [5, 3], [5, 3]][ds];
+  sal.gwiin = branches.some(b => GUI.includes(b));
+
+  // 대운
+  let daeun = null;
+  const gch = String(p.gender || '').toUpperCase()[0];
+  if (gch === 'M' || gch === 'F') {
+    const male = gch === 'M';
+    const fwd = yang(year.stem) === male;
+    const target = fwd ? jieMs(jieIdx + 1) : jieMs(jieIdx);
+    const days = Math.abs(target - ms) / 864e5;
+    const start = days / 3; // 3일 = 1년
+    const list = [];
+    for (let k = 1; k <= 10; k++) {
+      const g = gz(month.idx + (fwd ? k : -k));
+      list.push({ ...g, age: start + (k - 1) * 10 });
+    }
+    daeun = { forward: fwd, start, list };
+  }
+  const res = { male: gch === 'M' ? true : gch === 'F' ? false : null, pillars, dayStem: ds, me, count, gw, ratio, strength, yongG, fav, johu, season, tens, tgCount, sal, daeun, solarHM, hasHour: !!hour, birthMs: ms };
+  cache.set(key, res);
+  return res;
+}
+
+// ── 지지·천간 관계
+const SIX = [[0, 1], [2, 11], [3, 10], [4, 9], [5, 8], [6, 7]];
+const TRINES = [[8, 0, 4, 4], [11, 3, 7, 0], [2, 6, 10, 1], [5, 9, 1, 3]]; // 마지막 = 결과 오행
+const PUNISH = [[2, 5], [5, 8], [2, 8], [1, 10], [10, 7], [1, 7], [0, 3]];
+const HARM = [[0, 7], [1, 6], [2, 5], [3, 4], [8, 11], [9, 10]];
+const pairIn = (arr, a, b) => arr.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+export function branchRel(a, b) {
+  if (pairIn(SIX, a, b)) return 'hap';
+  if (Math.abs(a - b) === 6) return 'chung';
+  if (a !== b && TRINES.some(g => g.slice(0, 3).includes(a) && g.slice(0, 3).includes(b))) return 'samhap';
+  if (pairIn(PUNISH, a, b) || (a === b && [4, 6, 9, 11].includes(a))) return 'hyeong';
+  if (pairIn(HARM, a, b)) return 'hae';
+  return null;
+}
+export const stemHap = (a, b) => Math.abs(a - b) === 5;
+export const stemChung = (a, b) => (a < 4 && b === a + 6) || (b < 4 && a === b + 6);
+
+// 오행 길흉 값: 용신 +2, 희신 +1, 한신 0, 구신 -1, 기신 -2
+export function elValue(chart, el) {
+  const f = chart.fav;
+  return el === f.yong ? 2 : el === f.hee ? 1 : el === f.gi ? -2 : el === f.gu ? -1 : 0;
+}
+
+// 어떤 간지(일진·월운·세운·대운)가 원국과 만날 때의 판단
+const POS_W = { day: 1.6, month: 1.2, year: 0.8, hour: 0.8 };
+export function evalGZ(chart, stem, branch, male) {
+  const ds = chart.dayStem;
+  const vs = elValue(chart, STEM_EL[stem]), vb = elValue(chart, BRANCH_EL[branch]);
+  const val = 1.2 * vs + 1.0 * vb;
+  const tgS = tenGod(ds, stem), tgB = tenGodOfBranch(ds, branch);
+  const rels = [];
+  for (const [pos, pl] of Object.entries(chart.pillars)) {
+    if (!pl) continue;
+    const r = branchRel(branch, pl.branch);
+    if (r) rels.push({ pos, type: r, with: pl.branch });
+  }
+  const stemHapDay = stemHap(stem, ds), stemChungDay = stemChung(stem, ds);
+  let relSum = 0;
+  rels.forEach(r => { const w = POS_W[r.pos]; relSum += ({ hap: 2.2, samhap: 1.4, chung: -2.6, hyeong: -1.2, hae: -0.8 })[r.type] * w; });
+  if (stemHapDay) relSum += 1.2; if (stemChungDay) relSum -= 1.4;
+  const has = g => (groupOf(tgS) === g ? 1 : 0) + (groupOf(tgB) === g ? 0.7 : 0);
+  const gv = g => elValue(chart, elOfGroup(ds, g));
+  const sign = v => (v >= 0 ? 1 : -0.6);
+  const relAt = (pos, type) => rels.some(r => r.pos === pos && r.type === type);
+  // 신살: 그 날 지지가 원국의 도화·역마 자리인지
+  const tri = b => [[8, 0, 4], [2, 6, 10], [5, 9, 1], [11, 3, 7]].findIndex(g => g.includes(b));
+  const dohwa = [9, 3, 6, 0][tri(chart.pillars.day.branch)] === branch || [9, 3, 6, 0][tri(chart.pillars.year.branch)] === branch;
+  const yeokma = [2, 8, 11, 5][tri(chart.pillars.day.branch)] === branch;
+  // 넘치는 오행: 3개 이상이면서 나에게 부담이 되는 기운(용신·희신 제외)
+  const exc = chart.count.map((c, e) => c >= 3 && elValue(chart, e) < 0), lack = chart.count.map(c => c === 0);
+  const els = [STEM_EL[stem], BRANCH_EL[branch]];
+  const loveG = male === false ? 3 : 2; // 남성 재성, 여성 관성 (모르면 재성)
+  const dom = {
+    wealth: 3 + 1.2 * has(2) * sign(gv(2)) - (tgS === 1 || tgB === 1 ? 0.7 : 0) + 0.22 * val,
+    work: 3 + 1.0 * has(3) * sign(gv(3)) + 0.6 * has(1) * sign(gv(1)) + 0.4 * has(4) - (relAt('month', 'chung') ? 1 : 0) + 0.22 * val,
+    love: 3 + 1.1 * has(loveG) * sign(gv(loveG)) + (dohwa ? 0.8 : 0) + (relAt('day', 'hap') ? 0.8 : 0) - (relAt('day', 'chung') ? 1.2 : 0) + (stemHapDay ? 0.6 : 0) + 0.18 * val,
+    health: 3 - 0.8 * els.filter(e => exc[e]).length + 0.6 * els.filter(e => lack[e]).length - (relAt('day', 'chung') ? 0.6 : 0) - (rels.some(r => r.type === 'hyeong') ? 0.4 : 0) + 0.28 * val,
+  };
+  for (const k in dom) dom[k] = Math.max(1, Math.min(5, Math.round(dom[k])));
+  const raw = 62 + val * 5.5 + relSum * 2.4;
+  return { stem, branch, vs, vb, val, tgS, tgB, rels, relSum, stemHapDay, stemChungDay, dohwa, yeokma, dom, raw };
+}
+
+// 날짜의 간지(일진) — 그날 정오 기준
+export function dateGZ(y, m, d) { return dayGZ(y, m, d); }
+// 그날 12시진의 시주
+export const hourGZ = (dayStem, h) => ({ stem: hourStem(dayStem, h), branch: h });
+// 그 달·그 해의 간지(그 날짜 정오가 속한 절기 기준)
+export function monthYearGZAt(y, m, d) { return yearMonthGZ(Date.UTC(y, m - 1, d, 3)); }

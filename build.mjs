@@ -15,6 +15,8 @@ for (const c of LANGS) {
   Object.assign(L[c].ui, extraUi);
   L[c].lines = lines;
   L[c].lines.love = (await import(`./src/i18n/love/${c}.js`)).default;
+  // 사주 풀이 문장(현재 한국어만). 있으면 '사주' 탭과 근거 문장을 보여 줌
+  if (fs.existsSync(path.join(ROOT, `src/i18n/saju/${c}.js`))) { L[c].saju = (await import(`./src/i18n/saju/${c}.js`)).default; L[c].ui.tabs = { ...L[c].ui.tabs, saju: L[c].saju.ui.tab }; }
   // 태어난 나라: 전 세계 국가를 이 언어의 이름으로 (기존 '기타'는 저장된 정보 표시용으로만 유지)
   {
     const { COUNTRY_SOLAR } = await import('./src/countries.js');
@@ -251,6 +253,7 @@ ${footer(c)}
 function clientData(c, withLines = true) {
   const { policy, lines, placesData, ...rest } = L[c];
   if (withLines) rest.lines = lines;
+  else delete rest.saju;
   return {
     L: rest,
     images: config.images,
@@ -264,9 +267,10 @@ function clientData(c, withLines = true) {
 }
 
 // ── 3) 결과 화면 4탭 (/ko/result/fortune/ 등) — 개인 결과라 검색 제외
-const TABS = ['fortune', 'love', 'time', 'charm'];
+const BASE_TABS = ['fortune', 'love', 'time', 'charm'];
 function buildResult(c) {
   const Lc = L[c], U = Lc.ui;
+  const TABS = Lc.saju ? ['fortune', 'saju', 'love', 'time', 'charm'] : BASE_TABS;
   for (const t of TABS) {
     const nav = TABS.map(x => `<a href="/${c}/result/${x}/" class="tab${x === t ? ' is-on' : ''}"${x === t ? ' aria-current="page"' : ''}>${esc(U.tabs[x])}</a>`).join('');
     const html = `${head({ lang: c, title: `${U.tabs[t]} | ${BRAND} ${Lc.subBrand}`, desc: Lc.siteDesc, canonical: `/${c}/`, noindex: true })}
@@ -394,7 +398,7 @@ rm(DIST);
 mk(DIST);
 copyDir(path.join(ROOT, 'public'), DIST);
 mk(path.join(DIST, 'assets'));
-for (const f of ['engine.js', 'content.js', 'countries.js']) fs.copyFileSync(path.join(ROOT, 'src', f), path.join(DIST, 'assets', f));
+for (const f of ['engine.js', 'content.js', 'countries.js', 'saju.js', 'jieqi.js']) fs.copyFileSync(path.join(ROOT, 'src', f), path.join(DIST, 'assets', f));
 copyDir(path.join(ROOT, 'src/client'), path.join(DIST, 'assets'));
 fs.copyFileSync(path.join(ROOT, 'node_modules/korean-lunar-calendar/dist/korean-lunar-calendar.mjs'), path.join(DIST, 'assets/lunar.mjs'));
 for (const c of LANGS) { const { policy, placesData, ...rest } = L[c]; write(`assets/i18n/${c}.json`, JSON.stringify(rest)); }
@@ -423,7 +427,7 @@ for (const c of LANGS) { const { policy, placesData, ...rest } = L[c]; write(`as
   write('assets/world-land.txt', land);
 }
 // 브라우저 캐시 문제 방지: 스크립트끼리 불러오는 주소에도 버전을 붙임 (배포할 때마다 새 파일로 인식)
-for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js']) {
+for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js', 'saju.js', 'saju-view.js', 'jieqi.js']) {
   const fp = path.join(DIST, 'assets', f);
   const src = fs.readFileSync(fp, 'utf8')
     .replace(/(from\s+'\.\/[\w-]+\.m?js)'/g, `$1?v=${VERSION}'`)

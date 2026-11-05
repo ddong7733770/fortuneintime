@@ -1,4 +1,6 @@
 import { COUNTRY_SOLAR } from './countries.js';
+import * as SJ from './saju.js';
+export { SJ };
 
 // Fortune in Time 운세 엔진 — 브라우저와 빌드(Node) 양쪽에서 같은 코드를 씁니다.
 // 같은 입력·같은 날짜·같은 회차면 언제나 같은 결과가 나옵니다(서버 저장 없음).
@@ -125,37 +127,62 @@ function luckyNumbers(r, lang) {
   return out.sort((a, b) => a - b);
 }
 
-// 하루 운세. turn = 운명 바꾸기 횟수(0이 기본)
+// 용신 오행 → 행운의 색(COLOR_HEX 번호)·방향(0 북 … 7 북서)
+const EL_COLORS = [[7, 3], [0, 6], [2, 10], [9, 11], [8, 4]];
+const EL_DIRS = [[2], [4], [5, 1], [6], [0]];
+const HOUR_REL = { hap: 2, samhap: 1, chung: -3, hyeong: -1, hae: -0.5 };
+
+// 하루 운세: 그날 일진(日辰)이 사주 원국과 만나는 관계로 계산 (src/saju.js). turn = 운명 바꾸기 횟수
+// 같은 사람·같은 날짜면 언제나 같은 결과. 난수(rolls)는 같은 뜻의 문장 가운데 표현을 고르는 데만 씀
 export function daily(p, dateK, turn = 0, lang = 'ko') {
   const P = p.animal === undefined ? profileFrom(p) : p;
   const { y, m, d } = parseKey(dateK);
   const today = dayPillar(y, m, d);
   const r = rng(`${profileSeed(P)}#${dateK}#${turn}`);
   const rel = relation(today.branch, P.animal);
-  let score = 52 + r() * 36 + rel * 4 + (P.pillar.stem % 5 === today.stem % 5 ? 3 : 0);
-  if (turn > 0) score = Math.max(score, daily(P, dateK, turn - 1, lang).score + 3 + r() * 6);
-  score = clamp(score, 38, 99);
-  const hours = Array.from({ length: 12 }, (_, i) => clamp(score + (r() - 0.5) * 44 + relation(i, P.animal) * 5, 15, 99));
+  const chart = SJ.chartOf(P);
+  const ev = SJ.evalGZ(chart, today.stem, today.branch, chart.male);
+  const my = SJ.monthYearGZAt(y, m, d);
+  const evM = SJ.evalGZ(chart, my.month.stem, my.month.branch, chart.male);
+  const domains = { ...ev.dom };
+  const avg = (domains.wealth + domains.love + domains.work + domains.health) / 4;
+  let base = 0.7 * (ev.raw + 0.25 * (evM.raw - 62)) + 0.3 * (30 + avg * 14);
+  // 운명 바꾸기: 용신 기운을 보강하는 개운(開運) — 점수가 오르고 가장 약한 분야가 한 단계 나아짐
+  const kai = turn > 0 ? Math.min(14, 4 * turn + Math.round(r() * 2)) : 0;
+  if (turn > 0) {
+    for (let t = 0; t < Math.min(turn, 2); t++) {
+      const k = Object.keys(domains).reduce((a, b) => (domains[b] < domains[a] ? b : a));
+      domains[k] = Math.min(5, domains[k] + 1);
+    }
+  }
+  const score = clamp(base + kai, 32, 98);
+  const hours = Array.from({ length: 12 }, (_, i) => {
+    const hg = SJ.hourGZ(today.stem, i);
+    let hv = SJ.elValue(chart, SJ.STEM_EL[hg.stem]) + SJ.elValue(chart, SJ.BRANCH_EL[hg.branch]);
+    const rr = SJ.branchRel(hg.branch, chart.pillars.day.branch); if (rr) hv += HOUR_REL[rr];
+    return clamp(score - 2 + hv * 5.5, 15, 99);
+  });
   const best = pickHour(hours, Math.max);
   const worst = pickHour(hours, Math.min);
-  const dom = () => clamp(score / 20 + (r() - 0.5) * 2.4, 1, 5);
   const helperM = Math.floor(r() * 16);
   let drainM = Math.floor(r() * 16); if (drainM === helperM) drainM = (drainM + 5) % 16;
   const helperB = Math.floor(r() * 4);
   let drainB = Math.floor(r() * 4); if (drainB === helperB) drainB = (drainB + 1) % 4;
+  const luckEl = turn % 2 ? chart.fav.hee : chart.fav.yong;
+  const pick = arr => arr[Math.floor(r() * arr.length)];
   return {
     date: dateK, turn, score, rel,
     band: score >= 85 ? 3 : score >= 70 ? 2 : score >= 55 ? 1 : 0,
     power: clamp(70 + r() * 29, 70, 99),
-    hours, best, worst,
-    domains: { wealth: dom(), love: dom(), work: dom(), health: dom() },
-    color: Math.floor(r() * 12),
-    direction: Math.floor(r() * 8),
+    hours, best, worst, domains,
+    color: pick(EL_COLORS[luckEl]),
+    direction: pick(EL_DIRS[luckEl]),
     numbers: luckyNumbers(r, lang),
     helper: { mbti: MBTI[helperM], blood: BLOOD[helperB] },
     drain: { mbti: MBTI[drainM], blood: BLOOD[drainB] },
     charm: CHARMS[Math.floor(r() * CHARMS.length)],
-    rolls: Array.from({ length: 40 }, () => r()), // 문장 선택용 난수
+    rolls: Array.from({ length: 40 }, () => r()), // 같은 뜻 안에서 문장 표현을 고르는 난수
+    saju: { chart, ev, evM, kai, gz: today },
   };
 }
 

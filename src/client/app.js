@@ -1,10 +1,12 @@
 // Fortune in Time 화면 동작: 입력 페이지와 결과 4탭(운세, 궁합, 타임머신, 부적)
 import * as E from './engine.js';
 import { mountPlace } from './place.js';
+import { basisHTML, basisLines, domainReason, sajuTabHTML } from './saju-view.js';
 import { dialSVG, dialLabels, fmt, esc, pips, sijinRange, fmtDate, BLOOD_LABEL, SIGN_GLYPH, domainText, hourText, summaryText, loveTexts, startHands } from './content.js';
 
 const D = JSON.parse(document.getElementById('ttf-data').textContent);
 const L = D.L, U = L.ui, C = L.code;
+const S = L.saju || null; // 사주 풀이 문장(한국어). 없으면 한자 요약만
 const body = document.body;
 const qs = new URLSearchParams(location.search);
 const $ = (s, el = document) => el.querySelector(s);
@@ -343,6 +345,7 @@ ${mode === 'reveal' ? `<p class="fate-arrived" role="status">${esc(U.fateArrived
 <p class="lead">${esc(summary)}</p>
 <p class="rel-line">${esc(L.relToday[String(d.rel)])}</p>
 </section>
+${basisHTML(S, d, S ? `/${C}/result/saju/` : null)}
 
 <section class="sec dial-sec">
 <h2>${esc(U.dialTitle)}${L.sijinNote ? ` <button class="info" type="button" aria-label="?" data-note>?</button>` : ''}</h2>
@@ -371,7 +374,8 @@ ${days.length ? `<section class="sec saved-up">${days.map(x => { const dd = E.da
 
 ${rankHTML}${yijiHTML}
 
-<section class="sec${mode === 'reveal' ? ' fate-soft late' : ''}"><ul class="domains">${['wealth', 'love', 'work', 'health'].map((k, i) => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(domainText(L, k, d.domains[k], r, i))}</span></li>`).join('')}</ul></section>
+<section class="sec${mode === 'reveal' ? ' fate-soft late' : ''}"><ul class="domains">${['wealth', 'love', 'work', 'health'].map((k, i) => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(domainText(L, k, d.domains[k], r, i, 'now', S ? domainReason(S, d, k) : null))}</span></li>`).join('')}</ul></section>
+${tomorrowHTML(p, today)}
 
 ${adSlot('B')}
 
@@ -494,6 +498,22 @@ async function changeFate() {
     if (btn && btn.isConnected) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
     toast(U.fateFail);
   }
+}
+
+// 내일 미리보기: 점수와 가장 큰 근거 한 줄
+function tomorrowHTML(p, today) {
+  const t = addDays(today, 1), d2 = E.daily(p, t, 0, C);
+  const line = S ? basisLines(S, d2)[0] : '';
+  return `<section class="sec tmr"><a href="/${C}/result/time/?d=${t}"><span class="tmr-l">${esc(S ? S.ui.tomorrow : U.tomorrow)}<small>${esc(fmtDate(L, t))}</small></span><b>${d2.score}</b></a>${line ? `<p class="muted">${esc(line)}</p>` : ''}</section>`;
+}
+
+// ── 사주 탭 (사주 풀이 문장이 있는 언어만)
+function renderSaju() {
+  if (!S) { location.replace(`/${C}/result/fortune/`); return; }
+  const p = P();
+  app().innerHTML = sajuTabHTML(S, E.SJ.chartOf(p), p.name || '') + adSlot('tab');
+  const now = $('.daeun .is-now'); if (now) now.parentElement.scrollLeft = now.offsetLeft - now.parentElement.offsetLeft - 16; // 지금 대운이 보이게
+  pushAds(app());
 }
 
 // 앞뒤 7일 흐름 그래프. link=true면 점을 누를 때 타임머신으로 이동
@@ -657,8 +677,8 @@ ${adSlot('tab')}`;
 <p class="who"><span class="t-chip${sel < today ? ' past' : ''}">${esc(chip)}</span> ${esc(fmtDate(L, sel))}</p>
 <p class="big-score"><span>${d.score}</span><small>/100</small></p>
 <p class="lead">${esc(summaryText(L, d.band, d.rolls, tense))}</p>
-<ul class="domains">${['wealth', 'love', 'work', 'health'].map((k, i) => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(domainText(L, k, d.domains[k], d.rolls, i, tense))}</span></li>`).join('')}</ul>
-</section>`;
+<ul class="domains">${['wealth', 'love', 'work', 'health'].map((k, i) => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(domainText(L, k, d.domains[k], d.rolls, i, tense, S && tense !== 'past' ? domainReason(S, d, k) : null))}</span></li>`).join('')}</ul>
+</section>${tense !== 'past' ? basisHTML(S, d, null) : ''}`;
     if (scrollToResult) $('#tOut').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   };
   const list = () => {
@@ -756,7 +776,7 @@ else if (body.classList.contains('page-result')) {
     if (qs.get('inv')) session.set('inv', qs.get('inv'));
     location.replace(`/${C}/`);
   } else {
-    const render = { fortune: renderFortune, love: renderLove, time: renderTime, charm: renderCharm }[tab];
+    const render = { fortune: renderFortune, saju: renderSaju, love: renderLove, time: renderTime, charm: renderCharm }[tab];
     render();
     startTicker(() => { if (tab === 'fortune') renderFortune(false); else render(); });
   }

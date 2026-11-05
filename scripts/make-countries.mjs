@@ -11,10 +11,12 @@ const SKIP = new Set(['AQ', 'BV', 'HM', 'GS', 'UM', 'TF', 'IO', 'PN']);
 // 대표 도시 기준으로 직접 정한 값(기존 값 유지)
 const MANUAL = { KR: -32, JP: 19, CN: -14, TW: 6, HK: 36, US: 0, ES: -75, MX: -36, ID: 7 };
 
-const out = {};
+const out = {}, zone = {};
 for (const c of wc) {
   const code = c.cca2;
   if (SKIP.has(code)) continue;
+  const tz0 = (ct.getCountry(code)?.timezones || [])[0];
+  if (tz0 || code === 'XK') zone[code] = { XK: 'Europe/Belgrade',  KR: 'Asia/Seoul', JP: 'Asia/Tokyo', CN: 'Asia/Shanghai', US: 'America/New_York', ES: 'Europe/Madrid', MX: 'America/Mexico_City', ID: 'Asia/Jakarta' }[code] || tz0;
   if (code in MANUAL) { out[code] = MANUAL[code]; continue; }
   const tzs = (ct.getCountry(code)?.timezones || []).map(t => ct.getTimezone(t)?.utcOffset).filter(v => v !== undefined);
   const offsets = [...new Set(tzs)];
@@ -25,5 +27,7 @@ for (const c of wc) {
 const sorted = Object.fromEntries(Object.entries(out).sort(([a], [b]) => (a < b ? -1 : 1)));
 fs.writeFileSync(new URL('../src/countries.js', import.meta.url), `// 자동 생성 파일 (scripts/make-countries.mjs). 나라 코드 → 진태양시 보정(분)
 export const COUNTRY_SOLAR = ${JSON.stringify(sorted)};
+// 나라별 대표 시간대(IANA) — 서머타임·과거 표준시 변경(예: 한국 1954~61년 UTC+8:30, 1987~88년 서머타임)을 반영하는 데 씀
+export const COUNTRY_ZONE = ${JSON.stringify(Object.fromEntries(Object.entries(zone).sort()))};
 `);
 console.log('countries:', Object.keys(sorted).length);
