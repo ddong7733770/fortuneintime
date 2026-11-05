@@ -71,32 +71,36 @@ export function domainReading(S, d, k, D = null) {
   const has = g => gs === g || gb === g;
   const fav = g => SJ.elValue(chart, SJ.elOfGroup(ds, g)) >= 0;
   const relAt = (pos, t) => ev.rels.some(x => x.pos === pos && x.type === t);
+  // 확장 묶음(more·act가 있는 오늘 탭·하나): 문장 수 2배 — 흐름 → 풀어 쓰기 → 근거 → 주의/기회 → 행동 → 팁
+  const ext = !!D.more, r2 = j => d.rolls[(21 + i * 4 + j) % 40];
+  const W = x => (Array.isArray(x) ? pickR(x, r2(0)) : x);
   const out = [pickR(D.flow[c], r(0))];
+  if (ext) out.push(pickR(D.more[c], r2(1)));
   let why;
   if (k === 'wealth') {
-    if (has(2)) why = fav(2) ? (ev.tgS === 4 || ev.tgB === 4 ? D.why.pyeon : D.why.jeong) : D.why.bad;
-    else if (ev.tgS === 1 || ev.tgB === 1) why = D.why.rob;
-    else if (has(1)) why = D.why.output; else if (has(4)) why = D.why.doc; else why = D.why.none;
-    out.push(why); if (c <= 1) out.push(pickR(D.caution, r(1))); out.push(pickR(D.tip, r(2)));
+    if (has(2)) why = fav(2) ? (ev.tgS === 4 || ev.tgB === 4 ? W(D.why.pyeon) : W(D.why.jeong)) : W(D.why.bad);
+    else if (ev.tgS === 1 || ev.tgB === 1) why = W(D.why.rob);
+    else if (has(1)) why = W(D.why.output); else if (has(4)) why = W(D.why.doc); else why = W(D.why.none);
+    out.push(why); if (c <= 1) out.push(pickR(D.caution, r(1))); if (ext) out.push(pickR(D.act[c], r2(2))); out.push(pickR(D.tip, r(2)));
   } else if (k === 'love') {
     const g = chart.male === false ? 3 : 2;
     const star = chart.male === false ? '이성을 뜻하는 관성(官星)' : chart.male ? '이성을 뜻하는 재성(財星)' : '인연의 별';
-    if (has(g)) why = fav(g) ? fmt(D.why.star, { star }) : D.why.bad;
-    else if (ev.dohwa) why = D.why.dohwa; else if (relAt('day', 'hap')) why = D.why.dayHap; else if (relAt('day', 'chung')) why = D.why.dayChung;
-    else if (ev.stemHapDay) why = D.why.stemHap; else why = D.why.none;
-    out.push(why); if (c === 0 && D.caution) out.push(pickR(D.caution, r(1))); else if (c >= 1 || r(1) < 0.5) out.push(pickR(D.chance, r(3))); out.push(pickR(D.tip, r(2)));
+    if (has(g)) why = fav(g) ? fmt(W(D.why.star), { star }) : W(D.why.bad);
+    else if (ev.dohwa) why = W(D.why.dohwa); else if (relAt('day', 'hap')) why = W(D.why.dayHap); else if (relAt('day', 'chung')) why = W(D.why.dayChung);
+    else if (ev.stemHapDay) why = W(D.why.stemHap); else why = W(D.why.none);
+    out.push(why); if (c === 0 && D.caution) out.push(pickR(D.caution, r(1))); else if (c >= 1 || r(1) < 0.5) out.push(pickR(D.chance, r(3))); if (ext) out.push(pickR(D.act[c], r2(2))); out.push(pickR(D.tip, r(2)));
   } else if (k === 'work') {
-    if (has(3)) why = fav(3) ? D.why.kwan : D.why.kwanBad;
-    else if (relAt('month', 'chung')) why = D.why.monthChung;
-    else if (has(1)) why = D.why.output; else if (has(4)) why = D.why.study; else if (has(0)) why = D.why.rob; else why = D.why.none;
-    out.push(why); if (c <= 1) out.push(pickR(D.caution, r(1))); out.push(pickR(D.tip, r(2)));
+    if (has(3)) why = fav(3) ? W(D.why.kwan) : W(D.why.kwanBad);
+    else if (relAt('month', 'chung')) why = W(D.why.monthChung);
+    else if (has(1)) why = W(D.why.output); else if (has(4)) why = W(D.why.study); else if (has(0)) why = W(D.why.rob); else why = W(D.why.none);
+    out.push(why); if (c <= 1) out.push(pickR(D.caution, r(1))); if (ext) out.push(pickR(D.act[c], r2(2))); out.push(pickR(D.tip, r(2)));
   } else {
     const els = [SJ.STEM_EL[ev.stem], SJ.BRANCH_EL[ev.branch]];
     const ex = els.find(e => chart.count[e] >= 3 && SJ.elValue(chart, e) < 0), lk = els.find(e => chart.count[e] === 0);
-    if (ex !== undefined) why = fmt(D.why.excess, { el: S.el[ex], organ: S.organ[ex] });
-    else if (lk !== undefined) why = fmt(D.why.lack, { el: S.el[lk] });
-    else if (relAt('day', 'chung')) why = D.why.chung; else if (ev.rels.some(x => x.type === 'hyeong')) why = D.why.hyeong; else why = D.why.none;
-    out.push(why); out.push(c === 0 ? D.tip[0] : pickR(D.tip.slice(1), r(2)));
+    if (ex !== undefined) why = fmt(W(D.why.excess), { el: S.el[ex], organ: S.organ[ex] });
+    else if (lk !== undefined) why = fmt(W(D.why.lack), { el: S.el[lk] });
+    else if (relAt('day', 'chung')) why = W(D.why.chung); else if (ev.rels.some(x => x.type === 'hyeong')) why = W(D.why.hyeong); else why = W(D.why.none);
+    out.push(why); if (ext) out.push(pickR(D.act[c], r2(2))); out.push(c === 0 ? D.tip[0] : pickR(D.tip.slice(1), r(2)));
   }
   return out.join(' ');
 }

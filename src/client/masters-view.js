@@ -61,7 +61,7 @@ export function siunHTML(M, L, d, chart, nowMinute) {
       : `<p class="m-p">${esc(g)}${rl ? ` ${esc(rl)}` : ''}</p><p class="hr-do"><span>${esc(H.doLabel)}</span>${esc(H.doIt[h.tg])}<span>${esc(H.avoidLabel)}</span>${esc(avoid)}</p>`;
     const bw = h.i === best.i ? 'best' : h.i === worst.i ? 'worst' : '';
     return `<article class="hr hr-b${h.band}${h.i === cur ? ' is-now' : ''}${h.dawn ? ' is-dawn' : ''}${bw ? ` is-${bw}` : ''}" id="hr-${h.i}"${h.i === cur ? '' : ' hidden'}>
-<header><b>${esc(L.sijin[h.i])}</b><span class="hr-t">${sijinRange(h.i)}</span>${h.i === cur ? `<em>${esc(U.siunNow)}</em>` : ''}${bw ? `<em class="hr-tag t-${bw}">${esc(U[bw === 'best' ? 'bestTag' : 'worstTag'])}</em>` : ''}<span class="hr-s">${h.score}</span><span class="hr-band">${esc(U.band[h.band])}</span></header>
+${bw ? `<p class="hr-tagrow"><em class="hr-tag t-${bw}">${esc(U[bw === 'best' ? 'bestTag' : 'worstTag'])}</em></p>` : ''}<header><b>${esc(L.sijin[h.i])}</b><span class="hr-t">${sijinRange(h.i)}</span>${h.i === cur ? `<em>${esc(U.siunNow)}</em>` : ''}<span class="hr-s">${h.score}</span><span class="hr-band">${esc(U.band[h.band])}</span></header>
 ${body}</article>`;
   };
   const list = [3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => card(hs[i])).join('');
@@ -161,20 +161,29 @@ export function dohanSections(M, S, L, d, chart, now = new Date()) {
   // 같은 사람·같은 날이면 같은 문장: 그날의 난수(rolls)로 표현만 고름
   const pk = (arr, n) => arr[(Math.floor((d.rolls[n % d.rolls.length] || 0) * 997) + n) % arr.length];
   const KINDS = ['report', 'meeting', 'contract'];
-  const kindBox = (kind, x, ki) => {
-    const goods = x.best.map((h, j) => {
-      const n = 10 + ki * 6 + j * 3;
-      const fit = x.pref.includes(h.grp) ? pk(H2.fit[kind], n + 1) : pk(H2.fit.plain, n + 1);
-      const t = [pk(H2.why[h.grp], n), fit, (h.rel === 'hap' || h.rel === 'samhap') ? pk(H2.hap, n + 2) : '', x.pref.includes(h.grp) && !h.fav ? pk(H2.unfav, n + 2) : '', pk(H2.act[kind], n + j + 2)].filter(Boolean).join(' ');
-      return `<li><b>${esc(hourName(L, h.i))}</b><span class="hr-s">${h.score}</span><p>${esc(t)}</p></li>`;
-    }).join('');
-    const w = x.worst, n = 30 + ki * 2;
-    const wType = w.rel === 'chung' ? 'chung' : (w.rel === 'hyeong' || w.rel === 'hae') ? 'clash' : 'low';
-    const wt = `${pk(H2.worst[wType], n)} ${pk(H2.avoidAct[kind], n + 1)}`;
-    return `<div class="wk-k"><h3>${esc(U.kinds[kind])}</h3><p class="wk-lbl good">${esc(H2.good)}</p><ul class="wk-good">${goods}</ul>
-<p class="wk-lbl bad">${esc(H2.bad)}</p><div class="wk-bad"><div class="wk-bh"><b>${esc(hourName(L, w.i))}</b><span class="hr-s">${w.score}</span></div><p>${esc(wt)}</p></div></div>`;
-  };
-  const hours = `${p(H2.lead)}<div class="wk-box">${KINDS.map((k, i) => kindBox(k, wh[k], i)).join('')}</div>`;
+  // 일정별로 고른 유리한 시간·피할 시간을 시간 기준으로 합쳐, 한 시간 안에서 보고·회의·계약을 코멘트로만 안내
+  const goodMap = new Map(), badMap = new Map();
+  KINDS.forEach(kind => {
+    wh[kind].best.forEach(h => { if (!goodMap.has(h.i)) goodMap.set(h.i, { h, kinds: [] }); goodMap.get(h.i).kinds.push(kind); });
+    const w = wh[kind].worst; if (!badMap.has(w.i)) badMap.set(w.i, { h: w, kinds: [] }); badMap.get(w.i).kinds.push(kind);
+  });
+  [...badMap.keys()].forEach(i => { if (goodMap.has(i)) badMap.delete(i); }); // 같은 시간이 양쪽에 걸리면 유리한 쪽만
+  const goodLi = [...goodMap.values()].sort((x, y) => x.h.i - y.h.i).map(({ h, kinds }) => {
+    const n = 10 + h.i * 3;
+    const parts = [pk(H2.why[h.grp], n)];
+    kinds.forEach((kind, j) => { parts.push(wh[kind].pref.includes(h.grp) ? pk(H2.fit[kind], n + j + 1) : fmt(pk(H2.plainK, n + j + 1), { k: U.kinds[kind] })); parts.push(pk(H2.act[kind], n + j + 2)); });
+    if (h.rel === 'hap' || h.rel === 'samhap') parts.push(pk(H2.hap, n + 2));
+    if (kinds.some(kind => wh[kind].pref.includes(h.grp)) && !h.fav) parts.push(pk(H2.unfav, n + 2));
+    return `<li><b>${esc(hourName(L, h.i))}</b><p>${esc(parts.join(' '))}</p></li>`;
+  }).join('');
+  const badLi = [...badMap.values()].sort((x, y) => x.h.i - y.h.i).map(({ h, kinds }) => {
+    const n = 30 + h.i * 2;
+    const wType = h.rel === 'chung' ? 'chung' : (h.rel === 'hyeong' || h.rel === 'hae') ? 'clash' : 'low';
+    const parts = [pk(H2.worst[wType], n), ...kinds.map((kind, j) => pk(H2.avoidAct[kind], n + j + 1))];
+    return `<li><b>${esc(hourName(L, h.i))}</b><p>${esc(parts.join(' '))}</p></li>`;
+  }).join('');
+  const hours = `${p(H2.lead)}<div class="wk-box"><div class="wk-k"><p class="wk-lbl good">${esc(H2.good)}</p><ul class="wk-list">${goodLi}</ul>
+<p class="wk-lbl bad">${esc(H2.bad)}</p><ul class="wk-list">${badLi}</ul></div></div>`;
   const ms = MS.monthScan(chart, now.getFullYear(), now.getMonth() + 1, 4);
   const F2 = DH.flow2;
   const toneIx = t => (t === 2 ? 0 : t === 1 ? 1 : 2);

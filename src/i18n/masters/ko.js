@@ -3,7 +3,8 @@
 // · haewoon: 직설적·짧게 끊는 합니다체 / hana: 밝고 다정한 해요체 / dohan: 간결·전략적 합니다체, 단정 금지
 // · 모든 문장은 계산된 사주 데이터에 연결해 고름. {키:은/는}은 받침에 따라 조사를 고름
 import MORE from './ko-more.js';
-export default {
+import { FORTUNE_DOM, HANA_TODAY } from './ko-dom.js';
+const KO = {
   ui: {
     tab: '명인',
     pick: '오늘은 누구에게 물어볼까요?',
@@ -356,3 +357,14 @@ export default {
     },
   },
 };
+
+// 분야별 코멘트 확장분 합치기(ko-dom.js): 흐름 문장·근거 표현·주의/기회/팁을 늘리고, 풀어 쓰기(more)·행동(act)을 더함
+function mergeDom(base, add) {
+  base.flow = base.flow.map((a, c) => [...a, ...add.flow[c]]);
+  base.more = add.more; base.act = add.act;
+  for (const [k, v] of Object.entries(add.why)) base.why[k] = [base.why[k], ...v];
+  for (const k of ['caution', 'chance', 'tip']) if (add[k]) base[k] = [...(base[k] || []), ...add[k]];
+}
+for (const k of Object.keys(FORTUNE_DOM)) mergeDom(KO.fortune.dom[k], FORTUNE_DOM[k]);
+mergeDom(KO.hana.today, HANA_TODAY);
+export default KO;

@@ -885,3 +885,19 @@ html.leaving main, html.leaving .foot { opacity: 0; transition: opacity .17s eas
 .wkend { margin: 14px 0 4px; padding: 12px 14px; border-radius: 14px; background: #FFF8EC; border: 1px solid #F1DFC0; }
 .wkend h3 { margin: 0 0 4px !important; color: #A8640E !important; }
 .wkend .m-p { margin: 0; }
+
+/* 시운 카드: 가장 좋은/조심할 시간 표시를 박스 좌측 최상단에 */
+.hr-tagrow { margin: -2px 0 6px; line-height: 1; }
+.hr-tagrow .hr-tag { display: inline-block; padding: 3px 9px; font-size: 11.5px; }
+/* 도한 업무 시간: 한 박스, 시간별 코멘트 */
+.wk-list { list-style: none; padding: 0; margin: 0 0 6px; }
+.wk-list li { padding: 10px 0; border-bottom: 1px dashed var(--ink-3); }
+.wk-list li:last-child { border-bottom: 0; }
+.wk-list li b { font-size: 15px; }
+.wk-list li p { margin: 4px 0 0; font-size: 14.5px; line-height: 1.75; color: #3A3631; }
+.wk-k .wk-lbl.bad { margin-top: 14px; }
+/* 오늘의 사주 근거: 회색 톤 배경 */
+.basis { background: #F1F0EC; margin: 8px -16px; padding: 22px 16px; border-top: 0; }
+.basis + .sec { border-top: 0; }
+.basis-chips span { background: #fff; border-color: #DCD8CF; }
+.basis-list li, .basis-note { color: #45413B; }
