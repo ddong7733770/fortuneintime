@@ -1,6 +1,7 @@
 // English sentence pools (same structure as ko.js)
 export default {
   ui: {
+    lockNote: "In this time slot you can only see the fortune for the details you first used. Fortunes for the new details start at {t}.",
     charmRec: "Recommended charm for this time slot",
     sfxOn: "Sound on", sfxOff: "Sound off",
     adminMode: "Admin mode · all features unlimited", fateGather: "The sleeping flow of fate is awakening.", fateArrived: "A new flow of fate has arrived.", fateAllUsed: "You've seen every flow of fate for this time slot. Meet new energy at {t}.", fateFail: "We couldn't load a new flow of fate. Your chance is still there.", fateLeft: "Changes left this time slot: {n}", mapOpen: "View on Google Maps",

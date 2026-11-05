@@ -602,3 +602,14 @@ html.fate-on #app { opacity: .18; transition: opacity .5s cubic-bezier(.4,0,.2,1
 .dy-gz { display: flex; gap: 4px; } .dy-gz b { font: 700 28px var(--serif); line-height: 1.1; }
 .dy-tone { font-size: 12px; font-weight: 700; } .dy-good .dy-tone { color: #4CC38A; } .dy-bad .dy-tone { color: #FF8A8A; } .dy-mid .dy-tone { color: var(--muted); }
 .dy-txt { font-size: 12.5px; line-height: 1.55; } .dy-when { font-size: 11px; color: var(--muted); }
+
+.lock-note { max-width: 488px; margin: 12px auto 0; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(201,162,74,.5); background: rgba(201,162,74,.1); color: var(--brass-hi); font-size: 14px; line-height: 1.6; }
+@media (max-width: 520px) { .lock-note { margin: 12px 16px 0; } }
+/* 해운정사의 풀이 */
+.hw { position: relative; }
+.hw h2 { margin-bottom: 10px; }
+.hw h3 { margin: 16px 0 4px; font-size: 14px; color: var(--brass); letter-spacing: .02em; }
+.hw p { margin: 0; font-size: 15.5px; line-height: 1.85; }
+.hw-flow { font-family: var(--serif); font-size: 17px !important; }
+.hw-close { margin-top: 16px !important; padding: 12px 14px; border-left: 3px solid var(--brass); background: var(--ink-2); border-radius: 0 10px 10px 0; font-family: var(--serif); color: var(--brass-hi); display: grid; gap: 4px; }
+.hw-close span { font-family: var(--sans); font-size: 12px; color: var(--muted); }

@@ -1,6 +1,7 @@
 // Kumpulan kalimat Bahasa Indonesia (struktur sama dengan ko.js)
 export default {
   ui: {
+    lockNote: "Di slot waktu ini kamu hanya bisa melihat ramalan dari data yang pertama kali dipakai. Ramalan data baru muncul mulai pukul {t}.",
     charmRec: "Jimat rekomendasi slot waktu ini",
     sfxOn: "Suara aktif", sfxOff: "Suara mati",
     adminMode: "Mode admin · semua fitur tanpa batas", fateGather: "Aliran takdir yang tertidur mulai terbangun.", fateArrived: "Aliran takdir yang baru telah tiba.", fateAllUsed: "Kamu sudah melihat semua aliran takdir di slot waktu ini. Temui energi baru pukul {t}.", fateFail: "Aliran takdir baru gagal dimuat. Kesempatanmu masih utuh.", fateLeft: "Sisa perubahan di slot ini: {n}", mapOpen: "Lihat di Google Maps",

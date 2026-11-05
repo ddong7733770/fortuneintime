@@ -1,6 +1,7 @@
 // 简体中文句库（结构与 ko.js 相同）
 export default {
   ui: {
+    lockNote: "本时段只能查看最初输入信息的运势。修改后的信息将从{t}开始显示运势。",
     charmRec: "本时段推荐的护身符",
     sfxOn: "声音已开启", sfxOff: "声音已关闭",
     adminMode: "管理员模式 · 全部功能无限制", fateGather: "沉睡的命运之流正在苏醒。", fateArrived: "新的命运之流已经到来。", fateAllUsed: "本时段的命运之流已全部查看。{t}再来迎接新的气运吧。", fateFail: "未能读取命运之流，次数仍然保留。", fateLeft: "本时段剩余改运 {n} 次", mapOpen: "在 Google 地图中查看",

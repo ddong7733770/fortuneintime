@@ -114,7 +114,7 @@ export function profileFrom(p) {
   };
 }
 // 계산 기준: 생년월일·시간 입력·태어난 나라·성별만 (이름·기기·IP는 넣지 않음 → 같은 정보면 어디서든 같은 결과)
-const profileSeed = p => `${p.y}-${p.m}-${p.d}|${p.timeMode || ''}|${p.timeMode === 'exact' ? `${p.hh}:${p.mm}` : ''}|${p.sijin ?? -1}|${p.country || ''}|${String(p.gender || '').toUpperCase()}`;
+export const profileSeed = p => `${p.y}-${p.m}-${p.d}|${p.timeMode || ''}|${p.timeMode === 'exact' ? `${p.hh}:${p.mm}` : ''}|${p.sijin ?? -1}|${p.country || ''}|${String(p.gender || '').toUpperCase()}`;
 
 // 추천 복권 번호(1~45 중 6개): 용신 오행의 수(하도수: 목 3·8, 화 2·7, 토 5·10, 금 4·9, 수 1·6)로 끝나는 번호를 2개 이상 넣음
 export const EL_DIGITS = [[3, 8], [2, 7], [5, 0], [4, 9], [1, 6]];

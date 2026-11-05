@@ -1,6 +1,7 @@
 // Frases en español (misma estructura que ko.js)
 export default {
   ui: {
+    lockNote: "En esta franja solo puedes ver la fortuna de los datos que usaste primero. La de los datos nuevos se verá a partir de las {t}.",
     charmRec: "Amuleto recomendado para esta franja",
     sfxOn: "Sonido activado", sfxOff: "Sonido desactivado",
     adminMode: "Modo administrador · todo sin límite", fateGather: "El flujo dormido del destino está despertando.", fateArrived: "Ha llegado un nuevo flujo del destino.", fateAllUsed: "Ya viste todos los flujos del destino de esta franja. A las {t} te espera una nueva energía.", fateFail: "No pudimos cargar un nuevo flujo del destino. Tu oportunidad sigue intacta.", fateLeft: "Cambios restantes en esta franja: {n}", mapOpen: "Ver en Google Maps",

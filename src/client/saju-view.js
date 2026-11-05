@@ -15,19 +15,91 @@ const POS_ORDER = ['day', 'month', 'year', 'hour'];
 export function basisLines(S, d) {
   const { chart, ev } = d.saju;
   const out = [];
-  const vs = SJ.elValue(chart, SJ.STEM_EL[ev.stem]);
   const ten = S.ten[ev.tgS].split('(')[0];
-  out.push(`${fmt(S.dayIntro, { s: stemName(S, ev.stem), d: stemName(S, chart.dayStem), ten, mean: S.tenMean[ev.tgS] })} ${S.tenDay[ev.tgS][vs >= 0 ? 0 : 1]}`);
+  out.push(fmt(S.dayIntro, { s: stemName(S, ev.stem), d: stemName(S, chart.dayStem), ten, mean: S.tenMean[ev.tgS] }));
   const els = [...new Set([SJ.STEM_EL[ev.stem], SJ.BRANCH_EL[ev.branch]])].map(e => S.el[e]).join('·');
   const mood = ev.val >= 1.5 ? 'good' : ev.val <= -1.5 ? 'bad' : 'mid';
   out.push(fmt(S.yongDay[mood], { yong: S.el[chart.fav.yong], els }));
-  const rels = [...ev.rels].sort((a, b) => POS_ORDER.indexOf(a.pos) - POS_ORDER.indexOf(b.pos)).slice(0, 2);
-  rels.forEach(r => out.push(fmt(S.rel[r.type], { b: branchName(S, ev.branch), nb: branchName(S, r.with), pos: S.pos[r.pos] })));
-  if (ev.stemHapDay) out.push(fmt(S.rel.stemHap, { s: stemName(S, ev.stem) }));
-  else if (ev.stemChungDay) out.push(fmt(S.rel.stemChung, { s: stemName(S, ev.stem) }));
   if (d.saju.kai) out.push(fmt(S.ui.kai, { el: S.el[chart.fav.yong] }));
   return out;
 }
+
+// ── 해운정사의 오늘 풀이: ① 전체 흐름 ② 눈여겨볼 대목 ③ 실천 조언 ④ 여운 있는 한마디
+const REL_PRI = { chung: 0, hyeong: 1, hap: 2, samhap: 3, hae: 4 };
+const DOMS = ['wealth', 'love', 'work', 'health'];
+export function todayReading(S, d) {
+  const H = S.hw, { chart, ev } = d.saju, r = d.rolls;
+  const vs = SJ.elValue(chart, SJ.STEM_EL[ev.stem]);
+  const flow = `${pickR(H.flow[d.band], r[31])} ${S.tenDay[ev.tgS][vs >= 0 ? 0 : 1]}`;
+  let focus;
+  const rels = [...ev.rels].sort((a, b2) => REL_PRI[a.type] - REL_PRI[b2.type] || POS_ORDER.indexOf(a.pos) - POS_ORDER.indexOf(b2.pos));
+  if (rels.length) {
+    const x = rels[0];
+    focus = fmt(S.rel[x.type], { b: branchName(S, ev.branch), nb: branchName(S, x.with), pos: S.pos[x.pos] });
+  } else if (ev.stemChungDay) focus = fmt(S.rel.stemChung, { s: stemName(S, ev.stem) });
+  else if (ev.stemHapDay) focus = fmt(S.rel.stemHap, { s: stemName(S, ev.stem) });
+  else {
+    const lo = DOMS.reduce((a, k) => (d.domains[k] < d.domains[a] ? k : a)), hi = DOMS.reduce((a, k) => (d.domains[k] > d.domains[a] ? k : a));
+    focus = d.domains[lo] <= 2 ? fmt(H.focusNone.weak, { dom: H.domName[lo] }) : fmt(H.focusNone.strong, { dom: H.domName[hi] });
+  }
+  if (r[32] < 0.4) focus = `${pickR(H.focusLead, r[33])} ${focus}`;
+  const weak = DOMS.reduce((a, k) => (d.domains[k] < d.domains[a] ? k : a));
+  const Y = S.yong[chart.fav.yong];
+  const advice = [pickR(H.adviceDom[weak], r[34])];
+  if (r[35] < 0.6) advice.push(fmt(pickR(H.adviceYong, r[36]), { act: Y.act.split(', ')[0], yong: S.el[chart.fav.yong] }));
+  const closing = pickR(H.closing[d.band <= 0 ? 0 : d.band === 1 ? 1 : 2], r[37]);
+  return { flow, focus, advice: advice.join(' '), closing };
+}
+export function todayReadingHTML(S, d, withFlow = true) {
+  const t = todayReading(S, d);
+  return `<section class="sec hw"><h2>${esc(S.ui.hwTitle)}</h2>
+${withFlow ? `<p class="hw-flow">${esc(t.flow)}</p>` : ''}
+<h3>${esc(S.ui.focus)}</h3><p>${esc(t.focus)}</p>
+<h3>${esc(S.ui.advice)}</h3><p>${esc(t.advice)}</p>
+<p class="hw-close">“${esc(t.closing)}”<span>— ${esc(S.ui.hwSay)}</span></p></section>`;
+}
+
+// ── 분야별 풀이(재물·애정·직장·건강): 흐름 → 왜 그런지(사주 근거) → 주의·가능성 → 현실 조언
+export function domainReading(S, d, k) {
+  const D = S.dom2[k], { chart, ev } = d.saju, ds = chart.dayStem;
+  const i = DOMS.indexOf(k), r = j => d.rolls[(10 + i * 5 + j) % 40];
+  const v = d.domains[k], c = v <= 2 ? 0 : v === 3 ? 1 : 2;
+  const gs = SJ.groupOf(ev.tgS), gb = SJ.groupOf(ev.tgB);
+  const has = g => gs === g || gb === g;
+  const fav = g => SJ.elValue(chart, SJ.elOfGroup(ds, g)) >= 0;
+  const relAt = (pos, t) => ev.rels.some(x => x.pos === pos && x.type === t);
+  const out = [pickR(D.flow[c], r(0))];
+  let why;
+  if (k === 'wealth') {
+    if (has(2)) why = fav(2) ? (ev.tgS === 4 || ev.tgB === 4 ? D.why.pyeon : D.why.jeong) : D.why.bad;
+    else if (ev.tgS === 1 || ev.tgB === 1) why = D.why.rob;
+    else if (has(1)) why = D.why.output; else if (has(4)) why = D.why.doc; else why = D.why.none;
+    out.push(why); if (c <= 1) out.push(pickR(D.caution, r(1))); out.push(pickR(D.tip, r(2)));
+  } else if (k === 'love') {
+    const g = chart.male === false ? 3 : 2;
+    const star = chart.male === false ? '이성을 뜻하는 관성(官星)' : chart.male ? '이성을 뜻하는 재성(財星)' : '인연의 별';
+    if (has(g)) why = fav(g) ? fmt(D.why.star, { star }) : D.why.bad;
+    else if (ev.dohwa) why = D.why.dohwa; else if (relAt('day', 'hap')) why = D.why.dayHap; else if (relAt('day', 'chung')) why = D.why.dayChung;
+    else if (ev.stemHapDay) why = D.why.stemHap; else why = D.why.none;
+    out.push(why); if (c >= 1 || r(1) < 0.5) out.push(pickR(D.chance, r(3))); out.push(pickR(D.tip, r(2)));
+  } else if (k === 'work') {
+    if (has(3)) why = fav(3) ? D.why.kwan : D.why.kwanBad;
+    else if (relAt('month', 'chung')) why = D.why.monthChung;
+    else if (has(1)) why = D.why.output; else if (has(4)) why = D.why.study; else if (has(0)) why = D.why.rob; else why = D.why.none;
+    out.push(why); if (c <= 1) out.push(pickR(D.caution, r(1))); out.push(pickR(D.tip, r(2)));
+  } else {
+    const els = [SJ.STEM_EL[ev.stem], SJ.BRANCH_EL[ev.branch]];
+    const ex = els.find(e => chart.count[e] >= 3 && SJ.elValue(chart, e) < 0), lk = els.find(e => chart.count[e] === 0);
+    if (ex !== undefined) why = fmt(D.why.excess, { el: S.el[ex], organ: S.organ[ex] });
+    else if (lk !== undefined) why = fmt(D.why.lack, { el: S.el[lk] });
+    else if (relAt('day', 'chung')) why = D.why.chung; else if (ev.rels.some(x => x.type === 'hyeong')) why = D.why.hyeong; else why = D.why.none;
+    out.push(why); out.push(c === 0 ? D.tip[0] : pickR(D.tip.slice(1), r(2)));
+  }
+  return out.join(' ');
+}
+// 예전 이름 호환
+export const domainReason = (S, d, k) => domainReading(S, d, k);
+
 // 한국어 이름: 계(癸·물), 미(未·양)
 export const stemName = (S, s) => `${SJ.STEM_K[s]}(${SJ.STEM_H[s]}·${S.elShort[SJ.STEM_EL[s]]})`;
 export const branchName = (S, b) => `${SJ.BRANCH_K[b]}(${SJ.BRANCH_H[b]}·${S.animal[b]})`;
@@ -52,25 +124,6 @@ export function basisHTML(S, d, link) {
 ${link ? `<a class="txt-link" href="${link}">${esc(S.ui.seeSaju)} →</a>` : ''}</section>`;
 }
 
-// 분야별 근거 한 문장(한국어)
-export function domainReason(S, d, k) {
-  const { chart, ev } = d.saju, ds = chart.dayStem, D = S.dom[k], r = d.rolls[30 + ['wealth', 'love', 'work', 'health'].indexOf(k)];
-  const gs = SJ.groupOf(ev.tgS), gb = SJ.groupOf(ev.tgB);
-  const has = g => gs === g || gb === g;
-  const fav = g => SJ.elValue(chart, SJ.elOfGroup(ds, g)) >= 0;
-  const relAt = (pos, t) => ev.rels.some(x => x.pos === pos && x.type === t);
-  if (k === 'wealth') { if (has(2)) return fav(2) ? D.star : D.starBad; if (ev.tgS === 1 || ev.tgB === 1) return D.rob; return pickR(D.plain, r); }
-  if (k === 'work') { if (has(3)) return fav(3) ? D.star : D.starBad; if (relAt('month', 'chung')) return D.monthChung; if (has(1)) return D.output; if (has(4)) return D.study; return pickR(D.plain, r); }
-  if (k === 'love') {
-    const g = chart.male === false ? 3 : 2;
-    if (has(g)) return fav(g) ? (chart.male === false ? D.starF : D.starM) : D.starBad;
-    if (ev.dohwa) return D.dohwa; if (relAt('day', 'hap')) return D.dayHap; if (relAt('day', 'chung')) return D.dayChung; return pickR(D.plain, r);
-  }
-  const els = [SJ.STEM_EL[ev.stem], SJ.BRANCH_EL[ev.branch]];
-  const ex = els.find(e => chart.count[e] >= 3 && SJ.elValue(chart, e) < 0); if (ex !== undefined) return fmt(D.excess, { el: S.el[ex], organ: S.organ[ex] });
-  const lk = els.find(e => chart.count[e] === 0); if (lk !== undefined) return fmt(D.lack, { el: S.el[lk] });
-  if (relAt('day', 'chung')) return D.chung; if (ev.rels.some(x => x.type === 'hyeong')) return D.hyeong; return pickR(D.plain, r);
-}
 
 // ── 타고난 분야별 운: 원국의 십신 무게·위치·용신·신살로 문장을 고름
 export function lifeTexts(S, chart) {
@@ -132,6 +185,42 @@ function lifeHTML(S, chart) {
   return ['wealth', 'work', 'love', 'home'].map(k => `<section class="sec life life-${k}"><h2>${esc(S.life.titles[k])}</h2><p class="lead-s">${t[k].map(esc).join(' ')}</p></section>`).join('');
 }
 
+// ── 해운정사의 종합 풀이: 타고난 기질 → 강점과 약점 → 지금의 흐름 → 앞으로의 변화 → 삶의 방향
+export function overallTexts(S, chart, nowMs = Date.now()) {
+  const O = S.ov, out = {};
+  out.nature = S.dayMaster[chart.dayStem];
+  const top = [...chart.tgCount.keys()].filter(i => chart.tgCount[i] > 0).sort((a, b) => chart.tgCount[b] - chart.tgCount[a])[0];
+  const lackE = chart.count.findIndex(c => c === 0), manyE = chart.count.findIndex(c => c >= 3);
+  const st = S.strength[chart.strength + 2][1].split('. ');
+  out.strong = [S.tenTrait[top], st.slice(0, 2).join('. ') + '.', lackE >= 0 ? S.none[lackE] : manyE >= 0 ? S.many[manyE] : ''].filter(Boolean).join(' ');
+  const age = (nowMs - chart.birthMs) / (365.2425 * 864e5);
+  const toneOf = ev => (ev.val >= 0.8 ? 0 : ev.val <= -0.8 ? 2 : 1);
+  const now = new Date(nowMs);
+  const yr = SJ.monthYearGZAt(now.getFullYear(), now.getMonth() + 1, now.getDate()).year;
+  const yTone = toneOf(SJ.evalGZ(chart, yr.stem, yr.branch, chart.male));
+  const gz = g => `${SJ.STEM_K[g.stem]}${SJ.BRANCH_K[g.branch]}(${SJ.STEM_H[g.stem]}${SJ.BRANCH_H[g.branch]})`;
+  const yearLine = fmt(O.year, { gz: gz(yr), tone: O.yearTone[yTone] });
+  if (chart.daeun) {
+    const list = chart.daeun.list, ci = list.findIndex(g => age >= g.age && age < g.age + 10);
+    const cur = list[Math.max(0, ci)], nxt = list[Math.max(0, ci) + 1];
+    const evC = SJ.evalGZ(chart, cur.stem, cur.branch, chart.male), tC = toneOf(evC);
+    const grpC = SJ.groupOf(SJ.tenGod(chart.dayStem, cur.stem));
+    out.now = `${fmt(O.now, { age: Math.floor(cur.age), gz: gz(cur), desc: S.daeunText[grpC][tC === 2 ? 1 : 0].split(' — ')[1] })} ${O.nowTone[tC]} ${yearLine}`;
+    if (nxt) {
+      const tN = toneOf(SJ.evalGZ(chart, nxt.stem, nxt.branch, chart.male)), grpN = SJ.groupOf(SJ.tenGod(chart.dayStem, nxt.stem));
+      out.next = fmt(O.next, { age: Math.floor(nxt.age), gz: gz(nxt), desc: S.daeunText[grpN][tN === 2 ? 1 : 0].split(' — ')[1], tone: O.nextTone[tN] });
+    }
+  } else out.now = yearLine;
+  const Y = S.yong[chart.fav.yong];
+  out.way = fmt(O.way, { el: S.el[chart.fav.yong], why: Y.why, close: O.wayClose[(chart.dayStem + chart.pillars.month.branch) % O.wayClose.length] });
+  return out;
+}
+function overallHTML(S, chart) {
+  const t = overallTexts(S, chart), U = S.ui;
+  const row = (h, v) => (v ? `<h3>${esc(h)}</h3><p>${esc(v)}</p>` : '');
+  return `<section class="sec hw"><h2>${esc(U.overall)}</h2>${row(U.ovNature, t.nature)}${row(U.ovStrong, t.strong)}${row(U.ovNow, t.now)}${row(U.ovNext, t.next)}${row(U.ovWay, t.way)}</section>`;
+}
+
 // ── 사주 탭
 function pillarCell(S, chart, pos) {
   const pl = chart.pillars[pos];
@@ -172,6 +261,7 @@ export function sajuTabHTML(S, chart, name, nowMs = Date.now()) {
 <div class="pillars">${['hour', 'day', 'month', 'year'].map(pos => pillarCell(S, chart, pos)).join('')}</div>
 ${chart.solarHM ? `<p class="muted small">${esc(fmt(U.solar, { t: `${pad(chart.solarHM[0])}:${pad(chart.solarHM[1])}` }))}</p>` : ''}
 ${chart.hasHour ? '' : `<p class="muted small">${esc(U.unknownHour)}</p>`}</section>
+${overallHTML(S, chart)}
 <section class="sec"><h2>${esc(U.dayMaster)}</h2>
 <p class="dm"><b class="${EL_CLS[chart.me]}">${SJ.STEM_H[chart.dayStem]}</b><span>${esc(SJ.STEM_K[chart.dayStem])}${esc(S.el[chart.me].slice(0, 1))} · ${esc(S.el[chart.me])}</span></p>
 <p class="lead-s">${esc(S.dayMaster[chart.dayStem])}</p></section>

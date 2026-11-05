@@ -1,7 +1,7 @@
 // Fortune in Time 화면 동작: 입력 페이지와 결과 4탭(운세, 궁합, 타임머신, 부적)
 import * as E from './engine.js';
 import { mountPlace } from './place.js';
-import { basisHTML, basisLines, domainReason, sajuTabHTML } from './saju-view.js';
+import { basisHTML, domainReading, sajuTabHTML, todayReading, todayReadingHTML } from './saju-view.js';
 import { dialSVG, dialLabels, fmt, esc, pips, sijinRange, fmtDate, BLOOD_LABEL, SIGN_GLYPH, domainText, hourText, summaryText, loveTexts, startHands } from './content.js';
 
 const D = JSON.parse(document.getElementById('ttf-data').textContent);
@@ -116,7 +116,17 @@ function wrapText(ctx, text, x, y, maxW, lh) {
 
 // ── 프로필
 function profile() { return store.get('profile', null); }
-function P() { const p = profile(); return p ? E.profileFrom(p) : null; }
+// 같은 기기에서는 시간대(6시·18시)마다 처음 운세를 본 정보로 고정.
+// 이름·생년월일 등을 바꿔도 바뀐 정보의 운세는 다음 시간대부터 보임(관리자 제외). 시간대가 바뀌면 그때 저장된 정보로 다시 고정
+function activeRaw() {
+  const raw = profile(); if (!raw) return null;
+  if (isAdmin()) return raw;
+  const per = E.period(), lk = store.get('lock', null), seed = E.profileSeed(raw);
+  if (!lk || lk.per !== per.key || !lk.raw) { store.set('lock', { per: per.key, seed, raw }); return raw; }
+  return lk.seed === seed ? raw : lk.raw;
+}
+const lockedOther = () => { const raw = profile(), lk = store.get('lock', null); return !!(raw && lk && !isAdmin() && lk.per === E.period().key && lk.seed !== E.profileSeed(raw)); };
+function P() { const p = activeRaw(); return p ? E.profileFrom(p) : null; }
 
 // ── 시계: 화면의 카운트다운을 1초마다 갱신, 리셋 시각이 지나면 다시 그림
 function startTicker(onReset) {
@@ -157,7 +167,7 @@ ${p.blood !== null && p.blood !== undefined ? `<div><dt>${esc(U.blood)}</dt><dd>
 </dl>`;
     $('#savedEdit').addEventListener('click', () => { showForm(true); form.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' }); });
     $('#savedDel').addEventListener('click', () => {
-      ['profile', 'turns', 'partner', 'days', 'charm'].forEach(k => store.del(k));
+      ['profile', 'partner', 'days', 'charm'].forEach(k => store.del(k)); // 운명 바꾸기 횟수·시간대 고정(lock)은 남겨 둠
       form.reset(); showForm(true);
     });
     showForm(qs.has('edit'));
@@ -297,7 +307,7 @@ function renderFortune(animate = true, mode = '') {
   const d = E.daily(p, today, ts.used, C);
   const r = d.rolls;
   const curSi = E.sijinIndex(new Date().getHours(), new Date().getMinutes());
-  const summary = summaryText(L, d.band, r, 'one');
+  const summary = S ? todayReading(S, d).flow : summaryText(L, d.band, r, 'one'); // 한국어: 해운정사의 오늘 흐름
   const days = store.get('days', []).filter(x => x.date >= todayKey() && x.date <= addDays(todayKey(), 7)).sort((a, b) => (a.date < b.date ? -1 : 1));
   const name = p.name ? esc(p.name) : '';
 
@@ -335,7 +345,7 @@ ${p.blood !== null && p.blood !== undefined && L.bloodTraits?.length ? `<p class
   app().innerHTML = `
 <section class="master">
 <img class="master-img" src="${D.images.master}" alt="${esc(U.masterName)}" width="88" height="88" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'master-img ph',textContent:'${esc(U.masterName).slice(0, 1)}'}))">
-<div class="master-txt"><p class="master-name">${esc(U.master)} <b>${esc(U.masterName)}</b></p><p class="power">${esc(U.power)} ${d.power}%</p></div>
+<div class="master-txt"><p class="master-name">${esc(U.master)} <b>${esc(U.masterName)}</b></p>${S ? `<p class="power">${esc(S.ui.hwTagline)}</p>` : `<p class="power">${esc(U.power)} ${d.power}%</p>`}</div>
 </section>
 <section class="hero-score${mode === 'reveal' ? ' fate-reveal' : ''}">
 ${mode === 'reveal' ? `<p class="fate-arrived" role="status">${esc(U.fateArrived)}</p><div class="fate-dust" aria-hidden="true">${Array.from({ length: 14 }, (_, i) => `<i style="--x:${(8 + (i * 47) % 84)}%;--y:${(10 + (i * 31) % 78)}%;--dl:${(i % 7) * 0.11}s"></i>`).join('')}</div>` : ''}
@@ -343,8 +353,9 @@ ${mode === 'reveal' ? `<p class="fate-arrived" role="status">${esc(U.fateArrived
 <p class="big-score" aria-label="${esc(U.todayScore)} ${d.score}"><span id="scoreNum">${animate ? 0 : d.score}</span><small>/100</small></p>
 <p class="score-label">${esc(U.todayScore)}</p>
 <p class="lead">${esc(summary)}</p>
-<p class="rel-line">${esc(L.relToday[String(d.rel)])}</p>
+${S ? '' : `<p class="rel-line">${esc(L.relToday[String(d.rel)])}</p>`}
 </section>
+${S ? todayReadingHTML(S, d, false) : ''}
 ${basisHTML(S, d, S ? `/${C}/result/saju/` : null)}
 
 <section class="sec dial-sec">
@@ -374,7 +385,7 @@ ${days.length ? `<section class="sec saved-up">${days.map(x => { const dd = E.da
 
 ${rankHTML}${yijiHTML}
 
-<section class="sec${mode === 'reveal' ? ' fate-soft late' : ''}"><ul class="domains">${['wealth', 'love', 'work', 'health'].map((k, i) => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(domainText(L, k, d.domains[k], r, i, 'now', S ? domainReason(S, d, k) : null))}</span></li>`).join('')}</ul></section>
+<section class="sec${mode === 'reveal' ? ' fate-soft late' : ''}"><ul class="domains">${['wealth', 'love', 'work', 'health'].map((k, i) => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(S ? domainReading(S, d, k) : domainText(L, k, d.domains[k], r, i))}</span></li>`).join('')}</ul></section>
 ${tomorrowHTML(p, today)}
 
 ${adSlot('B')}
@@ -504,7 +515,7 @@ async function changeFate() {
 // 내일 미리보기: 점수와 가장 큰 근거 한 줄
 function tomorrowHTML(p, today) {
   const t = addDays(today, 1), d2 = E.daily(p, t, 0, C);
-  const line = S ? basisLines(S, d2)[0] : '';
+  const line = S ? todayReading(S, d2).flow : '';
   return `<section class="sec tmr"><a href="/${C}/result/time/?d=${t}"><span class="tmr-l">${esc(S ? S.ui.tomorrow : U.tomorrow)}<small>${esc(fmtDate(L, t))}</small></span><b>${d2.score}</b></a>${line ? `<p class="muted">${esc(line)}</p>` : ''}</section>`;
 }
 
@@ -640,7 +651,7 @@ ${dialSVG({ hours: cp.together, labels: dialLabels(L), nowMin: nowMin(), best: c
     renderLove(true);
   });
   $('#inviteBtn').addEventListener('click', () => {
-    const raw = profile();
+    const raw = activeRaw();
     const code = b64e({ n: raw.name || '', y: raw.y, m: raw.m, d: raw.d, s: raw.sijin, g: raw.gender, b: raw.blood });
     shareLink(`${location.origin}/${C}/result/love/?inv=${code}`, fmt(U.invitedBy, { n: raw.name || '' }));
   });
@@ -677,8 +688,8 @@ ${adSlot('tab')}`;
     $('#tOut').innerHTML = `<section class="sec t-res">
 <p class="who"><span class="t-chip${sel < today ? ' past' : ''}">${esc(chip)}</span> ${esc(fmtDate(L, sel))}</p>
 <p class="big-score"><span>${d.score}</span><small>/100</small></p>
-<p class="lead">${esc(summaryText(L, d.band, d.rolls, tense))}</p>
-<ul class="domains">${['wealth', 'love', 'work', 'health'].map((k, i) => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(domainText(L, k, d.domains[k], d.rolls, i, tense, S && tense !== 'past' ? domainReason(S, d, k) : null))}</span></li>`).join('')}</ul>
+<p class="lead">${esc(S && tense !== 'past' ? todayReading(S, d).flow : summaryText(L, d.band, d.rolls, tense))}</p>
+<ul class="domains">${['wealth', 'love', 'work', 'health'].map((k, i) => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(S && tense !== 'past' ? domainReading(S, d, k) : domainText(L, k, d.domains[k], d.rolls, i, tense))}</span></li>`).join('')}</ul>
 </section>${tense !== 'past' ? basisHTML(S, d, null) : ''}`;
     if (scrollToResult) $('#tOut').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   };
@@ -715,7 +726,7 @@ function charmOf(raw, per) {
   return E.CHARMS[Math.floor(r() * E.CHARMS.length)];
 }
 function renderCharm() {
-  const raw = profile();
+  const raw = activeRaw();
   const gift = qs.get('gift');
   const per = E.period();
   const isGift = E.CHARMS.includes(gift);
@@ -778,7 +789,12 @@ else if (body.classList.contains('page-result')) {
     location.replace(`/${C}/`);
   } else {
     const render = { fortune: renderFortune, saju: renderSaju, love: renderLove, time: renderTime, charm: renderCharm }[tab];
+    if (lockedOther()) {
+      const n = document.createElement('p'); n.className = 'lock-note'; n.setAttribute('role', 'status');
+      n.textContent = fmt(U.lockNote, { t: hhmm(E.period().next) });
+      app().before(n);
+    }
     render();
-    startTicker(() => { if (tab === 'fortune') renderFortune(false); else render(); });
+    startTicker(() => { if (!lockedOther()) $('.lock-note')?.remove(); if (tab === 'fortune') renderFortune(false); else render(); });
   }
 }
