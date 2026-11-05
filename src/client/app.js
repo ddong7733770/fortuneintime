@@ -605,7 +605,7 @@ function renderMaster() {
   const head = `<header class="mhead">${imgTag(m, 76, 'mh-img')}<div><h1>${esc(MU.title[m])}</h1><p>${esc(MU.field[m])}</p></div></header>`;
   let content = '';
   if (open) {
-    const secs = m === 'haewoon' ? MV.haewoonSections(M, S, L, d, chart, nowMin()) : m === 'hana' ? MV.hanaSections(M, S, d, chart) : MV.dohanSections(M, S, L, d, chart);
+    const secs = m === 'haewoon' ? MV.haewoonSections(M, S, L, d, chart, nowMin()) : m === 'hana' ? MV.hanaSections(M, S, d, chart, new Date(), L) : MV.dohanSections(M, S, L, d, chart);
     const n = visitCount(m), o = MV.ORDER[m];
     const list = (n >= 3 ? o.late : o.early).map(k => secs[k]);
     const fold = n >= 3 && o.fold.length ? `<details class="fold"><summary>${esc(MU.fold[m])}</summary>${o.fold.map(k => secs[k]).join('')}</details>` : '';

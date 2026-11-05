@@ -77,7 +77,7 @@ export function haewoonSections(M, S, L, d, chart, nowMinute) {
 export function haewoonTeaser(M, S, chart) { return first(S.dayMaster[chart.dayStem], 2); }
 
 // ════════ 하나: 연애·대인관계 ════════
-export function hanaSections(M, S, d, chart, now = new Date()) {
+export function hanaSections(M, S, d, chart, now = new Date(), L = null) {
   const H = M.hana, U = M.ui, ds = chart.dayStem, tg = chart.tgCount, gw = chart.gw;
   const loveG = chart.male === false ? 3 : 2;
   const pe = MS.peopleOf(chart);
@@ -106,9 +106,42 @@ export function hanaSections(M, S, d, chart, now = new Date()) {
     temper: sec('temper', U.secs.temper, temper.map(p).join('')),
     type: sec('type', U.secs.type, type.map(p).join('')),
     today: sec('today', U.secs.today, pips + p(todayT)),
+    date: L ? hanaDate(M, S, L, d, chart, now) : '',
     timing: sec('timing', U.secs.timing, timing),
     people: sec('people', U.secs.people, people.map(p).join('')),
   };
+}
+// ── 하나: 추천하는 데이트 (용신 오행 → 장소군, 오늘 기운 → 분위기·시간·비용, 달 → 계절, 일지 관계 → 주의)
+export function hanaDate(M, S, L, d, chart, now = new Date()) {
+  const D = M.hana.date, U = D.labels, r = d.rolls, ev = d.saju.ev;
+  const el = chart.fav.yong;
+  const pl = D.places[el][Math.floor((r[18] || 0) * D.places[el].length)];
+  const lv = lvl(d.domains.love);
+  const grp = SJ.groupOf(ev.tgS), fav = SJ.elValue(chart, SJ.STEM_EL[ev.stem]) >= 0 ? 0 : 1;
+  const mood = pickR(D.mood[grp][fav], r[19]);
+  const bi = [4, 5, 6, 7, 8, 9, 10, 11].reduce((a, i) => (d.hours[i] > d.hours[a] ? i : a), 5);
+  const slot = bi <= 5 ? 0 : bi <= 7 ? 1 : bi <= 9 ? 2 : 3;
+  const hName = `${L.sijin[bi]}(${sijinRange(bi)})`;
+  const mo = now.getMonth() + 1, sea = mo >= 3 && mo <= 5 ? 0 : mo >= 6 && mo <= 8 ? 1 : mo >= 9 && mo <= 11 ? 2 : 3;
+  const seaName = ['봄', '여름', '가을', '겨울'][sea];
+  const wl = lvl(d.domains.wealth);
+  const pick = (a, j) => a[(Math.floor((r[(20 + j) % r.length] || 0) * 997) + j) % a.length];
+  const dayRel = ev.rels.filter(x => x.pos === 'day').map(x => x.type);
+  const careK = dayRel.includes('chung') ? 'dayChung' : ev.rels.some(x => x.type === 'hyeong') ? 'hyeong' : lv === 0 ? 'low' : lv === 2 ? 'good' : '';
+  const chips = [[U.mood, D.moodShort[grp][fav]], [U.time, `${L.sijin[bi]} ${sijinRange(bi)}`], [U.form, pl.form], [U.cost, D.costLv[pl.cost]], [U.season, seaName]];
+  const stages = ['some', 'early', 'long'];
+  const body = `<div class="dt-card"><p class="dt-intro">${esc(pick(D.intro[lv], 1))}</p>
+<h3 class="dt-name">${esc(pl.name)}</h3>
+<ul class="dt-chips">${chips.map(([k, v]) => `<li><span>${esc(k)}</span>${esc(v)}</li>`).join('')}</ul>
+<h4>${esc(U.why)}</h4><p class="m-p">${esc(pick(D.elWhy[el], 2))} ${esc(pick(pl.feature, 3))} ${esc(pick(pl.feature.filter(x => x !== pick(pl.feature, 3)), 4))}</p>
+<h4>${esc(U.how)}</h4><p class="m-p">${esc(fmt(D.moodLine, { m: mood }))} ${esc(fmt(pick(D.time[slot], 5), { h: hName }))} ${esc(pick(pl.course, 6))} ${esc(pick(pl.course.filter(x => x !== pick(pl.course, 6)), 7))}</p>
+<h4>${esc(U.stage)}</h4><ul class="dt-stage">${stages.map((k, i) => `<li><b>${esc(U.stageName[k])}</b><span>${esc(D.stageLead[i])} ${esc(pl.effect[k])}</span></li>`).join('')}</ul>
+<p class="m-p">${esc(pl.costNote)} ${esc(pick(D.cost[wl], 8))} ${esc(D.season[sea][el])} ${esc(pick(D.elTip[el], 9))}</p>
+<h4>${esc(U.talk)}</h4><ul class="dt-talk">${pl.talk.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+${careK ? `<h4>${esc(U.care)}</h4><p class="m-p">${esc(pick(D.care[careK], 10))}</p>` : ''}
+<p class="m-p">${esc(pick(D.after[lv], 12))}</p>
+<p class="dt-close">${esc(pick(D.closing[lv], 11))}</p></div>`;
+  return sec('date', D.title, body, 'date');
 }
 export function hanaTeaser(M, S, chart) { return first(M.hana.temper.palace[MS.peopleOf(chart).dayGrp], 2); }
 
@@ -167,6 +200,14 @@ export function dohanSections(M, S, L, d, chart, now = new Date()) {
     wh[kind].best.forEach(h => { if (!goodMap.has(h.i)) goodMap.set(h.i, { h, kinds: [] }); goodMap.get(h.i).kinds.push(kind); });
     const w = wh[kind].worst; if (!badMap.has(w.i)) badMap.set(w.i, { h: w, kinds: [] }); badMap.get(w.i).kinds.push(kind);
   });
+  // 유리한 시간은 2개만: 여러 일정에 겹치는 시간 → 점수 높은 시간 순으로 고르고, 빠진 일정은 두 시간 중 더 맞는 쪽에 붙임
+  const pick2 = [...goodMap.values()].sort((x, y) => y.kinds.length - x.kinds.length || y.h.score - x.h.score || x.h.i - y.h.i).slice(0, 2);
+  KINDS.forEach(kind => {
+    if (pick2.some(g => g.kinds.includes(kind))) return;
+    const t = pick2.find(g => wh[kind].pref.includes(g.h.grp)) || [...pick2].sort((x, y) => y.h.score - x.h.score)[0];
+    t.kinds.push(kind);
+  });
+  goodMap.clear(); pick2.forEach(g => goodMap.set(g.h.i, g));
   [...badMap.keys()].forEach(i => { if (goodMap.has(i)) badMap.delete(i); }); // 같은 시간이 양쪽에 걸리면 유리한 쪽만
   const goodLi = [...goodMap.values()].sort((x, y) => x.h.i - y.h.i).map(({ h, kinds }) => {
     const n = 10 + h.i * 3;
@@ -221,7 +262,7 @@ export function dohanTeaser(M, chart) { return first(M.dohan.style[MS.workStyle(
 // ── 방문 횟수에 따른 섹션 순서 (3번째 방문부터는 매일 바뀌는 내용을 먼저)
 export const ORDER = {
   haewoon: { early: ['pillars', 'overall', 'rest', 'siun'], late: ['siun', 'overall', 'pillars', 'rest'], fold: [] }, // 처음 2번은 시운이 대운 아래, 3번째부터 맨 위
-  hana: { early: ['temper', 'type', 'today', 'timing', 'people'], late: ['today', 'timing', 'people'], fold: ['temper', 'type'] },
+  hana: { early: ['temper', 'type', 'today', 'date', 'timing', 'people'], late: ['today', 'date', 'timing', 'people'], fold: ['temper', 'type'] },
   dohan: { early: ['style', 'fields', 'hours', 'flow', 'collab'], late: ['hours', 'flow', 'collab'], fold: ['style', 'fields'] },
 };
 export { stemName };

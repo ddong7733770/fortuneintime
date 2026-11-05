@@ -4,6 +4,7 @@
 // · 모든 문장은 계산된 사주 데이터에 연결해 고름. {키:은/는}은 받침에 따라 조사를 고름
 import MORE from './ko-more.js';
 import { FORTUNE_DOM, HANA_TODAY } from './ko-dom.js';
+import DATE from './ko-date.js';
 const KO = {
   ui: {
     tab: '명인',
@@ -367,4 +368,6 @@ function mergeDom(base, add) {
 }
 for (const k of Object.keys(FORTUNE_DOM)) mergeDom(KO.fortune.dom[k], FORTUNE_DOM[k]);
 mergeDom(KO.hana.today, HANA_TODAY);
+KO.hana.date = DATE; // 하나의 추천하는 데이트
+KO.ui.secs.date = DATE.title;
 export default KO;
