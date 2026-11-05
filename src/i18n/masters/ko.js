@@ -21,7 +21,7 @@ export default {
     compatNote: '궁합은 하나의 풀이와 따로 열려요. 이번 시간대({t}까지) 한 번 열면 계속 볼 수 있어요.',
     relKind: '관계', relKinds: { lover: '연인', some: '썸', friend: '친구', coworker: '동료', boss: '상사·부하', family: '가족' },
     siunTitle: '시운 — 오늘의 시간별 운세',
-    siunHint: '다이얼의 칸을 누르면 그 시간 풀이로 이동해요.',
+    siunHint: '시계의 시간대를 누르면 그 시간의 운세를 보여 드립니다.',
     siunNow: '지금',
     sleepRange: '23:00~05:00',
     teaserSiun: '오늘 가장 좋은 시간은?',

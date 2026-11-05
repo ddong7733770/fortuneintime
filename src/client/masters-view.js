@@ -46,15 +46,15 @@ export function siunHTML(M, L, d, chart, nowMinute) {
     const avoid = h.rel === 'chung' ? H.avoidChung : H.avoid[h.grp];
     const body = h.dawn ? `<p class="m-p">${esc(H.dawn)} ${esc(g)}</p>`
       : `<p class="m-p">${esc(g)}${rl ? ` ${esc(rl)}` : ''}</p><p class="hr-do"><span>${esc(H.doLabel)}</span>${esc(H.doIt[h.tg])}<span>${esc(H.avoidLabel)}</span>${esc(avoid)}</p>`;
-    return `<article class="hr hr-b${h.band}${h.i === cur ? ' is-now' : ''}${h.dawn ? ' is-dawn' : ''}" id="hr-${h.i}">
+    return `<article class="hr hr-b${h.band}${h.i === cur ? ' is-now' : ''}${h.dawn ? ' is-dawn' : ''}" id="hr-${h.i}"${h.i === cur ? '' : ' hidden'}>
 <header><b>${esc(L.sijin[h.i])}</b><span class="hr-t">${sijinRange(h.i)}</span>${h.i === cur ? `<em>${esc(U.siunNow)}</em>` : ''}<span class="hr-s">${h.score}</span><span class="hr-band">${esc(U.band[h.band])}</span></header>
 ${body}</article>`;
   };
   const list = [3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => card(hs[i])).join('');
-  const sleep = `<article class="hr is-sleep${cur <= 2 ? ' is-now' : ''}" id="hr-0"><header><b>${esc(L.sijin[0])} · ${esc(L.sijin[1])} · ${esc(L.sijin[2])}</b><span class="hr-t">${esc(U.sleepRange)}</span></header><p class="m-p">${esc(H.sleep)}</p></article>`;
+  const sleep = `<article class="hr is-sleep${cur <= 2 ? ' is-now' : ''}" id="hr-0"${cur <= 2 ? '' : ' hidden'}><header><b>${esc(L.sijin[0])} · ${esc(L.sijin[1])} · ${esc(L.sijin[2])}</b><span class="hr-t">${esc(U.sleepRange)}</span></header><p class="m-p">${esc(H.sleep)}</p></article>`;
   const sum = `${fmt(H.summary, { best: hourName(L, best.i), worst: hourName(L, worst.i) })} ${pickR(H.summaryTail, d.rolls[8])}`;
   const dial = dialSVG({ hours: d.hours, labels: dialLabels(L), nowMin: nowMinute, best: best.i, worst: worst.i, size: 300, id: 'sdial', centerTop: `${U.siunNow} ${L.sijin[cur]}`, centerMain: d.hours[cur], centerSub: sijinRange(cur) });
-  return sec('siun', U.secs.siun, `<p class="m-lead">${esc(sum)}</p><div class="siun-dial">${dial}</div><p class="dial-hint">${esc(U.siunHint)}</p><div class="hr-list">${list}${sleep}</div>`, 'siun');
+  return sec('siun', U.secs.siun, `<p class="m-lead">${esc(sum)}</p><div class="siun-box"><div class="siun-dial">${dial}</div><p class="dial-hint">${esc(U.siunHint)}</p><div class="hr-list">${list}${sleep}</div></div>`, 'siun');
 }
 export function haewoonSections(M, S, L, d, chart, nowMinute) {
   const x = sajuSections(S, chart, { O: M.haewoon.ov, overallTitle: M.ui.secs.overall });
@@ -178,7 +178,7 @@ export function dohanTeaser(M, chart) { return first(M.dohan.style[MS.workStyle(
 
 // ── 방문 횟수에 따른 섹션 순서 (3번째 방문부터는 매일 바뀌는 내용을 먼저)
 export const ORDER = {
-  haewoon: { early: ['pillars', 'overall', 'siun', 'rest'], late: ['siun', 'overall', 'pillars', 'rest'], fold: [] },
+  haewoon: { early: ['pillars', 'overall', 'rest', 'siun'], late: ['siun', 'overall', 'pillars', 'rest'], fold: [] }, // 처음 2번은 시운이 대운 아래, 3번째부터 맨 위
   hana: { early: ['temper', 'type', 'today', 'timing', 'people'], late: ['today', 'timing', 'people'], fold: ['temper', 'type'] },
   dohan: { early: ['style', 'fields', 'hours', 'flow', 'collab'], late: ['hours', 'flow', 'collab'], fold: ['style', 'fields'] },
 };

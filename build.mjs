@@ -299,7 +299,9 @@ function buildResult(c) {
   const PAGES = HAS_M ? [...NAV, 'saju', 'love'] : NAV;
   for (const t of PAGES) {
     const on = HAS_M && (t === 'saju' || t === 'love') ? 'master' : t;
-    const nav = NAV.map(x => `<a href="/${c}/result/${x}/" class="tab${x === on ? ' is-on' : ''}"${x === on ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICON[x]}</svg><span>${esc(U.tabs[x])}</span></a>`).join('');
+    // 명인 탭 아이콘은 해운정사 사진
+    const ico = x => (x === 'master' ? `<img class="tab-face" src="${config.images.master}" alt="" width="26" height="26">` : `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICON[x]}</svg>`);
+    const nav = NAV.map(x => `<a href="/${c}/result/${x}/" class="tab${x === on ? ' is-on' : ''}"${x === on ? ' aria-current="page"' : ''}>${ico(x)}<span>${esc(U.tabs[x])}</span></a>`).join('');
     const html = `${head({ lang: c, title: `${U.tabs[t]} | ${BRAND} ${Lc.subBrand}`, desc: Lc.siteDesc, canonical: `/${c}/`, noindex: true })}
 <body class="page-result has-bnav tab-${t}" data-lang="${c}" data-tab="${t}">
 ${header(c, { edit: true })}

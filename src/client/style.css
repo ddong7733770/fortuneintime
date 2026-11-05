@@ -373,7 +373,7 @@ input::placeholder { color: #A9A398; }
 .root-wrap { max-width: 520px; margin: 0 auto; padding: calc(28px + env(safe-area-inset-top)) 16px 24px; }
 .root-hero { text-align: center; }
 .root-title { margin: 0; display: grid; gap: 4px; }
-.root-title .wordmark { font-size: 38px; }
+.root-title .wordmark { font-size: 34px; } /* 기존 38px의 90% */
 .root-sub { font-family: var(--serif); font-size: 20px; color: var(--hanji); word-spacing: .4em; }
 .root-tag { margin: 6px 0 14px; color: var(--muted); font-style: italic; font-family: 'Gowun Batang', serif; }
 .root-dial .dial { width: 220px; height: 220px; }
@@ -780,3 +780,62 @@ textarea { font: inherit; font-size: 16px; color: var(--hanji); background: #fff
 .b-auth .form-err { grid-column: 1 / -1; font-size: 13px; }
 .b-empty { padding: 18px 2px; color: var(--muted); font-size: 14px; }
 .b-more { width: 100%; margin-top: 10px; }
+
+/* ── 수정(11/5 오후) ───────── */
+/* 하단 탭: 명인 = 해운정사 사진 */
+.tab-face { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; filter: grayscale(.6); opacity: .8; }
+.tab.is-on .tab-face { filter: none; opacity: 1; box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px var(--hanji); }
+/* 명인 선택: 사진(70%)과 담당 분야만 */
+.mpick { gap: 6px; }
+.mp { padding: 8px 4px 7px; gap: 3px; border-radius: 14px; }
+.mp-img { width: 36px; height: 36px; margin: 0; }
+.mp small { font-size: 11px; color: var(--hanji); font-weight: 500; }
+.mp.is-on small { font-weight: 700; color: var(--mc); }
+/* 운명 바꾸기(맨 아래): 쓸 수 있을 때 버튼이 반짝임 */
+.fate-cta { margin: 6px 0 4px; font-family: var(--serif); font-size: 19px; font-weight: 700; color: var(--brass); }
+.btn-fate:not(:disabled) { animation: fpulse 1.8s ease-in-out infinite; }
+@keyframes fpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(179,38,30,.45); } 50% { box-shadow: 0 0 0 9px rgba(179,38,30,0), 0 0 22px rgba(179,38,30,.35); } }
+.btn-fate:not(:disabled)::after { animation-duration: 2.4s; animation-delay: .2s; }
+@media (prefers-reduced-motion: reduce) { .btn-fate:not(:disabled) { animation: none; } }
+/* 오른쪽 아래: 맨 위로 + 다른 명인 */
+.fab { position: fixed; right: max(12px, calc((100vw - 520px) / 2 + 12px)); bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); z-index: 28; display: grid; gap: 10px; justify-items: center; }
+.fab-top { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--ink-3); background: rgba(255,255,255,.96); box-shadow: 0 4px 14px rgba(0,0,0,.12); display: grid; place-items: center; cursor: pointer; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .25s, transform .25s; }
+.fab.show-top .fab-top { opacity: 1; transform: none; pointer-events: auto; }
+.fab-top svg { width: 20px; height: 20px; fill: none; stroke: var(--hanji); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.fab-m { display: block; width: 44px; height: 44px; border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--mc), 0 4px 14px rgba(0,0,0,.15); overflow: hidden; }
+.fab-img { width: 44px; height: 44px; object-fit: cover; display: block; }
+/* 해운정사 시운: 시계와 한 시간 풀이를 한 화면에 */
+.siun-box { display: grid; gap: 8px; }
+.siun-dial .dial { width: min(74vw, 40vh, 290px); height: auto; }
+.siun .dial-hint { margin: 0; font-size: 13px; }
+.siun .hr-list { margin-top: 2px; }
+.siun .hr { padding: 12px 14px; }
+.siun .hr .m-p { font-size: clamp(14px, 3.8vw, 15px); line-height: 1.7; }
+.siun .m-lead { font-size: clamp(15px, 4.2vw, 17px); margin-bottom: 4px; }
+@media (max-height: 700px) { .siun-dial .dial { width: min(66vw, 36vh, 250px); } }
+/* 미래: 결과 전 광고 창 */
+.adgate { position: fixed; inset: 0; z-index: 260; display: grid; place-items: center; padding: 20px; background: rgba(20,18,15,.6); opacity: 0; transition: opacity .25s; }
+.adgate.on { opacity: 1; }
+html.adgate-on { overflow: hidden; }
+.adgate-box { position: relative; width: min(100%, 400px); padding: 34px 16px 18px; border-radius: 18px; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.adgate-box .ad { margin: 0; padding: 0; background: none; display: block; min-height: 250px; }
+.adgate-box .ad-mock { display: grid; place-items: center; height: 250px; border: 1px dashed #CFC9BC; border-radius: 10px; color: #9A958B; font-size: 13px; }
+.adgate-x { position: absolute; top: 6px; right: 6px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--hanji); display: grid; place-items: center; cursor: pointer; animation: ffade .3s ease both; }
+.adgate-x svg { width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; }
+.adgate-bar { height: 6px; border-radius: 3px; background: var(--mist); overflow: hidden; margin-top: 14px; }
+.adgate-bar i { display: block; height: 100%; width: 0; background: var(--brass); }
+.adgate.on .adgate-bar i { animation: adfill 5s linear forwards; }
+@keyframes adfill { to { width: 100%; } }
+.adgate-t { margin: 8px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+.adgate.done .adgate-t { visibility: hidden; }
+/* 페이지 전환: 부드럽게 */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .28s; }
+.top { view-transition-name: top; }
+.tabs { view-transition-name: bnav; }
+main.wrap, .root-wrap { animation: pagein .32s ease both; }
+@keyframes pagein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+html.leaving main, html.leaving .foot { opacity: 0; transition: opacity .17s ease; }
+#app.is-out { opacity: 0; transition: opacity .16s ease; }
+#app:not(.is-out) > *:not(.fate-reveal):not(.fate-soft) { animation: ffade .3s ease both; }
+@media (prefers-reduced-motion: reduce) { main.wrap, .root-wrap, #app > * { animation: none !important; } ::view-transition-old(root), ::view-transition-new(root) { animation: none; } }

@@ -373,23 +373,13 @@ ${dialSVG({ hours: d.hours, labels: dialLabels(L), nowMin: nowMin(), best: d.bes
 <ul class="bw"><li class="b"><span>${esc(U.best)}</span>${esc(hourText(L, 'best', `${L.sijin[d.best]} (${sijinRange(d.best)})`, r))}</li><li class="w"><span>${esc(U.worst)}</span>${esc(hourText(L, 'worst', `${L.sijin[d.worst]} (${sijinRange(d.worst)})`, r))}</li></ul>
 </section>
 
-<section class="sec change" id="changeSec">
-<div class="change-head"><h2>${esc(U.changeTitle)}</h2></div>
-<p class="fate-left${ts.left <= 0 ? ' is-out' : ''}">${admin ? esc(U.adminMode) : esc(fmt(U.fateLeft, { n: Math.max(0, ts.left) }))}</p>
-<p class="change-count">${esc(U.untilChange)} <b data-count>--:--:--</b></p>
-${ts.used > 0 && !admin ? `<p class="change-done">${esc(U.changeDone)}</p>` : ''}
-<div class="btn-row">
-<button class="btn-primary btn-fate" type="button" id="changeBtn"${ts.left <= 0 ? ' disabled' : ''}><span>${esc(U.changeBtn)}</span></button>
-${!admin && canReward() && ts.bonus < 1 ? `<button class="btn-ghost" type="button" id="rewardBtn">${esc(U.changeAd)}</button>` : ''}
-</div>
-${ts.left <= 0 ? `<p class="fate-none">${esc(fmt(U.fateAllUsed, { t: hhmm(per.next) }))}</p>` : ''}
-</section>
+
 
 ${adSlot('A')}
 
 ${days.length ? `<section class="sec saved-up">${days.map(x => { const dd = E.daily(p, x.date, 0, C); return `<a href="/${C}/result/time/?d=${x.date}"><b>${esc(x.label || U.savedDays)}</b><span>${esc(fmtDate(L, x.date))}</span><span class="sc">${dd.score}</span></a>`; }).join('')}</section>` : ''}
 
-<section class="sec kw-sec${mode === 'reveal' ? ' fate-soft' : ''}"><dl class="kw">${kw.map(([t, v, raw]) => `<div><dt>${esc(t)}</dt><dd>${raw ? v : esc(v)}</dd></div>`).join('')}</dl></section>
+
 
 ${rankHTML}${yijiHTML}
 
@@ -402,6 +392,8 @@ ${flowHTML(p, today, today, d.score, true)}
 <section class="sec rel"><h2>${esc(U.relTitle)}</h2>
 <div class="rel-grid"><div class="good"><p>${esc(U.helper)}</p><b>${relCells[0][1]}</b><span>${relCells[1][1]}</span></div><div class="bad"><p>${esc(U.drain)}</p><b>${relCells[0][2]}</b><span>${relCells[1][2]}</span></div></div>
 </section>
+
+<section class="sec kw-sec${mode === 'reveal' ? ' fate-soft' : ''}"><dl class="kw">${kw.map(([t, v, raw]) => `<div><dt>${esc(t)}</dt><dd>${raw ? v : esc(v)}</dd></div>`).join('')}</dl></section>
 
 <section class="sec place" id="placeSec">
 <div class="place-head"><h2>${esc(U.placeTitle)}</h2><button type="button" class="sfx-btn" aria-pressed="true" aria-label="${esc(U.sfxOn)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="x" d="M16 9l6 6M22 9l-6 6"/></svg></button></div><p class="muted">${esc(U.placeSub)}</p>
@@ -420,6 +412,18 @@ ${S ? `<p class="muted small nums-basis">${esc(fmt(S.lottoBasis, { el: S.el[d.sa
 <section class="sec share-row">
 <button class="btn-ghost" type="button" id="shareBtn">${esc(U.share)}</button>
 <a class="btn-ghost" href="/${C}/result/love/">${esc(U.gotoLove)}</a>
+</section>
+<section class="sec change" id="changeSec">
+<div class="change-head"><h2>${esc(U.changeTitle)}</h2></div>
+<p class="fate-cta">${esc(U.fateCta)}</p>
+<p class="fate-left${ts.left <= 0 ? ' is-out' : ''}">${admin ? esc(U.adminMode) : esc(fmt(U.fateLeft, { n: Math.max(0, ts.left) }))}</p>
+<p class="change-count">${esc(U.untilChange)} <b data-count>--:--:--</b></p>
+${ts.used > 0 && !admin ? `<p class="change-done">${esc(U.changeDone)}</p>` : ''}
+<div class="btn-row">
+<button class="btn-primary btn-fate" type="button" id="changeBtn"${ts.left <= 0 ? ' disabled' : ''}><span>${esc(U.changeBtn)}</span></button>
+${!admin && canReward() && ts.bonus < 1 ? `<button class="btn-ghost" type="button" id="rewardBtn">${esc(U.changeAd)}</button>` : ''}
+</div>
+${ts.left <= 0 ? `<p class="fate-none">${esc(fmt(U.fateAllUsed, { t: hhmm(per.next) }))}</p>` : ''}
 </section>`;
 
   if (animate || mode === 'reveal') countUp($('#scoreNum'), d.score); else $('#scoreNum').textContent = d.score;
@@ -515,21 +519,10 @@ ${mode === 'reveal' ? `<p class="fate-arrived" role="status">${esc(U.fateArrived
 <p class="lead">${esc(fr.flow)}</p>
 </section>
 
-<section class="sec change" id="changeSec">
-<div class="change-head"><h2>${esc(U.changeTitle)}</h2></div>
-<p class="fate-left${ts.left <= 0 ? ' is-out' : ''}">${admin ? esc(U.adminMode) : esc(fmt(U.fateLeft, { n: Math.max(0, ts.left) }))}</p>
-<p class="change-count">${esc(U.untilChange)} <b data-count>--:--:--</b></p>
-${ts.used > 0 && !admin ? `<p class="change-done">${esc(U.changeDone)}</p>` : ''}
-<div class="btn-row">
-<button class="btn-accent btn-primary btn-fate" type="button" id="changeBtn"${ts.left <= 0 ? ' disabled' : ''}><span>${esc(U.changeBtn)}</span></button>
-${!admin && canReward() && ts.bonus < 1 ? `<button class="btn-ghost" type="button" id="rewardBtn">${esc(U.changeAd)}</button>` : ''}
-</div>
-${ts.left <= 0 ? `<p class="fate-none">${esc(fmt(U.fateAllUsed, { t: hhmm(per.next) }))}</p>` : ''}
-</section>
+
 
 <section class="sec m-basic${mode === 'reveal' ? ' fate-soft' : ''}"><h2>${esc(M.fortune.title)}</h2>
 ${MV.fortuneBasicHTML(M, S, d)}
-<dl class="kw">${kw.map(([t, v, raw]) => `<div><dt>${esc(t)}</dt><dd>${raw ? v : esc(v)}</dd></div>`).join('')}</dl>
 <ul class="domains">${['wealth', 'love', 'work', 'health'].map(k => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(MV.fortuneDomain(M, S, d, k))}</span></li>`).join('')}</ul>
 </section>
 ${basisHTML(S, d, `/${C}/result/master/?m=haewoon`)}
@@ -540,6 +533,8 @@ ${flowHTML(p, today, today, d.score, true)}
 ${tomorrowHTML(p, today)}
 
 ${adSlot('A')}
+
+<section class="sec kw-sec"><dl class="kw">${kw.map(([t, v, raw]) => `<div><dt>${esc(t)}</dt><dd>${raw ? v : esc(v)}</dd></div>`).join('')}</dl></section>
 
 <section class="sec place" id="placeSec">
 <div class="place-head"><h2>${esc(U.placeTitle)}</h2><button type="button" class="sfx-btn" aria-pressed="true" aria-label="${esc(U.sfxOn)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="x" d="M16 9l6 6M22 9l-6 6"/></svg></button></div><p class="muted">${esc(U.placeSub)}</p>
@@ -557,6 +552,18 @@ ${adSlot('A')}
 <section class="sec share-row">
 <button class="btn-ghost" type="button" id="shareBtn">${esc(U.share)}</button>
 <a class="btn-ghost" href="/${C}/result/master/?m=hana#compat">${esc(U.gotoLove)}</a>
+</section>
+<section class="sec change" id="changeSec">
+<div class="change-head"><h2>${esc(U.changeTitle)}</h2></div>
+<p class="fate-cta">${esc(U.fateCta)}</p>
+<p class="fate-left${ts.left <= 0 ? ' is-out' : ''}">${admin ? esc(U.adminMode) : esc(fmt(U.fateLeft, { n: Math.max(0, ts.left) }))}</p>
+<p class="change-count">${esc(U.untilChange)} <b data-count>--:--:--</b></p>
+${ts.used > 0 && !admin ? `<p class="change-done">${esc(U.changeDone)}</p>` : ''}
+<div class="btn-row">
+<button class="btn-accent btn-primary btn-fate" type="button" id="changeBtn"${ts.left <= 0 ? ' disabled' : ''}><span>${esc(U.changeBtn)}</span></button>
+${!admin && canReward() && ts.bonus < 1 ? `<button class="btn-ghost" type="button" id="rewardBtn">${esc(U.changeAd)}</button>` : ''}
+</div>
+${ts.left <= 0 ? `<p class="fate-none">${esc(fmt(U.fateAllUsed, { t: hhmm(per.next) }))}</p>` : ''}
 </section>`;
 
   if (animate || mode === 'reveal') countUp($('#scoreNum'), d.score); else $('#scoreNum').textContent = d.score;
@@ -579,14 +586,15 @@ ${adSlot('A')}
 function renderMaster() {
   const tab = body.dataset.tab;
   const inv = qs.get('inv') ? b64d(qs.get('inv')) : null;
-  let m = qs.get('m');
+  let m = new URLSearchParams(location.search).get('m');
   if (!MASTERS.includes(m)) m = tab === 'saju' ? 'haewoon' : tab === 'love' ? 'hana' : (session.get('master') || 'haewoon');
   session.set('master', m);
   const MU = M.ui;
   const p = P(), chart = E.SJ.chartOf(p), per = E.period(), today = todayKey();
   const d = E.daily(p, today, turnsState(per.key).used, C);
   const open = isOpen(m) || (m === 'hana' && !!inv);
-  const pick = MASTERS.map(k => { const [bc, bt] = badgeOf(k); return `<a href="?m=${k}" class="mp mp-${k}${k === m ? ' is-on' : ''}"${k === m ? ' aria-current="page"' : ''}>${imgTag(k, 52, 'mp-img')}<b>${esc(MU.name[k])}</b><small>${esc(MU.field[k])}</small><em class="bdg bdg-${bc}">${esc(bt)}</em></a>`; }).join('');
+  // 위쪽 명인 선택: 사진과 담당 분야만 (이름·열림 표시 없음)
+  const pick = MASTERS.map(k => `<a href="?m=${k}" data-m="${k}" class="mp mp-${k}${k === m ? ' is-on' : ''}"${k === m ? ' aria-current="page"' : ''} aria-label="${esc(MU.name[k])}">${imgTag(k, 36, 'mp-img')}<small>${esc(MU.field[k])}</small></a>`).join('');
   const head = `<header class="mhead">${imgTag(m, 76, 'mh-img')}<div><h1>${esc(MU.title[m])}</h1><p>${esc(MU.field[m])}</p></div></header>`;
   let content = '';
   if (open) {
@@ -604,17 +612,43 @@ function renderMaster() {
   }
   app().innerHTML = `<nav class="mpick" aria-label="${esc(MU.pick)}">${pick}</nav><div class="mview m-${m}">${head}${content}</div>`;
   $('#unlockBtn')?.addEventListener('click', () => unlockWithAd(m, () => renderMaster()));
-  // 시운 다이얼: 칸을 누르면 그 시간 풀이로 이동
-  $('#sdial')?.addEventListener('click', e => {
-    const seg = e.target.closest('.seg'); if (!seg) return;
-    const i = +seg.dataset.i, el = document.getElementById(`hr-${i <= 2 ? 0 : i}`);
-    if (el) { el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' }); el.classList.add('is-flash'); setTimeout(() => el.classList.remove('is-flash'), 1400); }
-  });
+  // 시운 다이얼: 칸(시간대)을 누르면 그 시간의 풀이 하나만 아래에 보여 줌 (화면은 움직이지 않음)
+  const selHour = i => {
+    const svg = $('#sdial'); if (!svg) return;
+    $$('.seg', svg).forEach(x => x.classList.toggle('is-sel', +x.dataset.i === i));
+    const id = i <= 2 ? 0 : i;
+    $$('.hr-list .hr').forEach(x => { x.hidden = x.id !== `hr-${id}`; });
+    $('.c-top', svg).textContent = L.sijin[i]; $('.c-main', svg).textContent = d.hours[i]; $('.c-sub', svg).textContent = sijinRange(i);
+  };
+  $('#sdial')?.addEventListener('click', e => { const seg = e.target.closest('.seg'); if (seg) selHour(+seg.dataset.i); });
+  if ($('#sdial')) selHour(Math.floor(((nowMin() + 60) % 1440) / 120));
   if ($('#sdial')) requestAnimationFrame(() => requestAnimationFrame(() => $('#sdial')?.classList.add('is-in')));
   const now = $('.daeun .is-now'); if (now) now.parentElement.scrollLeft = now.offsetLeft - now.parentElement.offsetLeft - 16;
   if (m === 'hana' && open) bindCompat(p, inv);
   if ((tab === 'love' || location.hash === '#compat') && $('#compat')) setTimeout(() => $('#compat').scrollIntoView({ block: 'start' }), 60);
+  $$('.mpick a').forEach(a => a.addEventListener('click', e => { e.preventDefault(); goMaster(a.dataset.m); }));
+  fab(m);
   pushAds(app());
+}
+// 명인 바꾸기: 새로 불러오지 않고 화면만 부드럽게 바꿈
+function goMaster(k) {
+  const u = new URL(location.href); u.searchParams.set('m', k); u.hash = '';
+  history.pushState(null, '', u);
+  const a = app(); a.classList.add('is-out');
+  setTimeout(() => { window.scrollTo(0, 0); renderMaster(); a.classList.remove('is-out'); }, reduceMotion ? 0 : 160);
+}
+addEventListener('popstate', () => { if (HAS_M && ['master', 'saju', 'love'].includes(body.dataset.tab)) renderMaster(); });
+
+// ── 오른쪽 아래 떠 있는 버튼: 맨 위로 + (명인 화면) 지금 보고 있지 않은 명인 2명
+function fab(cur = null) {
+  let el = $('#fab');
+  if (!el) { el = document.createElement('div'); el.id = 'fab'; el.className = 'fab'; document.body.append(el); }
+  const others = HAS_M && cur ? MASTERS.filter(k => k !== cur) : [];
+  el.innerHTML = `<button type="button" class="fab-top" aria-label="${esc(U.toTop)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg></button>${others.map(k => `<a href="?m=${k}" class="fab-m mc-${k}" data-m="${k}" aria-label="${esc(M.ui.name[k])}">${imgTag(k, 44, 'fab-img')}</a>`).join('')}`;
+  el.querySelector('.fab-top').addEventListener('click', () => window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }));
+  el.querySelectorAll('.fab-m').forEach(a => a.addEventListener('click', e => { e.preventDefault(); goMaster(a.dataset.m); }));
+  const upd = () => el.classList.toggle('show-top', scrollY > 240);
+  upd(); if (!fab.bound) { addEventListener('scroll', () => $('#fab')?.classList.toggle('show-top', scrollY > 240), { passive: true }); fab.bound = true; }
 }
 
 // ── 하나의 궁합 (광고 별도). 초대 링크로 들어온 결과는 광고 없이 보여 줌
@@ -967,7 +1001,8 @@ ${adSlot('tab')}`;
     if (!inRange(v) || g2.left <= 0) return;
     g2.save({ used: g2.used + 1, data: v });
     history.replaceState(null, '', `?d=${v}`);
-    renderTime(true);
+    // 결과 전에 광고 창: 5초 동안 게이지가 찬 뒤 오른쪽 위 X를 누르면 결과가 보임 (관리자는 바로)
+    if (isAdmin()) renderTime(true); else adGate(() => renderTime(true));
   });
   $$('.quick button').forEach(b => b.addEventListener('click', () => { $('#tDate').value = b.dataset.k; $$('.quick button').forEach(x => x.classList.toggle('is-on', x === b)); }));
   $('#tSave').addEventListener('click', () => {
@@ -982,10 +1017,30 @@ ${adSlot('tab')}`;
   list(); pushAds(app());
 }
 
+// 광고 창(미래 운세 결과 전): 배너 광고 + 5초 로딩 게이지 → 닫기(X) 버튼이 나타남
+function adGate(done) {
+  const ov = document.createElement('div');
+  ov.className = 'adgate';
+  ov.innerHTML = `<div class="adgate-box" role="dialog" aria-modal="true" aria-label="${esc(U.ad)}">
+<button type="button" class="adgate-x" aria-label="${esc(U.closeAd)}" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+${adSlot('gate')}
+<div class="adgate-bar" aria-hidden="true"><i></i></div><p class="adgate-t">${esc(U.adLoading)}</p></div>`;
+  document.body.append(ov);
+  document.documentElement.classList.add('adgate-on');
+  pushAds(ov);
+  requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('on')));
+  const x = ov.querySelector('.adgate-x');
+  setTimeout(() => { x.hidden = false; ov.classList.add('done'); x.focus(); }, 5000);
+  x.addEventListener('click', () => {
+    ov.classList.remove('on'); document.documentElement.classList.remove('adgate-on');
+    setTimeout(() => ov.remove(), 260); done();
+  });
+}
+
 // ── 부적 탭: 이번 시간대(운명 바꾸기를 하면 새로)에 맞는 부적 1개를 무작위로 추천
 // 선물 링크로 들어오면 선물받은 부적을 보여 줌(입력 없이도 볼 수 있음)
 function charmOf(raw, per) {
-  const seed = raw ? `${raw.y}-${raw.m}-${raw.d}-${raw.sijin ?? ''}-${raw.name || ''}` : 'guest';
+  const seed = raw ? E.profileSeed(raw) : 'guest'; // 이름은 넣지 않음(같은 정보면 같은 부적)
   const r = E.rng(`charm#${seed}#${per.key}#${turnsState(per.key).used}`);
   return E.CHARMS[Math.floor(r() * E.CHARMS.length)];
 }
@@ -1047,6 +1102,18 @@ async function saveCharm(k, hq) {
 // 시작
 // ════════════════════════════════════════
 startHands();
+// 페이지 이동 시 부드럽게: 지원 브라우저는 CSS 화면 전환(@view-transition), 그 밖에는 본문을 살짝 흐리게 한 뒤 이동
+if (!('onpagereveal' in window) && !reduceMotion) {
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href]');
+    if (!a || e.defaultPrevented || a.target || e.metaKey || e.ctrlKey || e.shiftKey || a.hasAttribute('download')) return;
+    const u = new URL(a.href, location.href);
+    if (u.origin !== location.origin || (u.pathname === location.pathname && u.search === location.search)) return;
+    e.preventDefault(); document.documentElement.classList.add('leaving');
+    setTimeout(() => { location.href = u.href; }, 170);
+  });
+  addEventListener('pageshow', () => document.documentElement.classList.remove('leaving'));
+}
 if (body.classList.contains('page-input')) initInput();
 else if (body.classList.contains('page-result')) {
   const tab = body.dataset.tab;
@@ -1061,7 +1128,11 @@ else if (body.classList.contains('page-result')) {
       n.textContent = fmt(U.lockNote, { t: hhmm(E.period().next) });
       app().before(n);
     }
+    // 페이지에 들어오면 언제나 맨 위(오늘의 운세 점수)부터
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    if (!location.hash) window.scrollTo(0, 0);
     render();
+    if (!document.getElementById('fab')) fab();
     startTicker(() => { if (!lockedOther()) $('.lock-note')?.remove(); if (tab === 'fortune') renderFortune(false); else render(); });
   }
 }
