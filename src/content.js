@@ -66,7 +66,7 @@ export function dialSVG({ hours = null, labels, nowMin = null, best = -1, worst 
     const [hx, hy] = pt(R1 - 16, i * 30);
     const short = String(labels[i]);
     text += `<text x="${f(lx)}" y="${f(ly)}" class="dl${short.length > 6 ? ' dl-long dl-xl' : short.length > 2 ? ' dl-long' : ''}" text-anchor="middle" dominant-baseline="central">${esc(short)}</text>`;
-    text += `<text x="${f(hx)}" y="${f(hy)}" class="dh" text-anchor="middle" dominant-baseline="central">${String(i * 2).padStart(2, '0')}:00</text>`;
+    text += `<text x="${f(hx)}" y="${f(hy)}" class="dh${i === best ? ' dh-best' : ''}${i === worst ? ' dh-worst' : ''}" text-anchor="middle" dominant-baseline="central">${String(i * 2).padStart(2, '0')}:00</text>`;
   }
   for (let k = 0; k < 96; k++) { // 15분 눈금
     const deg = k * 3.75, major = k % 8 === 4;
@@ -137,8 +137,10 @@ export function startHands() {
   setTimeout(() => { tick(); setInterval(tick, 1000); }, 1000 - (Date.now() % 1000));
 }
 
+// 5칸 게이지: 단계별 색(1~2 붉음 · 3 호박 · 4~5 초록) + 숫자
 export function pips(v) {
-  return `<span class="pips" aria-label="${v}/5">${[1, 2, 3, 4, 5].map(n => `<i class="${n <= v ? 'on' : ''}"></i>`).join('')}</span>`;
+  const lv = v <= 2 ? 'lo' : v === 3 ? 'mid' : 'hi';
+  return `<span class="pips pips-${lv}" role="img" aria-label="${v}/5">${[1, 2, 3, 4, 5].map(n => `<i class="${n <= v ? 'on' : ''}"></i>`).join('')}<b>${v}<small>/5</small></b></span>`;
 }
 
 // 정적 목록 페이지: 항목별 오늘 점수. 일본어 별자리는 '오늘의 순위' 형식

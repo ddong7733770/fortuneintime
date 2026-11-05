@@ -141,6 +141,7 @@ ${font.includes('Noto+Serif+KR') ? '' : `<link rel="stylesheet" href="https://fo
 <link rel="stylesheet" href="/assets/style.css?v=${VERSION}">
 ${client ? `<meta name="google-adsense-account" content="${client}">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}" crossorigin="anonymous"></script>` : ''}
+<script type="speculationrules">{"prerender":[{"where":{"href_matches":"/*/result/*"},"eagerness":"moderate"}],"prefetch":[{"where":{"href_matches":"/*/result/*"},"eagerness":"eager"}]}</script>
 ${config.ga4 ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${config.ga4}"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${config.ga4}');</script>` : ''}
 <script>(function(){var h=location.hostname,p=/(^|[?&])ads=preview/.test(location.search);if(p||h==='localhost'||h==='127.0.0.1')document.documentElement.classList.add('ad-preview');${client ? "document.documentElement.classList.add('ads-on');" : ''}})();</script>
@@ -247,9 +248,9 @@ ${header(c)}
 <fieldset class="field"><legend>${esc(U.gender)}</legend><div class="seg-ctl"><label><input type="radio" name="gender" value="M" checked><span>${esc(U.male)}</span></label><label><input type="radio" name="gender" value="F"><span>${esc(U.female)}</span></label></div></fieldset>
 ${showLunar ? `<fieldset class="field"><legend>${esc(U.calendar)}</legend><div class="seg-ctl"><label><input type="radio" name="cal" value="solar" checked><span>${esc(U.solar)}</span></label><label><input type="radio" name="cal" value="lunar"><span>${esc(U.lunar)}</span></label></div><label class="check leap" hidden><input type="checkbox" name="leap"> ${esc(U.leap)}</label></fieldset>` : ''}
 <fieldset class="field"><legend>${esc(U.birth)}</legend><div class="ymd">
-<select name="y" aria-label="${esc(U.year)}"><option value="">${esc(U.year)}</option>${selectOpts(thisYear, 1930, null)}</select>
-<select name="m" aria-label="${esc(U.month)}"><option value="">${esc(U.month)}</option>${selectOpts(1, 12, null)}</select>
-<select name="d" aria-label="${esc(U.day)}"><option value="">${esc(U.day)}</option>${selectOpts(1, 31, null)}</select>
+<select name="y" aria-label="${esc(U.year)}"><option value="">${esc(U.year)}</option>${selectOpts(thisYear, 1930, 2000)}</select>
+<select name="m" aria-label="${esc(U.month)}"><option value="">${esc(U.month)}</option>${selectOpts(1, 12, 1)}</select>
+<select name="d" aria-label="${esc(U.day)}"><option value="">${esc(U.day)}</option>${selectOpts(1, 31, 1)}</select>
 </div></fieldset>
 <fieldset class="field"><legend>${esc(U.birthTime)}</legend>
 <select name="sijin"><option value="">${esc(U.unknown)}</option>${sijinOpts}</select>

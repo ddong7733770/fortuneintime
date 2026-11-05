@@ -2,7 +2,7 @@
 // 문장은 L.masters(src/i18n/masters/ko.js), 계산은 masters.js. 같은 사람·같은 날이면 언제나 같은 결과
 import { SJ } from './engine.js';
 import * as MS from './masters.js';
-import { dialSVG, dialLabels, sijinRange } from './content.js';
+import { dialSVG, dialLabels, sijinRange, pips as gauge } from './content.js';
 import { esc, fmt, pickR, todayReading, domainReading, sajuSections, stemName } from './saju-view.js';
 
 const DOMS = ['wealth', 'love', 'work', 'health'];
@@ -20,9 +20,22 @@ export function fortuneDomain(M, S, d, k) {
   const t = domainReading(S, d, k, D);
   return k === 'love' ? t.replace('{star}', loveStar(d.saju.chart)) : t;
 }
-export function fortuneBasicHTML(M, S, d) {
+export function fortuneBasicHTML(M, S, d, dateK = null) {
   const t = fortuneReading(M, S, d), F = M.fortune;
-  return `<h3>${esc(F.focus)}</h3><p class="m-p">${esc(t.focus)}</p><h3>${esc(F.advice)}</h3><p class="m-p">${esc(t.advice)}</p>`;
+  const wk = dateK ? weekendText(M, d, dateK) : '';
+  return `<h3>${esc(F.focus)}</h3><p class="m-p">${esc(t.focus)}</p><h3>${esc(F.advice)}</h3><p class="m-p">${esc(t.advice)}</p>${wk ? `<div class="wkend"><h3>${esc(F.weekend.title)}</h3><p class="m-p">${esc(wk)}</p></div>` : ''}`;
+}
+// 토·일요일에만: 외출·여행·외식·데이트 등 휴일 운세 (점수 구간 · 오늘의 십신 · 용신 · 약한 분야 · 애정 단계로 고름)
+export function weekendText(M, d, dateK) {
+  const [y, m, dd] = dateK.split('-').map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, dd)).getUTCDay();
+  if (dow !== 0 && dow !== 6) return '';
+  const W = M.fortune.weekend, r = d.rolls, { chart, ev } = d.saju;
+  const grp = SJ.groupOf(ev.tgS), fav = SJ.elValue(chart, SJ.STEM_EL[ev.stem]) >= 0 ? 0 : 1;
+  const weak = DOMS.reduce((a, k) => (d.domains[k] < d.domains[a] ? k : a), 'wealth');
+  const out = [pickR(W.lead[d.band], r[12]), pickR(W.act[grp][fav], r[13]), pickR(W.place[chart.fav.yong], r[14])];
+  if (d.domains[weak] <= 3) out.push(pickR(W.care[weak], r[15])); else out.push(pickR(W.who[lvl(d.domains.love)], r[16]));
+  return out.join(' ');
 }
 
 // 오늘 탭의 명인 카드 한 줄
@@ -46,15 +59,16 @@ export function siunHTML(M, L, d, chart, nowMinute) {
     const avoid = h.rel === 'chung' ? H.avoidChung : H.avoid[h.grp];
     const body = h.dawn ? `<p class="m-p">${esc(H.dawn)} ${esc(g)}</p>`
       : `<p class="m-p">${esc(g)}${rl ? ` ${esc(rl)}` : ''}</p><p class="hr-do"><span>${esc(H.doLabel)}</span>${esc(H.doIt[h.tg])}<span>${esc(H.avoidLabel)}</span>${esc(avoid)}</p>`;
-    return `<article class="hr hr-b${h.band}${h.i === cur ? ' is-now' : ''}${h.dawn ? ' is-dawn' : ''}" id="hr-${h.i}"${h.i === cur ? '' : ' hidden'}>
-<header><b>${esc(L.sijin[h.i])}</b><span class="hr-t">${sijinRange(h.i)}</span>${h.i === cur ? `<em>${esc(U.siunNow)}</em>` : ''}<span class="hr-s">${h.score}</span><span class="hr-band">${esc(U.band[h.band])}</span></header>
+    const bw = h.i === best.i ? 'best' : h.i === worst.i ? 'worst' : '';
+    return `<article class="hr hr-b${h.band}${h.i === cur ? ' is-now' : ''}${h.dawn ? ' is-dawn' : ''}${bw ? ` is-${bw}` : ''}" id="hr-${h.i}"${h.i === cur ? '' : ' hidden'}>
+<header><b>${esc(L.sijin[h.i])}</b><span class="hr-t">${sijinRange(h.i)}</span>${h.i === cur ? `<em>${esc(U.siunNow)}</em>` : ''}${bw ? `<em class="hr-tag t-${bw}">${esc(U[bw === 'best' ? 'bestTag' : 'worstTag'])}</em>` : ''}<span class="hr-s">${h.score}</span><span class="hr-band">${esc(U.band[h.band])}</span></header>
 ${body}</article>`;
   };
   const list = [3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => card(hs[i])).join('');
   const sleep = `<article class="hr is-sleep${cur <= 2 ? ' is-now' : ''}" id="hr-0"${cur <= 2 ? '' : ' hidden'}><header><b>${esc(L.sijin[0])} · ${esc(L.sijin[1])} · ${esc(L.sijin[2])}</b><span class="hr-t">${esc(U.sleepRange)}</span></header><p class="m-p">${esc(H.sleep)}</p></article>`;
   const sum = `${fmt(H.summary, { best: hourName(L, best.i), worst: hourName(L, worst.i) })} ${pickR(H.summaryTail, d.rolls[8])}`;
   const dial = dialSVG({ hours: d.hours, labels: dialLabels(L), nowMin: nowMinute, best: best.i, worst: worst.i, size: 300, id: 'sdial', centerTop: `${U.siunNow} ${L.sijin[cur]}`, centerMain: d.hours[cur], centerSub: sijinRange(cur) });
-  return sec('siun', U.secs.siun, `<p class="m-lead">${esc(sum)}</p><div class="siun-box"><div class="siun-dial">${dial}</div><p class="dial-hint">${esc(U.siunHint)}</p><div class="hr-list">${list}${sleep}</div></div>`, 'siun');
+  return sec('siun', U.secs.siun, `<p class="m-lead">${esc(sum)}</p><div class="siun-box"><div class="siun-dial">${dial}</div><p class="dial-legend"><span><i class="lg-best"></i>${esc(U.bestTag)} ${esc(L.sijin[best.i])}</span><span><i class="lg-worst"></i>${esc(U.worstTag)} ${esc(L.sijin[worst.i])}</span></p><p class="dial-hint">${esc(U.siunHint)}</p><div class="hr-list">${list}${sleep}</div></div>`, 'siun');
 }
 export function haewoonSections(M, S, L, d, chart, nowMinute) {
   const x = sajuSections(S, chart, { O: M.haewoon.ov, overallTitle: M.ui.secs.overall });
@@ -76,7 +90,7 @@ export function hanaSections(M, S, d, chart, now = new Date()) {
   const type = [fmt(H.type.attract, { p: H.elPerson[atEl], el: S.el[atEl] }), fmt(H.type.match, { p: H.elPerson[yEl], el: S.el[yEl] }), fmt(H.type.animals, { a: an(pe.match) }), atEl !== yEl ? H.type.tip : ''].filter(Boolean);
   // 3) 오늘의 인연 흐름
   const todayT = domainReading(S, d, 'love', H.today).replace('{star}', loveStar(chart));
-  const pips = `<p class="m-level"><span>${esc(M.fortune.domName.love)}</span>${[1, 2, 3, 4, 5].map(n => `<i class="${n <= d.domains.love ? 'on' : ''}"></i>`).join('')}</p>`;
+  const pips = `<p class="m-level"><span>${esc(M.fortune.domName.love)}</span>${gauge(d.domains.love)}</p>`;
   // 4) 인연 시기: 앞으로 6개월 + 올해
   const ms = MS.monthScan(chart, now.getFullYear(), now.getMonth() + 1, 6).map(mo => ({ mo, ...MS.loveSignals(chart, mo) }));
   const keep = ms.filter(x => x.sig.length || x.warn.includes('dayChung'));
@@ -143,26 +157,45 @@ export function dohanSections(M, S, L, d, chart, now = new Date()) {
   const fields = [`${fmt(DH.fields.lead, { el: S.el[Y] })} (${DH.fields.list[Y]})`, fmt(DH.fields.roleLine, { r: DH.fields.role[Y] }), fmt(DH.fields.strength, { t: S.ten[topTen].split('(')[0], trait: S.tenTrait[topTen] })];
   // 3) 보고·회의·계약 시간
   const wh = MS.workHours(chart, d);
-  const hrLine = (kind, x) => {
-    const best = x.best.map(h => {
-      const why = [x.pref.includes(h.grp) ? DH.hours.why[h.grp] : DH.hours.plain, (h.rel === 'hap' || h.rel === 'samhap') ? DH.hours.hap : '', x.pref.includes(h.grp) && !h.fav ? DH.hours.unfavNote : ''].filter(Boolean).join(' ');
-      return `<li><b>${esc(hourName(L, h.i))}</b><span class="hr-s">${h.score}</span><p>${esc(why)}</p></li>`;
+  const H2 = DH.hours2;
+  // 같은 사람·같은 날이면 같은 문장: 그날의 난수(rolls)로 표현만 고름
+  const pk = (arr, n) => arr[(Math.floor((d.rolls[n % d.rolls.length] || 0) * 997) + n) % arr.length];
+  const KINDS = ['report', 'meeting', 'contract'];
+  const kindBox = (kind, x, ki) => {
+    const goods = x.best.map((h, j) => {
+      const n = 10 + ki * 6 + j * 3;
+      const fit = x.pref.includes(h.grp) ? pk(H2.fit[kind], n + 1) : pk(H2.fit.plain, n + 1);
+      const t = [pk(H2.why[h.grp], n), fit, (h.rel === 'hap' || h.rel === 'samhap') ? pk(H2.hap, n + 2) : '', x.pref.includes(h.grp) && !h.fav ? pk(H2.unfav, n + 2) : '', pk(H2.act[kind], n + j + 2)].filter(Boolean).join(' ');
+      return `<li><b>${esc(hourName(L, h.i))}</b><span class="hr-s">${h.score}</span><p>${esc(t)}</p></li>`;
     }).join('');
-    const w = x.worst, wWhy = w.rel === 'chung' ? DH.hours.worst.chung : (w.rel === 'hyeong' || w.rel === 'hae') ? DH.hours.worst.clash : DH.hours.worst.low;
-    return `<div class="wk"><h3>${esc(U.kinds[kind])}</h3><ul class="wk-good">${best}</ul><p class="wk-bad"><span>${esc(U.avoid)}</span><b>${esc(hourName(L, w.i))}</b> ${esc(wWhy)}</p></div>`;
+    const w = x.worst, n = 30 + ki * 2;
+    const wType = w.rel === 'chung' ? 'chung' : (w.rel === 'hyeong' || w.rel === 'hae') ? 'clash' : 'low';
+    const wt = `${pk(H2.worst[wType], n)} ${pk(H2.avoidAct[kind], n + 1)}`;
+    return `<div class="wk-k"><h3>${esc(U.kinds[kind])}</h3><p class="wk-lbl good">${esc(H2.good)}</p><ul class="wk-good">${goods}</ul>
+<p class="wk-lbl bad">${esc(H2.bad)}</p><div class="wk-bad"><div class="wk-bh"><b>${esc(hourName(L, w.i))}</b><span class="hr-s">${w.score}</span></div><p>${esc(wt)}</p></div></div>`;
   };
-  const hours = `${p(DH.hours.lead)}${['report', 'meeting', 'contract'].map(k => hrLine(k, wh[k])).join('')}`;
-  // 4) 이번 달·올해 커리어 흐름
+  const hours = `${p(H2.lead)}<div class="wk-box">${KINDS.map((k, i) => kindBox(k, wh[k], i)).join('')}</div>`;
   const ms = MS.monthScan(chart, now.getFullYear(), now.getMonth() + 1, 4);
+  const F2 = DH.flow2;
   const toneIx = t => (t === 2 ? 0 : t === 1 ? 1 : 2);
   const m0 = ms[0], sig0 = MS.careerSignals(chart, m0);
   const yi = MS.yearInfo(chart, now.getFullYear()), sigY = MS.careerSignals(chart, yi);
   const sigs = [...new Set([...sig0, ...sigY])].slice(0, 2);
   const da = MS.currentDaeun(chart, now.getTime());
-  const flow = `<h3>${esc(U.thisMonth)}</h3>${p(DH.flow.month[m0.grpS][toneIx(m0.tone)])}
-<h3>${esc(U.next3)}</h3><ul class="m-months">${ms.slice(1).map(x => `<li class="t${x.tone}"><b>${x.m}월</b><span>${esc(DH.flow.short[x.grpS])} · ${esc(DH.flow.tone[x.tone])}</span></li>`).join('')}</ul>
-<h3>${esc(U.thisYear)}</h3>${p(DH.flow.year[yi.grpS][yi.tone === 0 ? 1 : 0])}
-${sigs.length ? sigs.map(s => p(DH.flow.sig[s])).join('') : p(DH.flow.noSig)}
+  // 이번 달 기운과 내 월지·일지의 관계
+  const mr = m0.ev.rels.filter(r => r.pos === 'month' || r.pos === 'day');
+  const relK = mr.some(r => r.type === 'chung') ? 'chung' : mr.some(r => r.type === 'hyeong' || r.type === 'hae') ? 'clash' : mr.some(r => r.type === 'hap' || r.type === 'samhap') ? 'hap' : 'none';
+  // 달·해 문장은 그 달(해)의 간지로 고름 → 같은 달 안에서는 매일 같은 풀이
+  const mk = (m0.gz.stem * 12 + m0.gz.branch), yk = (yi.gz.stem * 12 + yi.gz.branch);
+  const at = (arr, k) => arr[k % arr.length];
+  const ti = toneIx(m0.tone);
+  const monthT = [at(F2.theme[m0.grpS][ti], mk), at(F2.detail[m0.grpS], mk + 1), at(F2.rel[relK], mk + 2), at(F2.toneAdv[ti], mk + 3), at(F2.closing[ti], mk + 4)].join(' ');
+  const yT = yi.tone === 0 ? 1 : 0;
+  const yearT = [at(F2.year[yi.grpS][yT], yk), at(F2.yDetail[yi.grpS], yk + 1), at(F2.yClose[yT], yk + 2)].join(' ');
+  const flow = `<h3>${esc(U.thisMonth)}</h3>${p(monthT)}
+<h3>${esc(U.next3)}</h3><ul class="m-months m-months-l">${ms.slice(1).map(x => { const k = x.gz.stem * 12 + x.gz.branch; return `<li class="t${x.tone}"><b>${x.m}월</b><span><em>${esc(DH.flow.short[x.grpS])} · ${esc(DH.flow.tone[x.tone])}</em> ${esc(at(F2.hint[x.grpS], k))} ${esc(at(F2.toneAdv[toneIx(x.tone)], k + 1))}</span></li>`; }).join('')}</ul>
+<h3>${esc(U.thisYear)}</h3>${p(yearT)}
+${sigs.length ? sigs.map((sg, i) => p(at(F2.sig[sg], yk + mk + i))).join('') : p(at(F2.noSig, yk))}
 ${da ? p(fmt(DH.flow.daeun, { gz: `${SJ.STEM_K[da.stem]}${SJ.BRANCH_K[da.branch]}(${SJ.STEM_H[da.stem]}${SJ.BRANCH_H[da.branch]})`, desc: S.daeunText[da.grp][da.tone === 0 ? 1 : 0].split(' — ')[1] })) : ''}`;
   // 5) 협업
   const collab = [fmt(DH.collab.noble, { a: an(pe.noble) }), fmt(DH.collab.match, { a: an(pe.match) }), fmt(DH.collab.clash, { a: an(pe.clash) }), gw[0] >= 3 ? DH.collab.rob : gw[0] <= 0.5 ? DH.collab.alone : DH.collab.mid];

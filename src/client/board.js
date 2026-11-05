@@ -62,7 +62,7 @@ export function mountBoard(root, { C, L, U, getName, isAdmin, getGate, onWrote }
       const r = await fetch(`/api/board?lang=${lang}${before ? `&before=${before}` : ''}`).then(x => x.json());
       if (!r.ok) throw new Error(r.error);
       if (reset && !r.items.length) $('#bList').innerHTML = `<li class="b-empty">${esc(B.boardEmpty)}</li>`;
-      $('#bList').insertAdjacentHTML('beforeend', r.items.map(it => `<li class="b-it" data-id="${it.id}"><button type="button" class="b-row"><b>${esc(it.title)}</b>${it.has_img ? '<i class="b-ic" aria-hidden="true"></i>' : ''}<span>${esc(it.name === '__admin__' ? B.boardAdminName : it.name)} · ${esc(country(it.country))} · ${esc(when(it.created))}</span></button><div class="b-body" hidden></div></li>`).join(''));
+      $('#bList').insertAdjacentHTML('beforeend', r.items.map(it => `<li class="b-it" data-id="${it.id}"><button type="button" class="b-row"><b>${esc(it.title)}</b>${it.has_img ? '<i class="b-ic" aria-hidden="true"></i>' : ''}<em class="b-pre">${esc(String(it.preview || '').replace(/\s+/g, ' '))}</em><span>${esc(it.name === '__admin__' ? B.boardAdminName : it.name)} · ${esc(country(it.country))} · ${esc(when(it.created))}</span></button><div class="b-body" hidden></div></li>`).join(''));
       if (r.items.length) before = r.items[r.items.length - 1].id;
       $('#bMore').hidden = !r.more;
     } catch (e) {

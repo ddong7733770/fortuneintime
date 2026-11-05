@@ -63,6 +63,8 @@ function adSlot(name) {
     : `<div class="ad-mock">${esc(U.adMock)} ${name}</div>`}</aside>`;
 }
 function pushAds(root = document) {
+  // 미리 그려 둔(프리렌더) 화면에서는 실제로 열릴 때 광고를 요청
+  if (document.prerendering) { document.addEventListener('prerenderingchange', () => pushAds(root), { once: true }); return; }
   $$('ins.adsbygoogle', root).forEach(ins => {
     if (ins.dataset.pushed || ins.closest('[hidden]')) return;
     ins.dataset.pushed = '1';
@@ -100,7 +102,7 @@ async function shareCanvas(canvas, filename, text) {
 const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
 
 // 다이얼 SVG를 그림 파일로 그릴 때 필요한 스타일(외부 CSS가 적용되지 않으므로)
-const SVG_STYLE = `<style>.rim{fill:#1A1A1A}.bowl{fill:#fff}.tk{stroke:#CFC9BC;stroke-width:1}.tk-m{stroke:#1A1A1A;stroke-width:1.4}.seg{stroke:#fff;stroke-width:1.2}.dl{fill:#1A1A1A;font:600 15px serif}.dl-long{font-size:9px}.dl-xl{font-size:8px}.hub{fill:#fff;stroke:#1A1A1A;stroke-width:1}.c-top{fill:#6E6A62;font:12px sans-serif}.c-sm{font-size:10px}.c-xs{font-size:8.6px}.dh{fill:#3A3631;font:700 9px sans-serif}.c-main{fill:#B3261E;font:700 34px serif}.c-sub{fill:#6E6A62;font:12px sans-serif}.needle line{stroke:#1A1A1A;stroke-width:2.5}.needle circle{fill:#B3261E}.sec-hand{display:none}.seg.is-best{stroke:#1A1A1A;stroke-width:2.4}.seg.is-worst{stroke:#8C877D;stroke-width:2;stroke-dasharray:4 3}</style>`;
+const SVG_STYLE = `<style>.rim{fill:#1A1A1A}.bowl{fill:#fff}.tk{stroke:#CFC9BC;stroke-width:1}.tk-m{stroke:#1A1A1A;stroke-width:1.4}.seg{stroke:#fff;stroke-width:1.2}.dl{fill:#1A1A1A;font:600 15px serif}.dl-long{font-size:9px}.dl-xl{font-size:8px}.hub{fill:#fff;stroke:#1A1A1A;stroke-width:1}.c-top{fill:#6E6A62;font:12px sans-serif}.c-sm{font-size:10px}.c-xs{font-size:8.6px}.dh{fill:#3A3631;font:700 9px sans-serif}.c-main{fill:#B3261E;font:700 34px serif}.c-sub{fill:#6E6A62;font:12px sans-serif}.needle line{stroke:#1A1A1A;stroke-width:2.5}.needle circle{fill:#B3261E}.sec-hand{display:none}.seg.is-best{fill:#C2302A;stroke:#7E1712;stroke-width:2.4}.seg.is-worst{fill:#3F4A5E;stroke:#1F2633;stroke-width:2}.dh-best,.dh-worst{fill:#fff}</style>`;
 function svgToImg(svg) {
   const s = svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/(<svg[^>]*>)/, `$1${SVG_STYLE}`)
     .replace(/<g class="needle" style="--deg:([\d.]+)deg">/, (_, d) => `<g class="needle" transform="rotate(${d} 160 160)">`)
@@ -482,7 +484,12 @@ function visitCount(k) {
   const raw = activeRaw(); if (!raw) return 1;
   const seed = E.profileSeed(raw), t = todayKey(), v = store.get('visits', {});
   const rec = { n: 0, last: '', ...((v[seed] || {})[k] || {}) };
-  if (rec.last !== t) { rec.n += 1; rec.last = t; v[seed] = { ...(v[seed] || {}), [k]: rec }; store.set('visits', v); }
+  if (rec.last !== t) {
+    rec.n += 1; rec.last = t;
+    const save = () => { const v2 = store.get('visits', {}); v2[seed] = { ...(v2[seed] || {}), [k]: rec }; store.set('visits', v2); };
+    // 미리 그려 둔 화면은 사용자가 실제로 열었을 때만 방문으로 셈
+    if (document.prerendering) document.addEventListener('prerenderingchange', save, { once: true }); else save();
+  }
   return rec.n;
 }
 const masterImg = k => (k === 'haewoon' ? D.images.master : D.images[k]);
@@ -522,7 +529,7 @@ ${mode === 'reveal' ? `<p class="fate-arrived" role="status">${esc(U.fateArrived
 
 
 <section class="sec m-basic${mode === 'reveal' ? ' fate-soft' : ''}"><h2>${esc(M.fortune.title)}</h2>
-${MV.fortuneBasicHTML(M, S, d)}
+${MV.fortuneBasicHTML(M, S, d, today)}
 <ul class="domains">${['wealth', 'love', 'work', 'health'].map(k => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(MV.fortuneDomain(M, S, d, k))}</span></li>`).join('')}</ul>
 </section>
 ${basisHTML(S, d, `/${C}/result/master/?m=haewoon`)}
@@ -665,9 +672,9 @@ function compatBlock(viaInvite) {
 <label class="field"><span>${esc(U.partnerName)} <small>${esc(U.optional)}</small></span><input name="name" maxlength="20" value="${esc(pv.name || '')}"></label>
 <fieldset class="field"><legend>${esc(U.gender)}</legend><div class="seg-ctl"><label><input type="radio" name="gender" value="M"${pv.gender !== 'F' ? ' checked' : ''}><span>${esc(U.male)}</span></label><label><input type="radio" name="gender" value="F"${pv.gender === 'F' ? ' checked' : ''}><span>${esc(U.female)}</span></label></div></fieldset>
 <fieldset class="field"><legend>${esc(U.birth)}</legend><div class="ymd">
-<select name="y" aria-label="${esc(U.year)}"><option value="">${esc(U.year)}</option>${opt(thisYear, 1930, pv.y)}</select>
-<select name="m" aria-label="${esc(U.month)}"><option value="">${esc(U.month)}</option>${opt(1, 12, pv.m)}</select>
-<select name="d" aria-label="${esc(U.day)}"><option value="">${esc(U.day)}</option>${opt(1, 31, pv.d)}</select></div></fieldset>
+<select name="y" aria-label="${esc(U.year)}"><option value="">${esc(U.year)}</option>${opt(thisYear, 1930, pv.y || 2000)}</select>
+<select name="m" aria-label="${esc(U.month)}"><option value="">${esc(U.month)}</option>${opt(1, 12, pv.m || 1)}</select>
+<select name="d" aria-label="${esc(U.day)}"><option value="">${esc(U.day)}</option>${opt(1, 31, pv.d || 1)}</select></div></fieldset>
 <label class="field"><span>${esc(U.birthTime)} <small>${esc(U.optional)}</small></span><select name="sijin"><option value="">${esc(U.unknown)}</option>${L.sijin.map((s, i) => `<option value="${i}"${pv.sijin === i ? ' selected' : ''}>${esc(s)} (${sijinRange(i)})</option>`).join('')}</select></label>
 <p class="form-err" id="loveErr" hidden>${esc(U.required)}</p>
 <button class="btn-primary" type="submit">${esc(U.analyze)}</button>
@@ -688,7 +695,7 @@ function bindCompat(p, inv) {
     const tog = da.map((h, i) => Math.round((h + db[i]) / 2));
     const bh = [4, 5, 6, 7, 8, 9, 10, 11].reduce((a, i) => (tog[i] > tog[a] ? i : a), 4);
     const nm1 = esc(p.name || U.me || '나'), nm2 = esc(pt.name || M.ui.relKinds[pt.kind || 'lover']);
-    const bar = v => `<span class="pips">${[1, 2, 3, 4, 5].map(n => `<i class="${n <= v ? 'on' : ''}"></i>`).join('')}</span>`;
+    const bar = v => pips(v);
     out.innerHTML = `<div class="love-res">
 <p class="pair"><span>${nm1}</span><i aria-hidden="true">+</i><span>${nm2}</span></p>
 <p class="big-score"><span id="loveNum">0</span><small>/100</small></p><p class="score-label">${esc(U.loveScore)}</p></div>
@@ -874,9 +881,9 @@ ${inv ? `<p class="invite-banner">${esc(fmt(U.invitedBy, { n: inv.n || '?' }))}<
 <form id="loveForm" class="form compact"${canAsk ? '' : ' hidden'}>
 <label class="field"><span>${esc(U.partnerName)} <small>${esc(U.optional)}</small></span><input name="name" maxlength="20" value="${esc(pv?.name || '')}"></label>
 <fieldset class="field"><legend>${esc(U.birth)}</legend><div class="ymd">
-<select name="y" aria-label="${esc(U.year)}"><option value="">${esc(U.year)}</option>${opt(thisYear, 1930, pv?.y)}</select>
-<select name="m" aria-label="${esc(U.month)}"><option value="">${esc(U.month)}</option>${opt(1, 12, pv?.m)}</select>
-<select name="d" aria-label="${esc(U.day)}"><option value="">${esc(U.day)}</option>${opt(1, 31, pv?.d)}</select></div></fieldset>
+<select name="y" aria-label="${esc(U.year)}"><option value="">${esc(U.year)}</option>${opt(thisYear, 1930, pv?.y || 2000)}</select>
+<select name="m" aria-label="${esc(U.month)}"><option value="">${esc(U.month)}</option>${opt(1, 12, pv?.m || 1)}</select>
+<select name="d" aria-label="${esc(U.day)}"><option value="">${esc(U.day)}</option>${opt(1, 31, pv?.d || 1)}</select></div></fieldset>
 <label class="field"><span>${esc(U.birthTime)} <small>${esc(U.optional)}</small></span><select name="sijin"><option value="">${esc(U.unknown)}</option>${L.sijin.map((s, i) => `<option value="${i}"${pv?.sijin === i ? ' selected' : ''}>${esc(s)} (${sijinRange(i)})</option>`).join('')}</select></label>
 <div class="two">
 <label class="field"><span>${esc(U.blood)}</span><select name="blood"><option value="">${esc(U.none)}</option>${BLOOD_LABEL.map((b, i) => `<option value="${i}"${pv?.blood === i ? ' selected' : ''}>${b}</option>`).join('')}</select></label>
@@ -1110,8 +1117,16 @@ if (!('onpagereveal' in window) && !reduceMotion) {
     const u = new URL(a.href, location.href);
     if (u.origin !== location.origin || (u.pathname === location.pathname && u.search === location.search)) return;
     e.preventDefault(); document.documentElement.classList.add('leaving');
-    setTimeout(() => { location.href = u.href; }, 170);
+    setTimeout(() => { location.href = u.href; }, 110);
   });
+  // 손가락이 닿는 순간 다음 페이지를 미리 받아 둠(누르고 떼는 사이에 받아져 이동이 빨라짐)
+  const pre = new Set();
+  document.addEventListener('touchstart', e => {
+    const a = e.target.closest('a[href]'); if (!a) return;
+    const u = new URL(a.href, location.href);
+    if (u.origin !== location.origin || pre.has(u.href)) return;
+    pre.add(u.href); const l = document.createElement('link'); l.rel = 'prefetch'; l.href = u.href; document.head.append(l);
+  }, { passive: true });
   addEventListener('pageshow', () => document.documentElement.classList.remove('leaving'));
 }
 if (body.classList.contains('page-input')) initInput();

@@ -15,7 +15,7 @@
 const LANGS = ['ko', 'ja', 'zh', 'en', 'es', 'id'];
 const MAX_IMG = 500 * 1024;
 const IMG_TYPES = ['image/jpeg', 'image/webp', 'image/png'];
-const PAGE = 20;
+const PAGE = 10; // 목록 한 번에 10개
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const err = (code, status = 400) => json({ ok: false, error: code }, status);
@@ -78,8 +78,8 @@ async function board(request, env, url) {
   if (request.method === 'GET' && path === '') {
     const lang = url.searchParams.get('lang') || 'all', before = +url.searchParams.get('before') || 2e9;
     const q = lang === 'all' || !LANGS.includes(lang)
-      ? db.prepare('SELECT id, lang, country, name, title, has_img, created FROM posts WHERE id < ? ORDER BY id DESC LIMIT ?').bind(before, PAGE + 1)
-      : db.prepare('SELECT id, lang, country, name, title, has_img, created FROM posts WHERE lang = ? AND id < ? ORDER BY id DESC LIMIT ?').bind(lang, before, PAGE + 1);
+      ? db.prepare('SELECT id, lang, country, name, title, substr(body, 1, 120) AS preview, has_img, created FROM posts WHERE id < ? ORDER BY id DESC LIMIT ?').bind(before, PAGE + 1)
+      : db.prepare('SELECT id, lang, country, name, title, substr(body, 1, 120) AS preview, has_img, created FROM posts WHERE lang = ? AND id < ? ORDER BY id DESC LIMIT ?').bind(lang, before, PAGE + 1);
     const { results } = await q.all();
     return json({ ok: true, items: results.slice(0, PAGE), more: results.length > PAGE });
   }
