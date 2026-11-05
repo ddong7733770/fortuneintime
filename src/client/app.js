@@ -724,6 +724,57 @@ ${cp.lines.map(t => `<p class="m-p">${esc(t)}</p>`).join('')}
   });
 }
 
+// ════════ 관리자 탭: 접속 트래픽 (국가·언어·기기 / 연·월·주·일) ════════
+function renderAdmin() {
+  if (!isAdmin()) { location.replace(`/${C}/result/fortune/`); return; }
+  const st = { by: session.get('adm_by') || 'day', range: session.get('adm_range') || '30' };
+  const kst = d => new Date(d.getTime() + 9 * 3600e3).toISOString().slice(0, 10);
+  const rangeFrom = r => (r === 'all' ? '2000-01-01' : kst(new Date(Date.now() - (Number(r) - 1) * 864e5)));
+  const dn = (() => { try { return new Intl.DisplayNames(['ko'], { type: 'region' }); } catch { return null; } })();
+  const LN = { ko: '한국어', ja: '일본어', zh: '중국어', en: '영어', es: '스페인어', id: '인도네시아어', etc: '기타' };
+  const DV = { mobile: '모바일', tablet: '태블릿', desktop: 'PC' };
+  const BY = { day: '일별', week: '주별', month: '월별', year: '연별' };
+  const RG = { 7: '최근 7일', 30: '최근 30일', 90: '최근 90일', 365: '최근 1년', all: '전체' };
+  const num = n => Number(n || 0).toLocaleString('ko-KR');
+  app().innerHTML = `<section class="sec adm"><h1 class="page-h">접속 트래픽</h1><p class="muted small">개인 정보 없이 날짜·국가·언어·기기별 숫자만 집계합니다. 날짜는 한국 시간 기준이며, 관리자 본인의 접속은 빠집니다.</p>
+<div class="adm-ctl"><div class="adm-seg" id="admBy">${Object.entries(BY).map(([k, v]) => `<button type="button" data-v="${k}" aria-pressed="${k === st.by}">${v}</button>`).join('')}</div>
+<select id="admRange">${Object.entries(RG).map(([k, v]) => `<option value="${k}"${k === st.range ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
+<div id="admOut"><p class="muted">불러오는 중…</p></div></section>`;
+  const bar = (rows, label) => {
+    const max = Math.max(1, ...rows.map(r => r.pv));
+    const tot = rows.reduce((a, r) => a + r.pv, 0) || 1;
+    return `<table class="adm-t"><thead><tr><th></th><th>페이지뷰</th><th>방문자</th><th>비율</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(label(r.k))}</td><td>${num(r.pv)}</td><td>${num(r.uv)}</td><td><span class="adm-bar"><i style="width:${(r.pv / max) * 100}%"></i></span><em>${Math.round((r.pv / tot) * 100)}%</em></td></tr>`).join('') || '<tr><td colspan="4" class="muted">데이터가 없습니다</td></tr>'}</tbody></table>`;
+  };
+  const chart = rows => {
+    if (!rows.length) return '<p class="muted">아직 데이터가 없습니다.</p>';
+    const W = 340, H = 160, n = rows.length, max = Math.max(1, ...rows.map(r => r.pv));
+    const bw = Math.max(2, (W - 10) / n - 2);
+    const bars = rows.map((r, i) => { const x = 5 + i * ((W - 10) / n), h = (r.pv / max) * (H - 30), hu = (r.uv / max) * (H - 30); return `<g><title>${esc(r.k)} · 페이지뷰 ${num(r.pv)} · 방문자 ${num(r.uv)}</title><rect x="${x}" y="${H - 18 - h}" width="${bw}" height="${h}" class="b-pv"/><rect x="${x}" y="${H - 18 - hu}" width="${bw}" height="${hu}" class="b-uv"/></g>`; }).join('');
+    const lab = i => `<text x="${5 + i * ((W - 10) / n) + bw / 2}" y="${H - 4}" text-anchor="${i === 0 ? 'start' : 'end'}">${esc(rows[i].k)}</text>`;
+    return `<svg class="adm-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="추이 그래프">${bars}${lab(0)}${n > 1 ? lab(n - 1) : ''}</svg><p class="adm-legend"><span><i class="b-pv"></i>페이지뷰</span><span><i class="b-uv"></i>방문자</span><span class="muted">최고 ${num(max)}</span></p>`;
+  };
+  const load = async () => {
+    const out = $('#admOut');
+    const name = (profile()?.name || '').trim();
+    try {
+      const r = await fetch(`/api/stats?by=${st.by}&from=${rangeFrom(st.range)}&to=${kst(new Date())}`, { headers: { 'x-admin': encodeURIComponent(name) } }).then(x => x.json());
+      if (!r.ok) throw new Error(r.error);
+      const t = r.total || {};
+      out.innerHTML = `<div class="adm-cards"><div><span>페이지뷰</span><b>${num(t.pv)}</b></div><div><span>방문자</span><b>${num(t.uv)}</b></div><div><span>국가 수</span><b>${num(t.countries)}</b></div></div>
+<h2>${BY[st.by]} 추이</h2>${chart(r.series)}
+<details class="adm-more"><summary>${BY[st.by]} 숫자 보기</summary>${bar([...r.series].reverse(), k => k)}</details>
+<h2>국가별</h2>${bar(r.country, k => (k === 'XX' ? '알 수 없음' : `${(dn && dn.of(k)) || k} (${k})`))}
+<h2>언어별</h2>${bar(r.lang, k => LN[k] || k)}
+<h2>기기별</h2>${bar(r.device, k => DV[k] || k)}`;
+    } catch (e) {
+      out.innerHTML = `<p class="muted">${e.message === 'denied' ? 'Cloudflare에 설정한 관리자 이름(ADMIN_NAME)과 지금 이름이 달라 볼 수 없습니다.' : e.message === 'no_db' ? '데이터베이스(DB)가 연결되어 있지 않습니다.' : '통계를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'}</p>`;
+    }
+  };
+  $$('#admBy button').forEach(b => b.addEventListener('click', () => { st.by = b.dataset.v; session.set('adm_by', st.by); $$('#admBy button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); load(); }));
+  $('#admRange').addEventListener('change', e => { st.range = e.target.value; session.set('adm_range', st.range); load(); });
+  load();
+}
+
 // ── 운명 바꾸기 연출: 기운이 모임 → 운명의 문 → 개방(데이터 교체) → 새 운세 공개
 // 기회는 새 운세가 만들어지고 화면에 그려진 뒤에만 차감. 실패하면 그대로 두고 기존 운세 유지.
 let fateBusy = false;
@@ -1129,14 +1180,30 @@ if (!('onpagereveal' in window) && !reduceMotion) {
   }, { passive: true });
   addEventListener('pageshow', () => document.documentElement.classList.remove('leaving'));
 }
+// 접속 통계: 개인 정보 없이 언어·그날 첫 방문 여부만 보냄(국가·기기는 서버가 숫자로만 집계). 관리자 본인은 제외
+function sendHit() {
+  if (isAdmin()) return;
+  if (document.prerendering) { document.addEventListener('prerenderingchange', sendHit, { once: true }); return; }
+  const t = todayKey(), first = store.get('hitDay', '') !== t;
+  store.set('hitDay', t);
+  try { fetch('/api/hit', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ l: C, n: first ? 1 : 0 }) }).catch(() => {}); } catch { /* */ }
+}
+sendHit();
+// 관리자(이름 master3771)로 접속하면 하단 탭 '부적&톡' 옆에 '관리자' 탭을 붙임
+if (isAdmin() && $('.tabs') && !$('.tabs .tab-admin')) {
+  const a = document.createElement('a');
+  a.href = `/${C}/result/admin/`; a.className = `tab tab-admin${body.dataset.tab === 'admin' ? ' is-on' : ''}`;
+  a.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>${esc((U.tabs && U.tabs.admin) || 'Admin')}</span>`;
+  $('.tabs').append(a);
+}
 if (body.classList.contains('page-input')) initInput();
 else if (body.classList.contains('page-result')) {
   const tab = body.dataset.tab;
-  if (!profile() && tab !== 'charm') {
+  if (!profile() && tab !== 'charm' && tab !== 'admin') {
     if (qs.get('inv')) session.set('inv', qs.get('inv'));
     location.replace(`/${C}/`);
   } else {
-    const render = HAS_M ? { fortune: renderFortune, master: renderMaster, saju: renderMaster, love: renderMaster, time: renderTime, charm: renderCharm }[tab]
+    const render = tab === 'admin' ? renderAdmin : HAS_M ? { fortune: renderFortune, master: renderMaster, saju: renderMaster, love: renderMaster, time: renderTime, charm: renderCharm }[tab]
       : { fortune: renderFortune, saju: renderSaju, love: renderLove, time: renderTime, charm: renderCharm }[tab];
     if (lockedOther()) {
       const n = document.createElement('p'); n.className = 'lock-note'; n.setAttribute('role', 'status');

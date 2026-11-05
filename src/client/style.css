@@ -937,3 +937,39 @@ html.leaving main, html.leaving .foot { opacity: 0; transition: opacity .17s eas
 .place-why h4 { color: var(--pl-g); }
 .place-maplink { border-bottom-color: rgba(45,98,184,.6); }
 .place-maplink svg { fill: var(--pl-b); }
+
+/* 게시판 제목 강조 */
+.board .b-title { font-family: var(--serif); font-size: 24px; line-height: 1.35; color: var(--hanji); margin: 0 0 6px; display: flex; align-items: center; gap: 10px; }
+.board .b-title::before { display: none; }
+.b-ico { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--brass); display: grid; place-items: center; }
+.b-ico svg { width: 20px; height: 20px; fill: #fff; }
+.b-sub { margin: 0 0 4px; color: #4A4640; font-size: 14.5px; }
+.board { border-top: 0; margin: 10px -16px 0; padding: 28px 16px; background: var(--ink-2); }
+/* 하단 탭에 관리자가 붙으면 5칸 */
+.tab-admin { color: var(--brass); }
+/* 관리자 탭 */
+.adm-ctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0 14px; }
+.adm-seg { display: inline-flex; border: 1px solid var(--ink-3); border-radius: 10px; overflow: hidden; }
+.adm-seg button { border: 0; background: #fff; padding: 8px 12px; font-size: 13.5px; cursor: pointer; color: var(--muted); }
+.adm-seg button[aria-pressed="true"] { background: var(--hanji); color: #fff; font-weight: 700; }
+#admRange { min-height: 38px; padding: 6px 10px; width: auto; }
+.adm-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.adm-cards div { padding: 12px; border-radius: 12px; background: var(--ink-2); border: 1px solid var(--ink-3); }
+.adm-cards span { display: block; font-size: 12px; color: var(--muted); }
+.adm-cards b { font: 700 22px var(--serif); font-variant-numeric: tabular-nums; }
+.adm h2 { font-size: 16px; margin: 22px 0 8px; }
+.adm-chart { width: 100%; height: auto; display: block; background: #fff; border: 1px solid var(--ink-3); border-radius: 12px; }
+.adm-chart .b-pv { fill: #E3B5AD; } .adm-chart .b-uv { fill: var(--brass); }
+.adm-chart text { font-size: 9px; fill: var(--muted); }
+.adm-legend { display: flex; gap: 14px; font-size: 12px; margin: 6px 0 0; }
+.adm-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.adm-legend i.b-pv { background: #E3B5AD; } .adm-legend i.b-uv { background: var(--brass); }
+.adm-t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.adm-t th { text-align: right; font-weight: 500; color: var(--muted); font-size: 12px; padding: 4px 6px; border-bottom: 1px solid var(--ink-3); }
+.adm-t td { padding: 7px 6px; border-bottom: 1px solid var(--ink-3); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.adm-t td:first-child { text-align: left; white-space: normal; }
+.adm-t td:last-child { width: 34%; }
+.adm-bar { display: inline-block; width: calc(100% - 38px); height: 8px; background: var(--mist); border-radius: 4px; vertical-align: middle; overflow: hidden; }
+.adm-bar i { display: block; height: 100%; background: var(--brass); }
+.adm-t em { font-style: normal; font-size: 12px; color: var(--muted); margin-left: 4px; }
+.adm-more summary { cursor: pointer; font-size: 13.5px; color: var(--muted); margin-top: 8px; }

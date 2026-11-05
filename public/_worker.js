@@ -49,6 +49,8 @@ async function ensure(db) {
     db.prepare('CREATE INDEX IF NOT EXISTS posts_lang ON posts (lang, id)'),
     db.prepare('CREATE TABLE IF NOT EXISTS imgs (post_id INTEGER PRIMARY KEY, type TEXT, data BLOB)'),
     db.prepare('CREATE TABLE IF NOT EXISTS limits (h TEXT PRIMARY KEY, exp INTEGER)'),
+    // 접속 통계: 개인 정보 없이 날짜·국가·언어·기기별 숫자만 (pv=페이지뷰, uv=그날 첫 방문)
+    db.prepare('CREATE TABLE IF NOT EXISTS stats (day TEXT, country TEXT, lang TEXT, device TEXT, pv INTEGER DEFAULT 0, uv INTEGER DEFAULT 0, PRIMARY KEY (day, country, lang, device))'),
   ]);
   ready = true;
 }
@@ -153,6 +155,41 @@ async function board(request, env, url) {
   return json({ ok: true });
 }
 
+// ── 접속 통계 (관리자 탭)
+const BOT = /bot|crawl|spider|slurp|preview|headless|lighthouse|facebookexternalhit|embedly|GPT|Claude|anthropic|CCBot|Bytespider|Perplexity|Diffbot|cohere|Amazonbot/i;
+const deviceOf = ua => (/iPad|Tablet|PlayBook|Silk|(Android(?!.*Mobile))/i.test(ua) ? 'tablet' : /Mobi|iPhone|iPod|Android/i.test(ua) ? 'mobile' : 'desktop');
+const kstDay = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); // 통계 날짜는 한국 시간 기준
+async function hit(request, env) {
+  if (!env.DB) return new Response(null, { status: 204 });
+  const ua = request.headers.get('user-agent') || '';
+  if (BOT.test(ua)) return new Response(null, { status: 204 });
+  let b = {}; try { b = await request.json(); } catch { /* */ }
+  const lang = LANGS.includes(b.l) ? b.l : 'etc';
+  const country = String((request.cf || {}).country || 'XX').slice(0, 2);
+  await ensure(env.DB);
+  await env.DB.prepare('INSERT INTO stats (day, country, lang, device, pv, uv) VALUES (?, ?, ?, ?, 1, ?) ON CONFLICT(day, country, lang, device) DO UPDATE SET pv = pv + 1, uv = uv + excluded.uv')
+    .bind(kstDay(), country, lang, deviceOf(ua), b.n ? 1 : 0).run();
+  return new Response(null, { status: 204 });
+}
+async function stats(request, env, url) {
+  if (!env.DB) return err('no_db', 503);
+  if (!isAdmin(env, decodeURIComponent(request.headers.get('x-admin') || ''))) return err('denied', 403);
+  await ensure(env.DB);
+  const re = /^\d{4}-\d{2}-\d{2}$/;
+  const to = re.test(url.searchParams.get('to') || '') ? url.searchParams.get('to') : kstDay();
+  const from = re.test(url.searchParams.get('from') || '') ? url.searchParams.get('from') : '2000-01-01';
+  const KEY = { day: 'day', week: "strftime('%Y-W%W', day)", month: 'substr(day, 1, 7)', year: 'substr(day, 1, 4)' }[url.searchParams.get('by')] || 'day';
+  const q = (sql) => env.DB.prepare(sql).bind(from, to).all().then(r => r.results);
+  const [series, country, lang, device, total] = await Promise.all([
+    q(`SELECT ${KEY} AS k, SUM(pv) AS pv, SUM(uv) AS uv FROM stats WHERE day BETWEEN ? AND ? GROUP BY k ORDER BY k`),
+    q('SELECT country AS k, SUM(pv) AS pv, SUM(uv) AS uv FROM stats WHERE day BETWEEN ? AND ? GROUP BY k ORDER BY pv DESC LIMIT 50'),
+    q('SELECT lang AS k, SUM(pv) AS pv, SUM(uv) AS uv FROM stats WHERE day BETWEEN ? AND ? GROUP BY k ORDER BY pv DESC'),
+    q('SELECT device AS k, SUM(pv) AS pv, SUM(uv) AS uv FROM stats WHERE day BETWEEN ? AND ? GROUP BY k ORDER BY pv DESC'),
+    q('SELECT SUM(pv) AS pv, SUM(uv) AS uv, COUNT(DISTINCT country) AS countries FROM stats WHERE day BETWEEN ? AND ?'),
+  ]);
+  return json({ ok: true, from, to, series, country, lang, device, total: total[0] || {} });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -167,6 +204,8 @@ export default {
       };
       return json(body);
     }
+    if (url.pathname === '/api/hit' && request.method === 'POST') { try { return await hit(request, env); } catch { return new Response(null, { status: 204 }); } }
+    if (url.pathname === '/api/stats') { try { return await stats(request, env, url); } catch { return err('server', 500); } }
     if (url.pathname === '/api/board' || url.pathname.startsWith('/api/board/')) {
       try { return await board(request, env, url); } catch { return err('server', 500); }
     }

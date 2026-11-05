@@ -15,7 +15,7 @@ export default {
     country: 'Country of birth', blood: 'Blood type', none: 'Not sure', mbti: 'MBTI',
     localOnly: 'Your details stay on this device only and are never sent to a server.',
     submit: 'See my fortune', edit: 'Edit details', required: 'Please enter your date of birth.',
-    tabs: { fortune: 'Today', love: 'Match', time: 'Future', charm: 'Charms' },
+    tabs: { fortune: 'Today', love: 'Match', time: 'Future', charm: 'Charms & Talk', admin: 'Admin' },
     master: 'Master', masterName: 'Haeun Jeongsa', power: 'Insight', todayScore: "Today's fortune score",
     dialTitle: 'Destiny Dial', dialHint: 'Tap a period to see your luck at that time', best: 'Best time', worst: 'Take care', now: 'Now',
     changeTitle: 'Change your destiny', changeLeft: 'Chances left this period', changeBtn: 'Change destiny', changeAd: 'Watch an ad for one more',

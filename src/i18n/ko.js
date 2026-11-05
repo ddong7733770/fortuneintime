@@ -15,7 +15,7 @@ export default {
     country: '태어난 나라', blood: '혈액형', none: '모름', mbti: 'MBTI',
     localOnly: '입력한 정보는 이 기기에만 저장되고 서버로 전송되지 않습니다.',
     submit: '내 운세 보기', edit: '정보 수정', required: '생년월일을 입력해 주세요.',
-    tabs: { fortune: '오늘', master: '명인', love: '궁합', time: '미래', charm: '부적' },
+    tabs: { fortune: '오늘', master: '명인', love: '궁합', time: '미래', charm: '부적&톡', admin: '관리자' },
     master: '명인', masterName: '해운정사', power: '신통력', todayScore: '오늘의 운세 점수',
     dialTitle: '시운', dialHint: '시진을 누르면 그 시간의 운이 보여요', best: '가장 좋은 시간', worst: '조심할 시간', now: '지금',
     changeTitle: '운명 바꾸기', changeLeft: '이번 시간대 남은 기회', changeBtn: '운명 바꾸기', changeAd: '광고 보고 한 번 더',

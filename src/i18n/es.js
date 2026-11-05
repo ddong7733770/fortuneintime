@@ -15,7 +15,7 @@ export default {
     country: 'País de nacimiento', blood: 'Tipo de sangre', none: 'No lo sé', mbti: 'MBTI',
     localOnly: 'Tus datos se guardan solo en este dispositivo y nunca se envían a un servidor.',
     submit: 'Ver mi fortuna', edit: 'Editar datos', required: 'Ingresa tu fecha de nacimiento.',
-    tabs: { fortune: 'Hoy', love: 'Pareja', time: 'Futuro', charm: 'Amuletos' },
+    tabs: { fortune: 'Hoy', love: 'Pareja', time: 'Futuro', charm: 'Amuletos y charla', admin: 'Admin' },
     master: 'Maestro', masterName: 'Haeun Jeongsa', power: 'Intuición', todayScore: 'Puntuación de hoy',
     dialTitle: 'Reloj del destino', dialHint: 'Toca una hora para ver tu suerte en ese momento', best: 'Mejor momento', worst: 'Ten cuidado', now: 'Ahora',
     changeTitle: 'Cambia tu destino', changeLeft: 'Oportunidades en este periodo', changeBtn: 'Cambiar destino', changeAd: 'Ver un anuncio para otra',

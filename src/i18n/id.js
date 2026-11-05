@@ -15,7 +15,7 @@ export default {
     country: 'Negara kelahiran', blood: 'Golongan darah', none: 'Tidak tahu', mbti: 'MBTI',
     localOnly: 'Datamu hanya disimpan di perangkat ini dan tidak pernah dikirim ke server.',
     submit: 'Lihat ramalanku', edit: 'Ubah data', required: 'Masukkan tanggal lahirmu.',
-    tabs: { fortune: 'Hari Ini', love: 'Jodoh', time: 'Masa Depan', charm: 'Wallpaper' },
+    tabs: { fortune: 'Hari Ini', love: 'Jodoh', time: 'Masa Depan', charm: 'Jimat & Obrolan', admin: 'Admin' },
     master: 'Master', masterName: 'Haeun Jeongsa', power: 'Intuisi', todayScore: 'Skor hari ini',
     dialTitle: 'Dial takdir', dialHint: 'Ketuk satu waktu untuk melihat keberuntunganmu saat itu', best: 'Waktu terbaik', worst: 'Hati-hati', now: 'Sekarang',
     changeTitle: 'Ubah takdir', changeLeft: 'Sisa kesempatan periode ini', changeBtn: 'Ubah takdir', changeAd: 'Tonton iklan untuk sekali lagi',

@@ -89,6 +89,7 @@ const TAB_ICON = {
   saju: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12h17"/>',
   love: '<path d="M12 20s-7.2-4.4-7.2-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.2 2.6C19.2 15.6 12 20 12 20z"/>',
   time: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.2V12l3.2 2.1"/><path d="M19.5 4.5v3.2h-3.2"/>',
+  admin: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   charm: '<rect x="7" y="2.8" width="10" height="18.4" rx="1.2"/><path d="M10 7.2h4M12 7.2v9.6M10 12h4M10 16.8h4"/>',
 };
 
@@ -128,7 +129,7 @@ function head({ lang, title, desc, canonical, alts = null, noindex = false, ogIm
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
-${noindex ? '<meta name="robots" content="noindex, follow">' : ''}
+${noindex ? '<meta name="robots" content="noindex, follow, noai, noimageai">' : '<meta name="robots" content="index, follow, noai, noimageai">'}
 <link rel="canonical" href="${SITE}${canonical}">
 ${alts ? alts.map(a => `<link rel="alternate" hreflang="${a.hl}" href="${SITE}${a.href}">`).join('\n') : ''}
 <meta property="og:type" content="website">
@@ -307,7 +308,7 @@ function buildResult(c) {
   const Lc = L[c], U = Lc.ui;
   const HAS_M = !!(Lc.saju && Lc.masters);
   const NAV = HAS_M ? ['fortune', 'master', 'time', 'charm'] : BASE_TABS;
-  const PAGES = HAS_M ? [...NAV, 'saju', 'love'] : NAV;
+  const PAGES = [...(HAS_M ? [...NAV, 'saju', 'love'] : NAV), 'admin']; // admin: 관리자만 (탭은 화면에서 붙임)
   for (const t of PAGES) {
     const on = HAS_M && (t === 'saju' || t === 'love') ? 'master' : t;
     // 명인 탭 아이콘은 해운정사 사진
@@ -424,10 +425,12 @@ function buildMisc() {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${pages.map(p => `<url><loc>${SITE}${p.loc}</loc><lastmod>${today}</lastmod>${p.alts ? p.alts.map(a => `<xhtml:link rel="alternate" hreflang="${a.hl}" href="${SITE}${a.href}"/>`).join('') : ''}</url>`).join('\n')}
 </urlset>`);
-  write('robots.txt', `User-agent: *\nAllow: /\nDisallow: /*/result/\n\nSitemap: ${SITE}/sitemap.xml\n`);
+  // AI 학습·수집 봇 차단 (검색·애드센스용 Googlebot, Mediapartners-Google 등은 그대로 허용)
+  const AI_BOTS = ['GPTBot', 'ChatGPT-User', 'OAI-SearchBot', 'ClaudeBot', 'Claude-Web', 'Claude-SearchBot', 'Claude-User', 'anthropic-ai', 'CCBot', 'Google-Extended', 'GoogleOther', 'Applebot-Extended', 'PerplexityBot', 'Perplexity-User', 'Bytespider', 'Amazonbot', 'meta-externalagent', 'meta-externalfetcher', 'FacebookBot', 'cohere-ai', 'cohere-training-data-crawler', 'Diffbot', 'ImagesiftBot', 'Omgilibot', 'Omgili', 'YouBot', 'AI2Bot', 'Ai2Bot-Dolma', 'DuckAssistBot', 'MistralAI-User', 'PetalBot', 'Timpibot', 'VelenPublicWebCrawler', 'Webzio-Extended', 'iaskspider', 'Kangaroo Bot', 'Scrapy', 'img2dataset', 'TikTokSpider', 'Brightbot'];
+  write('robots.txt', `${AI_BOTS.map(b => `User-agent: ${b}\nDisallow: /\n`).join('\n')}\nUser-agent: *\nAllow: /\nDisallow: /*/result/\nDisallow: /api/\n\nSitemap: ${SITE}/sitemap.xml\n`);
   if (ADS.client) write('ads.txt', `google.com, ${ADS.client.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n`);
   write('manifest.webmanifest', JSON.stringify({ name: `${BRAND} 시운`, short_name: BRAND, id: '/', start_url: '/?source=home', scope: '/', display: 'standalone', lang: 'ko', description: 'Your fortune, hour by hour', background_color: '#FFFFFF', theme_color: '#FFFFFF', icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }] }));
-  write('_headers', `/assets/*\n  Cache-Control: public, max-age=86400\n/images/*\n  Cache-Control: public, max-age=86400\n/sw.js\n  Cache-Control: no-cache\n/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n`);
+  write('_headers', `/assets/*\n  Cache-Control: public, max-age=86400\n/images/*\n  Cache-Control: public, max-age=86400\n/sw.js\n  Cache-Control: no-cache\n/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  X-Robots-Tag: noai, noimageai\n`);
   write('404.html', `${head({ lang: 'ko', title: `404 | ${BRAND}`, desc: L.ko.siteDesc, canonical: '/404', noindex: true })}
 <body class="page-root"><main class="root-wrap"><h1 class="root-title"><span class="wordmark">${esc(BRAND)}</span></h1><p class="root-tag">404</p>
 <div class="lang-grid">${LANGS.map(c => `<a class="lang-card" href="/${c}/"><span class="lang-name">${esc(L[c].ui.home)}</span></a>`).join('')}</div></main></body></html>`);

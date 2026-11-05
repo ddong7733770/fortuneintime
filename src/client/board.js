@@ -31,7 +31,7 @@ export function mountBoard(root, { C, L, U, getName, isAdmin, getGate, onWrote }
   const when = ms => new Intl.DateTimeFormat(L.htmlLang, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
   let lang = C, before = null, editing = null, imgBlob = null, removeImg = false;
 
-  root.innerHTML = `<h2>${esc(B.boardTitle)}</h2><p class="muted">${esc(B.boardSub)}</p>
+  root.innerHTML = `<h2 class="b-title"><span class="b-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg></span>${esc(B.boardTitle)}</h2><p class="b-sub">${esc(B.boardSub)}</p>
 <div class="b-tabs" role="tablist">${['all', 'ko', 'ja', 'zh', 'en', 'es', 'id'].map(k => `<button type="button" role="tab" data-l="${k}" aria-selected="${k === lang}">${esc(k === 'all' ? B.boardAll : LANG_NAMES[k])}</button>`).join('')}</div>
 <div class="b-head"><button type="button" class="btn-primary sm" id="bWriteBtn">${esc(B.boardWrite)}</button><span class="muted small" id="bGateNote"></span></div>
 <form class="form compact b-form" id="bForm" hidden>

@@ -15,7 +15,7 @@ export default {
     country: '生まれた国', blood: '血液型', none: 'わからない', mbti: 'MBTI',
     localOnly: '入力した情報はこの端末にのみ保存され、サーバーには送信されません。',
     submit: '今日の運勢を見る', edit: '情報を変更', required: '生年月日を入力してください。',
-    tabs: { fortune: '今日', love: '相性', time: '未来', charm: 'お守り' },
+    tabs: { fortune: '今日', love: '相性', time: '未来', charm: 'お守り&トーク', admin: '管理者' },
     master: '名人', masterName: '海雲精舎', power: '神通力', todayScore: '今日の運勢スコア',
     dialTitle: '時間ダイヤル', dialHint: '時刻をタップするとその時間の運勢が見られます', best: 'いちばん良い時間', worst: '注意したい時間', now: '今',
     changeTitle: '運命チェンジ', changeLeft: 'この時間帯の残り回数', changeBtn: '運命を変える', changeAd: '広告を見てもう1回',
