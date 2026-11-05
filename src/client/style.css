@@ -915,3 +915,25 @@ html.leaving main, html.leaving .foot { opacity: 0; transition: opacity .17s eas
 .dt-stage b { display: block; font-size: 12.5px; color: var(--hn); margin-bottom: 2px; }
 .dt-talk { margin: 0; padding-left: 18px; font-size: 14.5px; line-height: 1.8; }
 .dt-close { margin: 14px 0 0; font-family: var(--serif); font-size: 16px; color: var(--hn); }
+
+/* ── 지금 나에게 필요한 장소는? : 초록(자연)·파랑(바다·하늘)·노랑(햇살)을 은은하게 */
+.place { --pl-g: #2F7D5B; --pl-b: #2D62B8; --pl-y: #C9921B; margin: 10px -16px; padding: 26px 16px 24px; border-top: 0;
+  background: linear-gradient(160deg, #EEF6F0 0%, #EEF3FB 55%, #FDF6E4 100%); }
+.place + .sec { border-top: 0; }
+.place .place-head h2::before { background: var(--pl-g); }
+.place .muted { color: #4D5A55; }
+.place-stage { border-color: #CFE1D8; background: #E6F0F7; box-shadow: 0 6px 20px rgba(45,98,184,.08); }
+.place-stage.is-idle .place-map { filter: grayscale(.2) saturate(.9); opacity: .7; }
+.place .pidle circle, .place .pidle ellipse, .place .pidle line { stroke: #8FB5D6; }
+.place-go { background: var(--pl-g); border-color: var(--pl-g); box-shadow: 0 0 0 8px rgba(47,125,91,.15), 0 0 0 16px rgba(47,125,91,.07); }
+.place-go:active { background: #256449; }
+.place-photo { border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.12); background: #fff; }
+.place-photo img { aspect-ratio: 4 / 3; }
+.place-card { background: rgba(255,255,255,.88); border-radius: 18px; padding: 16px; border: 1px solid #DCE9E2; }
+.place-card h3 { color: var(--pl-b); }
+.place-route i { color: var(--pl-y); }
+.place-you { border-left-color: var(--pl-y); background: #FFF8E6; }
+.place-why { background: #F1F8F3; border-color: #CFE1D8; }
+.place-why h4 { color: var(--pl-g); }
+.place-maplink { border-bottom-color: rgba(45,98,184,.6); }
+.place-maplink svg { fill: var(--pl-b); }

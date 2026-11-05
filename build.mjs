@@ -42,9 +42,19 @@ for (const c of LANGS) {
   Object.assign(L[c].ui, pl.ui);
   const more = (await import(`./src/i18n/places/more/${c}.js`)).default;
   const reason = (await import(`./src/i18n/places/reason/${c}.js`)).default;
-  L[c].placesData = { ui: pl.live, places: { ...pl.places, ...more }, forYou: pl.forYou, reason };
+  const extra = (await import(`./src/i18n/places/extra/${c}.js`)).default; // 2차 추가 40곳
+  L[c].placesData = { ui: pl.live, places: { ...pl.places, ...more, ...extra }, forYou: pl.forYou, reason };
   const pv = L[c].policy.privacy;
   pv.splice(pv.length - 1, 0, pl.privacyAdd, BOARD_PRIVACY[c]); // '문의' 항목 앞에 위치·게시판 안내 추가
+}
+// ── 여행지 검사: 좌표·사진·문구가 6개 언어 모두 있어야 함
+{
+  const src = fs.readFileSync(path.join(ROOT, 'src/client/place.js'), 'utf8');
+  const ids = [...src.slice(src.indexOf('export const PLACES'), src.indexOf('// 구글 지도 검색어')).matchAll(/(\w+): \[-?\d/g)].map(m => m[1]);
+  const { PHOTOS } = await import('./src/client/place-photos.js');
+  for (const c of LANGS) { const miss = ids.filter(id => !L[c].placesData.places[id]); if (miss.length) { console.error(`✖ [${c}] 여행지 문구 없음: ${miss.join(', ')}`); process.exit(1); } }
+  const noPh = ids.filter(id => !PHOTOS[id]); if (noPh.length) { console.error(`✖ 여행지 사진 없음: ${noPh.join(', ')}`); process.exit(1); }
+  console.log(`✔ 여행지 ${ids.length}곳: 좌표·사진·6개 언어 문구 확인`);
 }
 // ── 문장 가짓수 검사: 요청 기준보다 적으면 빌드를 멈춤
 for (const c of LANGS) {

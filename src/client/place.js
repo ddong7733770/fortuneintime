@@ -17,6 +17,17 @@ export const PLACES = {
   uluru: [-25.34, 131.04], serengeti: [-2.33, 34.83], sossusvlei: [-24.73, 15.29], victoriafalls: [-17.92, 25.86],
   iguazu: [-25.69, -54.44], torresdelpaine: [-50.94, -73.41], galapagos: [-0.74, -90.31], yosemite: [37.75, -119.59],
   tulum: [20.21, -87.46], kerala: [9.5, 76.34], zhangjiajie: [29.32, 110.43], kauai: [22.17, -159.65],
+  // 2차 추가 40곳
+  tekapo: [-44.004, 170.477], seoraksan: [38.119, 128.466], gyeongju: [35.79, 129.332], suncheon: [34.886, 127.509],
+  kawaguchiko: [35.517, 138.751], shirakawago: [36.271, 136.899], biei: [43.588, 142.467], yangshuo: [24.778, 110.496],
+  huangshan: [30.125, 118.167], taroko: [24.158, 121.621], sapa: [22.336, 103.844], angkor: [13.412, 103.867],
+  borobudur: [-7.608, 110.204], elnido: [11.18, 119.39], ella: [6.877, 81.061], pokhara: [28.213, 83.946],
+  wadirum: [29.576, 35.42], pamukkale: [37.924, 29.123], deadsea: [31.559, 35.474], dolomites: [46.619, 12.302],
+  cinqueterre: [44.107, 9.729], lofoten: [67.932, 13.089], como: [45.986, 9.261], montsaintmichel: [48.636, -1.511],
+  valensole: [43.837, 5.983], lauterbrunnen: [46.595, 7.907], geiranger: [62.101, 7.094], giantscauseway: [55.241, -6.512],
+  benagil: [37.087, -8.426], grandcanyon: [36.057, -112.14], antelope: [36.862, -111.374], yellowstone: [44.525, -110.838],
+  tahoe: [39.096, -120.032], peritomoreno: [-50.496, -73.138], lencois: [-2.486, -43.128], atacama: [-22.92, -68.28],
+  cradle: [-41.684, 145.951], ladigue: [-4.37, 55.826], tablemountain: [-33.963, 18.41], skogafoss: [63.532, -19.511],
 };
 // 구글 지도 검색어(영문). 여행지 이름을 누르면 구글 지도의 해당 장소 정보로 이동
 const MAPQ = {
@@ -30,6 +41,16 @@ const MAPQ = {
   uluru: 'Uluru, Northern Territory', serengeti: 'Serengeti National Park, Tanzania', sossusvlei: 'Sossusvlei, Namibia', victoriafalls: 'Victoria Falls',
   iguazu: 'Iguazu Falls', torresdelpaine: 'Torres del Paine National Park', galapagos: 'Bartolomé Island, Galápagos', yosemite: 'Tunnel View, Yosemite National Park',
   tulum: 'Tulum Archaeological Site, Mexico', kerala: 'Alleppey Backwaters, Kerala', zhangjiajie: 'Zhangjiajie National Forest Park', kauai: 'Nā Pali Coast State Wilderness Park, Kauai',
+  tekapo: "Church of the Good Shepherd, Lake Tekapo", seoraksan: "Seoraksan National Park", gyeongju: "Bulguksa Temple, Gyeongju", suncheon: "Suncheon Bay Wetland Reserve",
+  kawaguchiko: "Lake Kawaguchi, Fujikawaguchiko", shirakawago: "Shirakawa-go, Gifu", biei: "Biei, Hokkaido", yangshuo: "Li River, Yangshuo",
+  huangshan: "Huangshan Scenic Area", taroko: "Taroko National Park", sapa: "Sa Pa, Lao Cai", angkor: "Angkor Wat",
+  borobudur: "Borobudur Temple, Magelang", elnido: "El Nido, Palawan", ella: "Nine Arches Bridge, Ella", pokhara: "Phewa Lake, Pokhara",
+  wadirum: "Wadi Rum Protected Area", pamukkale: "Pamukkale Travertines", deadsea: "Dead Sea", dolomites: "Tre Cime di Lavaredo",
+  cinqueterre: "Manarola, Cinque Terre", lofoten: "Reine, Lofoten", como: "Bellagio, Lake Como", montsaintmichel: "Mont-Saint-Michel",
+  valensole: "Lavender fields, Valensole", lauterbrunnen: "Lauterbrunnen Valley", geiranger: "Geirangerfjord", giantscauseway: "Giant's Causeway",
+  benagil: "Benagil Cave, Algarve", grandcanyon: "Grand Canyon Village, South Rim", antelope: "Upper Antelope Canyon, Page", yellowstone: "Grand Prismatic Spring",
+  tahoe: "Lake Tahoe", peritomoreno: "Perito Moreno Glacier", lencois: "Lençóis Maranhenses National Park", atacama: "Valle de la Luna, San Pedro de Atacama",
+  cradle: "Dove Lake, Cradle Mountain", ladigue: "Anse Source d'Argent, La Digue", tablemountain: "Table Mountain, Cape Town", skogafoss: "Skógafoss, Iceland",
 };
 export const mapsUrl = id => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MAPQ[id] || id)}`;
 
