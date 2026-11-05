@@ -31,6 +31,8 @@ export default {
   // 이미지 파일 — 같은 이름으로 덮어쓰면 그대로 반영됩니다.
   images: {
     master: '/images/master.jpg', // 명인 해운정사
+    hana: '/images/hana.jpg',     // 명인 하나 (연애·대인관계)
+    dohan: '/images/dohan.jpg',   // 명인 도한 (직장·사업)
     charms: {
       achieve: '/images/charm/achieve.jpg',
       noble: '/images/charm/noble.jpg',

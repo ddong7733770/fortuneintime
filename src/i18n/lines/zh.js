@@ -1,6 +1,9 @@
 // 简体中文句库（结构与 ko.js 相同）
 export default {
   ui: {
+    boardAdminName: "运营方",
+    boardTitle: "留言板", boardSub: "分享运势心得、开运符感受或今天的心愿。", boardAll: "全部", boardWrite: "发帖", boardBy: "作者", boardTitleLabel: "标题", boardTitlePh: "请输入标题", boardBodyLabel: "内容", boardBodyPh: "请输入内容", boardImg: "图片", boardImgNote: "（1张，超过500KB会自动压缩）", boardImgRemove: "移除图片", boardPw: "密码", boardPwPh: "用于修改或删除的密码（至少4位）", boardSubmit: "发布", boardCancel: "取消", boardMore: "查看更多", boardEmpty: "还没有帖子，来发第一帖吧。", boardEdit: "修改", boardDel: "删除", boardDelConfirm: "确定删除吗？请再点一次", boardOk: "确认", boardPwNeed: "请输入至少4位密码。", boardDenied: "密码不正确。", boardLimit: "本时段已发过帖子，请在下一个时段（6点·18点）再发。", boardEmptyField: "请填写标题和内容。", boardImgBig: "无法将图片压缩到500KB以下，请换一张。", boardErr: "请稍后再试。", boardOffline: "留言板准备中。", boardNote: "如内容不符合本站宗旨或不当，运营方可随时删除。", boardAnon: "匿名", boardGateLeft: "本时段可发1帖。", boardGateUsed: "本时段已发过帖子。",
+    weekend: "本周末", nextMonth1: "下月1日", myBirthday: "我的生日", pickDate: "选择日期", importantDays: "重要的日子", bestHours: "好时辰", seeToday: "查看今天",
     lockNote: "本时段只能查看最初输入信息的运势。修改后的信息将从{t}开始显示运势。",
     charmRec: "本时段推荐的护身符",
     sfxOn: "声音已开启", sfxOff: "声音已关闭",

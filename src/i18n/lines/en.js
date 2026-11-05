@@ -1,6 +1,9 @@
 // English sentence pools (same structure as ko.js)
 export default {
   ui: {
+    boardAdminName: "Admin",
+    boardTitle: "Board", boardSub: "Share fortune stories, charm reviews or today's resolution.", boardAll: "All", boardWrite: "Write", boardBy: "Posting as", boardTitleLabel: "Title", boardTitlePh: "Enter a title", boardBodyLabel: "Message", boardBodyPh: "Write your message", boardImg: "Image", boardImgNote: "(1 image; over 500KB is shrunk automatically)", boardImgRemove: "Remove image", boardPw: "Password", boardPwPh: "Password to edit or delete (4+ characters)", boardSubmit: "Post", boardCancel: "Cancel", boardMore: "Load more", boardEmpty: "No posts yet. Be the first!", boardEdit: "Edit", boardDel: "Delete", boardDelConfirm: "Delete for sure? Tap again", boardOk: "OK", boardPwNeed: "Please enter a password of 4+ characters.", boardDenied: "Wrong password.", boardLimit: "You already posted in this time slot. Try again from the next one (6:00 / 18:00).", boardEmptyField: "Please fill in both title and message.", boardImgBig: "Could not shrink the image under 500KB. Please choose another.", boardErr: "Please try again in a moment.", boardOffline: "The board is being set up.", boardNote: "Posts that do not fit the purpose of this site or are inappropriate may be removed by the operators at their discretion.", boardAnon: "Anonymous", boardGateLeft: "You can write 1 post in this time slot.", boardGateUsed: "You already posted in this time slot.",
+    weekend: "This weekend", nextMonth1: "1st of next month", myBirthday: "My birthday", pickDate: "Pick a date", importantDays: "Important days", bestHours: "Best hours", seeToday: "See today",
     lockNote: "In this time slot you can only see the fortune for the details you first used. Fortunes for the new details start at {t}.",
     charmRec: "Recommended charm for this time slot",
     sfxOn: "Sound on", sfxOff: "Sound off",

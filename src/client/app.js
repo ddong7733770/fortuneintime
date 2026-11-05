@@ -1,12 +1,17 @@
 // Fortune in Time 화면 동작: 입력 페이지와 결과 4탭(운세, 궁합, 타임머신, 부적)
 import * as E from './engine.js';
 import { mountPlace } from './place.js';
+import { mountBoard } from './board.js';
 import { basisHTML, domainReading, sajuTabHTML, todayReading, todayReadingHTML } from './saju-view.js';
+import * as MV from './masters-view.js';
+import { freeMaster, MASTERS } from './masters.js';
 import { dialSVG, dialLabels, fmt, esc, pips, sijinRange, fmtDate, BLOOD_LABEL, SIGN_GLYPH, domainText, hourText, summaryText, loveTexts, startHands } from './content.js';
 
 const D = JSON.parse(document.getElementById('ttf-data').textContent);
 const L = D.L, U = L.ui, C = L.code;
 const S = L.saju || null; // 사주 풀이 문장(한국어). 없으면 한자 요약만
+const M = L.masters || null; // 명인(해운정사·하나·도한) 문장. 있으면 오늘/명인/미래/부적 구성
+const HAS_M = !!(S && M);
 const body = document.body;
 const qs = new URLSearchParams(location.search);
 const $ = (s, el = document) => el.querySelector(s);
@@ -95,11 +100,11 @@ async function shareCanvas(canvas, filename, text) {
 const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
 
 // 다이얼 SVG를 그림 파일로 그릴 때 필요한 스타일(외부 CSS가 적용되지 않으므로)
-const SVG_STYLE = `<style>.rim{fill:#C9A24A}.bowl{fill:#1D2650}.tk{stroke:#5B6699;stroke-width:1}.tk-m{stroke:#C9A24A;stroke-width:1.6}.dl{fill:#E9E3D3;font:600 15px serif}.dl-long{font-size:9px}.dl-xl{font-size:8px}.hub{fill:#141B36;stroke:#C9A24A;stroke-width:1}.c-top{fill:#B9B3A3;font:12px sans-serif}.c-sm{font-size:10px}.c-xs{font-size:8.6px}.dh{fill:#141B36;font:700 9px sans-serif}.c-main{fill:#F3E2B0;font:700 34px serif}.c-sub{fill:#B9B3A3;font:12px sans-serif}.needle line{stroke:#F3E2B0;stroke-width:2.5}.needle circle{fill:#F3E2B0}.seg.is-best{stroke:#F3E2B0;stroke-width:2}</style>`;
+const SVG_STYLE = `<style>.rim{fill:#1A1A1A}.bowl{fill:#fff}.tk{stroke:#CFC9BC;stroke-width:1}.tk-m{stroke:#1A1A1A;stroke-width:1.4}.seg{stroke:#fff;stroke-width:1.2}.dl{fill:#1A1A1A;font:600 15px serif}.dl-long{font-size:9px}.dl-xl{font-size:8px}.hub{fill:#fff;stroke:#1A1A1A;stroke-width:1}.c-top{fill:#6E6A62;font:12px sans-serif}.c-sm{font-size:10px}.c-xs{font-size:8.6px}.dh{fill:#3A3631;font:700 9px sans-serif}.c-main{fill:#B3261E;font:700 34px serif}.c-sub{fill:#6E6A62;font:12px sans-serif}.needle line{stroke:#1A1A1A;stroke-width:2.5}.needle circle{fill:#B3261E}.sec-hand{display:none}.seg.is-best{stroke:#1A1A1A;stroke-width:2.4}.seg.is-worst{stroke:#8C877D;stroke-width:2;stroke-dasharray:4 3}</style>`;
 function svgToImg(svg) {
   const s = svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/(<svg[^>]*>)/, `$1${SVG_STYLE}`)
     .replace(/<g class="needle" style="--deg:([\d.]+)deg">/, (_, d) => `<g class="needle" transform="rotate(${d} 160 160)">`)
-    .replace(/var\(--ink-2\)/g, '#1D2650');
+    .replace(/var\(--ink-2\)/g, '#FAF8F3');
   return loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s));
 }
 function wrapText(ctx, text, x, y, maxW, lh) {
@@ -233,9 +238,11 @@ ${p.blood !== null && p.blood !== undefined ? `<div><dt>${esc(U.blood)}</dt><dd>
 // 결과 화면 공통
 // ════════════════════════════════════════
 const app = () => $('#app');
-// 이름이 관리자 코드면 모든 횟수 제한을 풀어 줌(이 기기에서만, 서버 확인 없음)
-const ADMIN_NAME = 'master3771';
-const isAdmin = () => (profile()?.name || '').trim().toLowerCase() === ADMIN_NAME;
+// 이름이 관리자 이름이면 모든 횟수 제한을 풀어 줌(이 기기에서만). 코드에는 이름 대신 해시만 둠
+// 게시판의 수정·삭제 권한은 서버(Cloudflare 비밀값 ADMIN_NAME)에서 따로 확인
+const nameHash = s => { let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0, ch; i < s.length; i++) { ch = s.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); };
+const ADMIN_HASH = 'uzj8gzsi7a';
+const isAdmin = () => nameHash((profile()?.name || '').trim().toLowerCase()) === ADMIN_HASH;
 const UNLIMITED = 999;
 function turnsState(key) {
   const t = store.get('turns', {});
@@ -299,6 +306,7 @@ function bindGate(root, name, rerender) {
 
 // ── 운세 탭
 function renderFortune(animate = true, mode = '') {
+  if (HAS_M) return renderFortuneM(animate, mode);
   const admin = isAdmin();
   const p = P();
   const per = E.period();
@@ -388,7 +396,6 @@ ${rankHTML}${yijiHTML}
 <section class="sec${mode === 'reveal' ? ' fate-soft late' : ''}"><ul class="domains">${['wealth', 'love', 'work', 'health'].map((k, i) => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(S ? domainReading(S, d, k) : domainText(L, k, d.domains[k], r, i))}</span></li>`).join('')}</ul></section>
 ${tomorrowHTML(p, today)}
 
-${adSlot('B')}
 
 ${flowHTML(p, today, today, d.score, true)}
 
@@ -407,7 +414,7 @@ ${flowHTML(p, today, today, d.score, true)}
 <section class="sec nums"><h2>${esc(U.numbersTitle)}</h2><p class="muted">${esc(U.numbersHint)}</p>
 <div class="cards six">${d.numbers.map(n => `<button type="button" class="flip"><span class="f-back" aria-hidden="true">?</span><span class="f-front">${n}</span></button>`).join('')}</div>
 ${S ? `<p class="muted small nums-basis">${esc(fmt(S.lottoBasis, { el: S.el[d.saju.chart.fav.yong], digits: E.EL_DIGITS[d.saju.chart.fav.yong].map(n => n || 10).join('·') }))}</p>` : ''}
-<div class="after-flip" hidden>${adSlot('C')}</div>
+
 </section>
 
 <section class="sec share-row">
@@ -428,7 +435,7 @@ ${S ? `<p class="muted small nums-basis">${esc(fmt(S.lottoBasis, { el: S.el[d.sa
   $$('.flip').forEach(b => b.addEventListener('click', () => {
     b.classList.add('is-open');
     const wrap = $('.after-flip');
-    if (wrap.hidden) { wrap.hidden = false; pushAds(wrap); }
+    if (wrap && wrap.hidden) { wrap.hidden = false; pushAds(wrap); }
   }));
   $('#shareBtn').addEventListener('click', () => shareFortune(p, d, summary, todayKey()));
   // 오늘 가장 약한 분야(모두 4 이상이면 없음)
@@ -438,6 +445,242 @@ ${S ? `<p class="muted small nums-basis">${esc(fmt(S.lottoBasis, { el: S.el[d.sa
   mountPlace($('#placeSec'), { C, D, U, weakest: d.domains[weakK] >= 4 ? null : { k: weakK, v: d.domains[weakK] }, getGate: () => gate('place'), onUsed: placeGate, fortune: { score: d.score, band: d.band, dir: d.direction, dirNames: L.directions } });
   animateFlow($('.flow'));
   pushAds(app());
+}
+
+// ════════════════════════════════════════
+// 명인 구성 (한국어): 오늘 탭 · 명인 탭(해운정사·하나·도한) · 광고 해제 · 방문 횟수
+// ════════════════════════════════════════
+// 광고로 연 명인: 시간대(6시·18시)마다 기록. 하나·도한 중 오늘의 무료 명인은 날짜만으로 정함(모두에게 같음)
+function unlocked() { const per = E.period(); return (store.get('unlock', {})[per.key]) || {}; }
+function isOpen(k) {
+  if (isAdmin()) return true;
+  if ((k === 'hana' || k === 'dohan') && freeMaster(todayKey()) === k) return true;
+  return !!unlocked()[k];
+}
+function setOpen(k) {
+  const per = E.period(), a = store.get('unlock', {});
+  Object.keys(a).forEach(x => { if (x !== per.key) delete a[x]; });
+  a[per.key] = { ...(a[per.key] || {}), [k]: 1 };
+  store.set('unlock', a);
+}
+// 보상형 광고를 보면 열림. 광고 연동 전이거나 광고를 불러오지 못하면 그냥 열어 줌
+function unlockWithAd(k, done) {
+  if (typeof window.ttfShowRewarded === 'function') {
+    try { window.ttfShowRewarded(() => { setOpen(k); done(); }, () => { setOpen(k); toast(M.ui.adFail); done(); }); }
+    catch { setOpen(k); toast(M.ui.adFail); done(); }
+    return;
+  }
+  if (isPreview()) return showRewarded(() => { setOpen(k); done(); });
+  setOpen(k); done();
+}
+// 같은 사주 정보로 그 명인 화면을 '서로 다른 날' 연 횟수(같은 날 다시 열면 세지 않음, 기기에만 저장)
+function visitCount(k) {
+  const raw = activeRaw(); if (!raw) return 1;
+  const seed = E.profileSeed(raw), t = todayKey(), v = store.get('visits', {});
+  const rec = { n: 0, last: '', ...((v[seed] || {})[k] || {}) };
+  if (rec.last !== t) { rec.n += 1; rec.last = t; v[seed] = { ...(v[seed] || {}), [k]: rec }; store.set('visits', v); }
+  return rec.n;
+}
+const masterImg = k => (k === 'haewoon' ? D.images.master : D.images[k]);
+const imgTag = (k, size, cls) => `<img class="${cls}" src="${masterImg(k)}" alt="${esc(M.ui.name[k])}" width="${size}" height="${size}" loading="lazy" onerror="this.style.visibility='hidden'">`;
+function badgeOf(k) {
+  const free = freeMaster(todayKey());
+  if (k === free && !isAdmin()) return ['free', M.ui.badge.free];
+  return isOpen(k) ? ['open', M.ui.badge.open] : ['ad', M.ui.badge.ad];
+}
+
+// ── 오늘 탭 (명인 구성): 점수·운명 바꾸기 → 오늘의 운세 → 명인 카드 → 7일 흐름 → 배너 → 장소 → 복권
+function renderFortuneM(animate = true, mode = '') {
+  const admin = isAdmin();
+  const p = P(), per = E.period(), ts = turnsState(per.key), today = todayKey();
+  const d = E.daily(p, today, ts.used, C), r = d.rolls;
+  const fr = MV.fortuneReading(M, S, d);
+  const name = p.name ? esc(p.name) : '';
+  const kw = [
+    [U.kwColor, `<span class="swatch" style="background:${E.COLOR_HEX[d.color]}"></span>${esc(L.colors[d.color])}`, true],
+    [U.kwDirection, L.directions[d.direction]],
+    [U.kwAnimal, L.animals[p.animal]],
+    [U.kwSign, `${SIGN_GLYPH[p.sign]} ${L.signs[p.sign]}`],
+  ];
+  const card = k => {
+    const [bc, bt] = badgeOf(k);
+    return `<a class="mc mc-${k}" href="/${C}/result/master/?m=${k}">${imgTag(k, 56, 'mc-img')}<span class="mc-txt"><span class="mc-top"><b>${esc(M.ui.name[k])}</b><small>${esc(M.ui.field[k])}</small><em class="bdg bdg-${bc}">${esc(bt)}</em></span>${k === 'haewoon' ? `<span class="mc-q">${esc(M.ui.teaserSiun)}</span>` : ''}<span class="mc-line">${esc(MV.cardLine(M, d, k))}</span></span></a>`;
+  };
+  app().innerHTML = `
+<section class="hero-score${mode === 'reveal' ? ' fate-reveal' : ''}">
+${mode === 'reveal' ? `<p class="fate-arrived" role="status">${esc(U.fateArrived)}</p><div class="fate-dust" aria-hidden="true">${Array.from({ length: 14 }, (_, i) => `<i style="--x:${(8 + (i * 47) % 84)}%;--y:${(10 + (i * 31) % 78)}%;--dl:${(i % 7) * 0.11}s"></i>`).join('')}</div>` : ''}
+<p class="who">${name ? `${name} · ` : ''}${esc(fmtDate(L, today))}</p>
+<p class="big-score" aria-label="${esc(U.todayScore)} ${d.score}"><span id="scoreNum">${animate ? 0 : d.score}</span><small>/100</small></p>
+<p class="score-label">${esc(U.todayScore)}</p>
+<p class="lead">${esc(fr.flow)}</p>
+</section>
+
+<section class="sec change" id="changeSec">
+<div class="change-head"><h2>${esc(U.changeTitle)}</h2></div>
+<p class="fate-left${ts.left <= 0 ? ' is-out' : ''}">${admin ? esc(U.adminMode) : esc(fmt(U.fateLeft, { n: Math.max(0, ts.left) }))}</p>
+<p class="change-count">${esc(U.untilChange)} <b data-count>--:--:--</b></p>
+${ts.used > 0 && !admin ? `<p class="change-done">${esc(U.changeDone)}</p>` : ''}
+<div class="btn-row">
+<button class="btn-accent btn-primary btn-fate" type="button" id="changeBtn"${ts.left <= 0 ? ' disabled' : ''}><span>${esc(U.changeBtn)}</span></button>
+${!admin && canReward() && ts.bonus < 1 ? `<button class="btn-ghost" type="button" id="rewardBtn">${esc(U.changeAd)}</button>` : ''}
+</div>
+${ts.left <= 0 ? `<p class="fate-none">${esc(fmt(U.fateAllUsed, { t: hhmm(per.next) }))}</p>` : ''}
+</section>
+
+<section class="sec m-basic${mode === 'reveal' ? ' fate-soft' : ''}"><h2>${esc(M.fortune.title)}</h2>
+${MV.fortuneBasicHTML(M, S, d)}
+<dl class="kw">${kw.map(([t, v, raw]) => `<div><dt>${esc(t)}</dt><dd>${raw ? v : esc(v)}</dd></div>`).join('')}</dl>
+<ul class="domains">${['wealth', 'love', 'work', 'health'].map(k => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(MV.fortuneDomain(M, S, d, k))}</span></li>`).join('')}</ul>
+</section>
+${basisHTML(S, d, `/${C}/result/master/?m=haewoon`)}
+
+<section class="sec mcards"><h2>${esc(M.ui.cardsTitle)}</h2><div class="mc-list">${MASTERS.map(card).join('')}</div></section>
+
+${flowHTML(p, today, today, d.score, true)}
+${tomorrowHTML(p, today)}
+
+${adSlot('A')}
+
+<section class="sec place" id="placeSec">
+<div class="place-head"><h2>${esc(U.placeTitle)}</h2><button type="button" class="sfx-btn" aria-pressed="true" aria-label="${esc(U.sfxOn)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="x" d="M16 9l6 6M22 9l-6 6"/></svg></button></div><p class="muted">${esc(U.placeSub)}</p>
+<div class="place-stage is-idle"><div class="place-map" aria-live="polite"><svg class="pidle" viewBox="0 0 320 200" aria-hidden="true"><circle cx="160" cy="100" r="86"/><ellipse cx="160" cy="100" rx="40" ry="86"/><ellipse cx="160" cy="100" rx="86" ry="30"/><line x1="74" y1="100" x2="246" y2="100"/><line x1="160" y1="14" x2="160" y2="186"/></svg></div>
+<button type="button" class="btn-primary place-go">${esc(U.placeStart)}</button></div>
+<div class="place-info"></div>
+<div id="placeGate"></div>
+</section>
+
+<section class="sec nums"><h2>${esc(U.numbersTitle)}</h2><p class="muted">${esc(U.numbersHint)}</p>
+<div class="cards six">${d.numbers.map(n => `<button type="button" class="flip"><span class="f-back" aria-hidden="true">?</span><span class="f-front">${n}</span></button>`).join('')}</div>
+<p class="muted small nums-basis">${esc(fmt(S.lottoBasis, { el: S.el[d.saju.chart.fav.yong], digits: E.EL_DIGITS[d.saju.chart.fav.yong].map(n => n || 10).join('·') }))}</p>
+</section>
+
+<section class="sec share-row">
+<button class="btn-ghost" type="button" id="shareBtn">${esc(U.share)}</button>
+<a class="btn-ghost" href="/${C}/result/master/?m=hana#compat">${esc(U.gotoLove)}</a>
+</section>`;
+
+  if (animate || mode === 'reveal') countUp($('#scoreNum'), d.score); else $('#scoreNum').textContent = d.score;
+  if (mode === 'reveal') setTimeout(() => { $('.fate-dust')?.remove(); $('.fate-arrived')?.classList.add('is-gone'); }, reduceMotion ? 1800 : 3200);
+  $$('[data-count]').forEach(el => { el.textContent = clock(per.next - Date.now()); });
+  $('#changeBtn').addEventListener('click', changeFate);
+  $('#rewardBtn')?.addEventListener('click', () => showRewarded(() => { const s = turnsState(per.key); s.bonus = 1; saveTurns(per.key, s); renderFortune(false); }));
+  $$('.flip').forEach(b => b.addEventListener('click', () => b.classList.add('is-open')));
+  $('#shareBtn').addEventListener('click', () => shareFortune(p, d, fr.flow, today));
+  const weakK = ['wealth', 'love', 'work', 'health'].reduce((a, k) => (d.domains[k] < d.domains[a] ? k : a), 'wealth');
+  const placeGate = () => { const el = $('#placeGate'); if (el) { el.innerHTML = gateHTML(gate('place')); bindGate(el, 'place', () => renderFortune(false)); } };
+  placeGate();
+  mountPlace($('#placeSec'), { C, D, U, weakest: d.domains[weakK] >= 4 ? null : { k: weakK, v: d.domains[weakK] }, getGate: () => gate('place'), onUsed: placeGate, fortune: { score: d.score, band: d.band, dir: d.direction, dirNames: L.directions } });
+  animateFlow($('.flow'));
+  pushAds(app());
+  void r;
+}
+
+// ── 명인 탭: 위에서 명인을 고르면 제목·색·내용이 함께 바뀜
+function renderMaster() {
+  const tab = body.dataset.tab;
+  const inv = qs.get('inv') ? b64d(qs.get('inv')) : null;
+  let m = qs.get('m');
+  if (!MASTERS.includes(m)) m = tab === 'saju' ? 'haewoon' : tab === 'love' ? 'hana' : (session.get('master') || 'haewoon');
+  session.set('master', m);
+  const MU = M.ui;
+  const p = P(), chart = E.SJ.chartOf(p), per = E.period(), today = todayKey();
+  const d = E.daily(p, today, turnsState(per.key).used, C);
+  const open = isOpen(m) || (m === 'hana' && !!inv);
+  const pick = MASTERS.map(k => { const [bc, bt] = badgeOf(k); return `<a href="?m=${k}" class="mp mp-${k}${k === m ? ' is-on' : ''}"${k === m ? ' aria-current="page"' : ''}>${imgTag(k, 52, 'mp-img')}<b>${esc(MU.name[k])}</b><small>${esc(MU.field[k])}</small><em class="bdg bdg-${bc}">${esc(bt)}</em></a>`; }).join('');
+  const head = `<header class="mhead">${imgTag(m, 76, 'mh-img')}<div><h1>${esc(MU.title[m])}</h1><p>${esc(MU.field[m])}</p></div></header>`;
+  let content = '';
+  if (open) {
+    const secs = m === 'haewoon' ? MV.haewoonSections(M, S, L, d, chart, nowMin()) : m === 'hana' ? MV.hanaSections(M, S, d, chart) : MV.dohanSections(M, S, L, d, chart);
+    const n = visitCount(m), o = MV.ORDER[m];
+    const list = (n >= 3 ? o.late : o.early).map(k => secs[k]);
+    const fold = n >= 3 && o.fold.length ? `<details class="fold"><summary>${esc(MU.fold[m])}</summary>${o.fold.map(k => secs[k]).join('')}</details>` : '';
+    if (m === 'hana') content = list.join('') + fold + adSlot('tab') + compatBlock(!!inv);
+    else content = list.slice(0, -1).join('') + adSlot('tab') + list[list.length - 1] + fold;
+    content += `<section class="sec"><p class="disc-inline">${esc(m === 'haewoon' ? S.ui.disclaimer : MU.disclaimer)}</p></section>`;
+  } else {
+    const teaser = m === 'haewoon' ? MV.haewoonTeaser(M, S, chart) : m === 'hana' ? MV.hanaTeaser(M, S, chart) : MV.dohanTeaser(M, chart);
+    content = `<section class="sec locked"><p class="lk-teaser">${esc(teaser)}</p><div class="lk-blur" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<div class="lk-box"><button class="btn-accent btn-primary" type="button" id="unlockBtn">${esc(MU.unlock)}</button><p class="muted small">${esc(fmt(MU.unlockNote, { t: hhmm(per.next) }))}</p>${m !== 'haewoon' ? `<p class="muted small">${esc(MU.unlockFree)}</p>` : ''}</div></section>${adSlot('tab')}`;
+  }
+  app().innerHTML = `<nav class="mpick" aria-label="${esc(MU.pick)}">${pick}</nav><div class="mview m-${m}">${head}${content}</div>`;
+  $('#unlockBtn')?.addEventListener('click', () => unlockWithAd(m, () => renderMaster()));
+  // 시운 다이얼: 칸을 누르면 그 시간 풀이로 이동
+  $('#sdial')?.addEventListener('click', e => {
+    const seg = e.target.closest('.seg'); if (!seg) return;
+    const i = +seg.dataset.i, el = document.getElementById(`hr-${i <= 2 ? 0 : i}`);
+    if (el) { el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' }); el.classList.add('is-flash'); setTimeout(() => el.classList.remove('is-flash'), 1400); }
+  });
+  if ($('#sdial')) requestAnimationFrame(() => requestAnimationFrame(() => $('#sdial')?.classList.add('is-in')));
+  const now = $('.daeun .is-now'); if (now) now.parentElement.scrollLeft = now.offsetLeft - now.parentElement.offsetLeft - 16;
+  if (m === 'hana' && open) bindCompat(p, inv);
+  if ((tab === 'love' || location.hash === '#compat') && $('#compat')) setTimeout(() => $('#compat').scrollIntoView({ block: 'start' }), 60);
+  pushAds(app());
+}
+
+// ── 하나의 궁합 (광고 별도). 초대 링크로 들어온 결과는 광고 없이 보여 줌
+function compatBlock(viaInvite) {
+  const MU = M.ui, open = viaInvite || isOpen('compat');
+  const pv = store.get('partner', null) || {};
+  const thisYear = new Date().getFullYear();
+  const opt = (from, to, sel) => { let s = ''; for (let i = from; to >= from ? i <= to : i >= to; to >= from ? i++ : i--) s += `<option value="${i}"${i === sel ? ' selected' : ''}>${i}</option>`; return s; };
+  if (!open) return `<section class="sec compat" id="compat"><h2>${esc(MU.compatTitle)}</h2><p class="muted">${esc(MU.compatSub)}</p>
+<div class="lk-box"><button class="btn-accent btn-primary" type="button" id="compatUnlock">${esc(MU.compatUnlock)}</button><p class="muted small">${esc(fmt(MU.compatNote, { t: hhmm(E.period().next) }))}</p></div></section>`;
+  return `<section class="sec compat" id="compat"><h2>${esc(MU.compatTitle)}</h2><p class="muted">${esc(MU.compatSub)}</p>
+<form id="compatForm" class="form compact"${viaInvite ? ' hidden' : ''}>
+<label class="field"><span>${esc(MU.relKind)}</span><select name="kind">${Object.entries(MU.relKinds).map(([k, v]) => `<option value="${k}"${pv.kind === k ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
+<label class="field"><span>${esc(U.partnerName)} <small>${esc(U.optional)}</small></span><input name="name" maxlength="20" value="${esc(pv.name || '')}"></label>
+<fieldset class="field"><legend>${esc(U.gender)}</legend><div class="seg-ctl"><label><input type="radio" name="gender" value="M"${pv.gender !== 'F' ? ' checked' : ''}><span>${esc(U.male)}</span></label><label><input type="radio" name="gender" value="F"${pv.gender === 'F' ? ' checked' : ''}><span>${esc(U.female)}</span></label></div></fieldset>
+<fieldset class="field"><legend>${esc(U.birth)}</legend><div class="ymd">
+<select name="y" aria-label="${esc(U.year)}"><option value="">${esc(U.year)}</option>${opt(thisYear, 1930, pv.y)}</select>
+<select name="m" aria-label="${esc(U.month)}"><option value="">${esc(U.month)}</option>${opt(1, 12, pv.m)}</select>
+<select name="d" aria-label="${esc(U.day)}"><option value="">${esc(U.day)}</option>${opt(1, 31, pv.d)}</select></div></fieldset>
+<label class="field"><span>${esc(U.birthTime)} <small>${esc(U.optional)}</small></span><select name="sijin"><option value="">${esc(U.unknown)}</option>${L.sijin.map((s, i) => `<option value="${i}"${pv.sijin === i ? ' selected' : ''}>${esc(s)} (${sijinRange(i)})</option>`).join('')}</select></label>
+<p class="form-err" id="loveErr" hidden>${esc(U.required)}</p>
+<button class="btn-primary" type="submit">${esc(U.analyze)}</button>
+</form>
+<div id="compatOut"></div>
+<div class="share-row"><button class="btn-ghost" type="button" id="inviteBtn">${esc(U.invite)}</button></div>
+</section>`;
+}
+function bindCompat(p, inv) {
+  $('#compatUnlock')?.addEventListener('click', () => unlockWithAd('compat', () => { renderMaster(); setTimeout(() => $('#compat')?.scrollIntoView({ block: 'start' }), 60); }));
+  const out = $('#compatOut'); if (!out) return;
+  const show = (pt, scroll) => {
+    const raw = activeRaw();
+    const partner = E.profileFrom({ name: pt.name || '', y: pt.y, m: pt.m, d: pt.d, sijin: pt.sijin ?? null, timeMode: pt.sijin === null || pt.sijin === undefined ? 'unknown' : 'sijin', country: raw.country, gender: pt.gender || null });
+    const cp = MV.compatReading(M, S, p, partner, pt.kind || 'lover');
+    const C2 = M.hana.compat;
+    const da = E.daily(p, todayKey(), 0, C).hours, db = E.daily(partner, todayKey(), 0, C).hours;
+    const tog = da.map((h, i) => Math.round((h + db[i]) / 2));
+    const bh = [4, 5, 6, 7, 8, 9, 10, 11].reduce((a, i) => (tog[i] > tog[a] ? i : a), 4);
+    const nm1 = esc(p.name || U.me || '나'), nm2 = esc(pt.name || M.ui.relKinds[pt.kind || 'lover']);
+    const bar = v => `<span class="pips">${[1, 2, 3, 4, 5].map(n => `<i class="${n <= v ? 'on' : ''}"></i>`).join('')}</span>`;
+    out.innerHTML = `<div class="love-res">
+<p class="pair"><span>${nm1}</span><i aria-hidden="true">+</i><span>${nm2}</span></p>
+<p class="big-score"><span id="loveNum">0</span><small>/100</small></p><p class="score-label">${esc(U.loveScore)}</p></div>
+<ul class="axes">${Object.entries(C2.axes).map(([k, t]) => `<li><span>${esc(t)}</span>${bar(cp.axes[k])}</li>`).join('')}</ul>
+${cp.lines.map(t => `<p class="m-p">${esc(t)}</p>`).join('')}
+<div class="dodont"><div><h3>${esc(C2.do)}</h3><ul>${cp.doList.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div><div><h3>${esc(C2.dont)}</h3><ul>${cp.dontList.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></div>
+<p class="m-p">${esc(fmt(C2.hour, { h: `${L.sijin[bh]} (${sijinRange(bh)})` }))}</p>`;
+    countUp($('#loveNum'), cp.score);
+    if (scroll) out.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  };
+  if (inv) show({ name: inv.n, y: inv.y, m: inv.m, d: inv.d, sijin: inv.s ?? null, gender: inv.g, kind: 'lover' }, false);
+  else { const pv = store.get('partner', null); if (pv && pv.y) show(pv, false); }
+  $('#compatForm')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const f = e.target, y = +f.y.value, mo = +f.m.value, dd = +f.d.value;
+    if (!y || !mo || !dd || new Date(y, mo - 1, dd).getMonth() !== mo - 1) { $('#loveErr').hidden = false; return; }
+    $('#loveErr').hidden = true;
+    const pt = { name: f.name.value.trim(), y, m: mo, d: dd, sijin: f.sijin.value === '' ? null : +f.sijin.value, gender: f.gender.value, kind: f.kind.value };
+    store.set('partner', pt);
+    show(pt, true);
+  });
+  $('#inviteBtn')?.addEventListener('click', () => {
+    const raw = activeRaw();
+    const code = b64e({ n: raw.name || '', y: raw.y, m: raw.m, d: raw.d, s: raw.sijin, g: raw.gender, b: raw.blood });
+    shareLink(`${location.origin}/${C}/result/love/?inv=${code}`, fmt(U.invitedBy, { n: raw.name || '' }));
+  });
 }
 
 // ── 운명 바꾸기 연출: 기운이 모임 → 운명의 문 → 개방(데이터 교체) → 새 운세 공개
@@ -515,8 +758,8 @@ async function changeFate() {
 // 내일 미리보기: 점수와 가장 큰 근거 한 줄
 function tomorrowHTML(p, today) {
   const t = addDays(today, 1), d2 = E.daily(p, t, 0, C);
-  const line = S ? todayReading(S, d2).flow : '';
-  return `<section class="sec tmr"><a href="/${C}/result/time/?d=${t}"><span class="tmr-l">${esc(S ? S.ui.tomorrow : U.tomorrow)}<small>${esc(fmtDate(L, t))}</small></span><b>${d2.score}</b></a>${line ? `<p class="muted">${esc(line)}</p>` : ''}</section>`;
+  const line = HAS_M ? MV.fortuneReading(M, S, d2).flow : S ? todayReading(S, d2).flow : '';
+  return `<section class="sec tmr"><a href="/${C}/result/time/?d=${t}"><span class="tmr-l">${esc(HAS_M ? U.tomorrow : S ? S.ui.tomorrow : U.tomorrow)}<small>${esc(fmtDate(L, t))}</small></span><b>${d2.score}</b></a>${line ? `<p class="muted">${esc(line)}</p>` : ''}</section>`;
 }
 
 // ── 사주 탭 (사주 풀이 문장이 있는 언어만)
@@ -535,7 +778,7 @@ function flowHTML(p, center, today, todayScore, link) {
   const W = 340, H = 150, x = i => 14 + i * ((W - 28) / 14), yv = v => H - 22 - (v - 30) / 70 * (H - 44);
   const path = sc.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${yv(v).toFixed(1)}`).join('');
   const ti = span.indexOf(today);
-  const dot = (v, i) => { const c = `<circle cx="${x(i)}" cy="${yv(v)}" r="${i === 7 ? 6 : 3.5}" class="${i === 7 ? 'pt sel' : 'pt'}"><title>${span[i]} ${v}</title></circle>`; return link ? `<a href="/${C}/result/time/?d=${span[i]}">${c}<circle cx="${x(i)}" cy="${yv(v)}" r="11" class="hit"/></a>` : c; };
+  const dot = (v, i) => { const c = `<circle cx="${x(i)}" cy="${yv(v)}" r="${i === 7 ? 6 : 3.5}" class="${i === 7 ? 'pt sel' : 'pt'}"><title>${span[i]} ${v}</title></circle>`; return link && span[i] > today ? `<a href="/${C}/result/time/?d=${span[i]}">${c}<circle cx="${x(i)}" cy="${yv(v)}" r="11" class="hit"/></a>` : c; };
   return `<section class="sec flow"><h2>${esc(U.flow)}</h2>
 <svg viewBox="0 0 ${W} ${H}" class="flow-svg flow-anim" role="img" aria-label="${esc(U.flow)}">
 <line x1="14" x2="${W - 14}" y1="${yv(70)}" y2="${yv(70)}" class="grid"/>
@@ -561,19 +804,19 @@ function animateFlow(sec) {
 async function shareFortune(p, d, summary, day) {
   const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350;
   const x = cv.getContext('2d');
-  x.fillStyle = '#141B36'; x.fillRect(0, 0, 1080, 1350);
-  x.strokeStyle = '#C9A24A'; x.lineWidth = 3; x.strokeRect(40, 40, 1000, 1270);
-  x.fillStyle = '#C9A24A'; x.font = '700 44px serif'; x.textAlign = 'center';
+  x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, 1080, 1350);
+  x.strokeStyle = '#1A1A1A'; x.lineWidth = 2; x.strokeRect(40, 40, 1000, 1270);
+  x.fillStyle = '#1A1A1A'; x.font = '700 44px serif'; x.textAlign = 'center';
   x.fillText(`${D.brand}  ${L.subBrand}`, 540, 130);
-  x.fillStyle = '#B9B3A3'; x.font = '32px sans-serif';
+  x.fillStyle = '#6E6A62'; x.font = '32px sans-serif';
   x.fillText(`${p.name ? p.name + '  ' : ''}${fmtDate(L, day)}`, 540, 190);
   const img = await svgToImg(dialSVG({ hours: d.hours, labels: dialLabels(L), nowMin: nowMin(), best: d.best, worst: d.worst, size: 620, centerTop: U.todayScore, centerMain: d.score, centerSub: '/100' }));
   if (img) x.drawImage(img, 230, 240, 620, 620);
-  x.fillStyle = '#E9E3D3'; x.font = '600 44px serif';
+  x.fillStyle = '#1A1A1A'; x.font = '600 44px serif';
   let y = wrapText(x, summary, 540, 960, 880, 62);
-  x.fillStyle = '#B9B3A3'; x.font = '32px sans-serif';
+  x.fillStyle = '#6E6A62'; x.font = '32px sans-serif';
   y = wrapText(x, hourText(L, 'best', L.sijin[d.best], d.rolls).split(/(?<=[.!。！?？])\s*/)[0], 540, y + 20, 900, 46);
-  x.fillStyle = '#C9A24A'; x.font = '30px sans-serif';
+  x.fillStyle = '#B3261E'; x.font = '30px sans-serif';
   x.fillText(D.site.replace(/^https?:\/\//, ''), 540, 1260);
   await shareCanvas(cv, `fortune-in-time-${day}.png`, `${summary} ${D.site}/${C}/`);
 }
@@ -658,62 +901,83 @@ ${dialSVG({ hours: cp.together, labels: dialLabels(L), nowMin: nowMin(), best: c
   pushAds(app());
 }
 
-// ── 타임머신 탭 (시간대마다 1회: 날짜를 고르고 '이동'을 누르면 기회를 씀)
+// ── 미래 탭 (내일~1년 뒤만). 시간대마다 1회: 날짜를 고르고 '이동'을 누르면 기회를 씀
+const dDay = (from, to) => { const a = E.parseKey(from), b = E.parseKey(to); return Math.round((Date.UTC(b.y, b.m - 1, b.d) - Date.UTC(a.y, a.m - 1, a.d)) / 864e5); };
+function quickDates(today, p) {
+  const t = E.parseKey(today), dow = new Date(Date.UTC(t.y, t.m - 1, t.d)).getUTCDay();
+  const sat = addDays(today, ((6 - dow + 7) % 7) || 7);
+  const nm = new Date(Date.UTC(t.y, t.m, 1)).toISOString().slice(0, 10);
+  let bd = `${t.y}-${pad(p.m)}-${pad(p.d)}`;
+  if (bd <= today) bd = `${t.y + 1}-${pad(p.m)}-${pad(p.d)}`;
+  if (E.parseKey(bd).m !== p.m) bd = addDays(bd, -1); // 2월 29일생: 평년에는 28일
+  return { tomorrow: addDays(today, 1), weekend: sat, nextMonth1: nm, myBirthday: bd };
+}
 function renderTime(scrollToResult = false) {
   const p = P();
-  const today = todayKey();
+  const today = todayKey(), minD = addDays(today, 1), maxD = addDays(today, 365);
+  const inRange = k => k && k >= minD && k <= maxD;
   const g = gate('time');
   const open = g.left > 0;
   const want = /^\d{4}-\d{2}-\d{2}$/.test(qs.get('d') || '') ? qs.get('d') : null;
-  const pre = open ? (want || g.data || today) : g.data;
+  if (want === today) { location.replace(`/${C}/result/fortune/`); return; }
+  const shown = inRange(g.data) ? g.data : null;
+  const pre = inRange(want) ? want : shown || minD;
+  const qd = quickDates(today, p);
+  // 지난 날은 목록에서 빼고, 가까운 날부터
+  const days = store.get('days', []).filter(x => x.date >= minD).sort((a, b) => (a.date < b.date ? -1 : 1));
+  store.set('days', days);
 
   app().innerHTML = `
 <section class="sec"><h1 class="page-h">${esc(U.timeTitle)}</h1><p class="muted">${esc(U.timeSub)}</p>
-<div class="time-ctl"><input type="date" id="tDate" value="${pre || today}" min="1930-01-01" max="2100-12-31" aria-label="${esc(U.birth)}"${open ? '' : ' disabled'}>
+<div class="quick">${Object.entries(qd).map(([k, v]) => `<button type="button" data-k="${v}"${open ? '' : ' disabled'}>${esc(U[k])}<small>${esc(fmtDate(L, v).replace(/^\d{4}[^\d]*/, ''))}</small></button>`).join('')}</div>
+<div class="time-ctl"><input type="date" id="tDate" value="${pre}" min="${minD}" max="${maxD}" aria-label="${esc(U.pickDate)}"${open ? '' : ' disabled'}>
 <button class="btn-primary sm" type="button" id="tGo"${open ? '' : ' disabled'}>${esc(U.go)}</button></div>
-<div class="quick"><button type="button" data-q="-1"${open ? '' : ' disabled'}>${esc(U.yesterday)}</button><button type="button" data-q="0"${open ? '' : ' disabled'}>${esc(U.today)}</button><button type="button" data-q="1"${open ? '' : ' disabled'}>${esc(U.tomorrow)}</button><button type="button" data-q="7"${open ? '' : ' disabled'}>${esc(U.nextWeek)}</button></div>
 ${gateHTML(g)}
 </section>
 <div id="tOut"></div>
-<section class="sec save-day"><h2>${esc(U.savedDays)}</h2>
+<section class="sec save-day"><h2>${esc(U.importantDays)}</h2>
 <div class="save-row"><input id="tLabel" maxlength="20" placeholder="${esc(U.dayLabelPh)}"><button class="btn-ghost sm" type="button" id="tSave">${esc(U.saveDay)}</button></div>
 <ul id="tList" class="day-list"></ul></section>
 ${adSlot('tab')}`;
 
   const draw = sel => {
-    // 오늘이면 운명 바꾸기 결과까지 반영, 지난 날이면 과거형 문장
-    const tense = sel < today ? 'past' : 'now';
-    const d = E.daily(p, sel, sel === today ? turnsState(E.period().key).used : 0, C);
-    const chip = sel < today ? U.pastDay : sel > today ? U.futureDay : U.today;
+    const d = E.daily(p, sel, 0, C);
+    const dd = dHTML(dDay(today, sel));
+    const lead = HAS_M ? MV.fortuneReading(M, S, d).flow : S ? todayReading(S, d).flow : summaryText(L, d.band, d.rolls, 'now');
+    const dom = k => (HAS_M ? MV.fortuneDomain(M, S, d, k) : S ? domainReading(S, d, k) : domainText(L, k, d.domains[k], d.rolls, ['wealth', 'love', 'work', 'health'].indexOf(k), 'now'));
+    const top = [4, 5, 6, 7, 8, 9, 10, 11].sort((a, b) => d.hours[b] - d.hours[a] || a - b).slice(0, 2).sort((a, b) => a - b);
     $('#tOut').innerHTML = `<section class="sec t-res">
-<p class="who"><span class="t-chip${sel < today ? ' past' : ''}">${esc(chip)}</span> ${esc(fmtDate(L, sel))}</p>
+<p class="who"><span class="t-chip">${dd}</span> ${esc(fmtDate(L, sel))}</p>
 <p class="big-score"><span>${d.score}</span><small>/100</small></p>
-<p class="lead">${esc(S && tense !== 'past' ? todayReading(S, d).flow : summaryText(L, d.band, d.rolls, tense))}</p>
-<ul class="domains">${['wealth', 'love', 'work', 'health'].map((k, i) => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(S && tense !== 'past' ? domainReading(S, d, k) : domainText(L, k, d.domains[k], d.rolls, i, tense))}</span></li>`).join('')}</ul>
-</section>${tense !== 'past' ? basisHTML(S, d, null) : ''}`;
+<p class="lead">${esc(lead)}</p>
+<p class="t-hours"><span>${esc(U.bestHours)}</span>${top.map(i => `<b>${esc(L.sijin[i])}</b> ${sijinRange(i)}`).join(' · ')}</p>
+<ul class="domains">${['wealth', 'love', 'work', 'health'].map(k => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(dom(k))}</span></li>`).join('')}</ul>
+</section>${basisHTML(S, d, null)}`;
     if (scrollToResult) $('#tOut').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   };
+  function dHTML(n) { return `D-${n}`; }
   const list = () => {
-    const days = store.get('days', []).sort((a, b) => (a.date < b.date ? -1 : 1));
-    $('#tList').innerHTML = days.map((x, i) => `<li><button type="button" class="day-go" data-k="${x.date}"${open ? '' : ' disabled'}><b>${esc(x.label || '·')}</b><span>${esc(fmtDate(L, x.date))}</span></button><button type="button" class="day-rm" data-i="${i}" aria-label="${esc(U.remove)}">${esc(U.remove)}</button></li>`).join('');
+    const ds = store.get('days', []).filter(x => x.date >= minD).sort((a, b) => (a.date < b.date ? -1 : 1));
+    $('#tList').innerHTML = ds.map((x, i) => `<li><button type="button" class="day-go" data-k="${x.date}"${open ? '' : ' disabled'}><b><em class="dd">D-${dDay(today, x.date)}</em>${esc(x.label || '·')}</b><span>${esc(fmtDate(L, x.date))}</span></button><button type="button" class="day-rm" data-i="${i}" aria-label="${esc(U.remove)}">${esc(U.remove)}</button></li>`).join('');
     $$('.day-go').forEach(b => b.addEventListener('click', () => { $('#tDate').value = b.dataset.k; window.scrollTo({ top: 0, behavior: 'smooth' }); }));
-    $$('.day-rm').forEach(b => b.addEventListener('click', () => { const ds = store.get('days', []).sort((a, c) => (a.date < c.date ? -1 : 1)); ds.splice(+b.dataset.i, 1); store.set('days', ds); list(); }));
+    $$('.day-rm').forEach(b => b.addEventListener('click', () => { const all = store.get('days', []).filter(x => x.date >= minD).sort((a, c) => (a.date < c.date ? -1 : 1)); all.splice(+b.dataset.i, 1); store.set('days', all); list(); }));
   };
   $('#tGo').addEventListener('click', () => {
     const v = $('#tDate').value; const g2 = gate('time');
-    if (!v || g2.left <= 0) return;
+    if (!inRange(v) || g2.left <= 0) return;
     g2.save({ used: g2.used + 1, data: v });
     history.replaceState(null, '', `?d=${v}`);
     renderTime(true);
   });
-  $$('.quick button').forEach(b => b.addEventListener('click', () => { $('#tDate').value = addDays(today, +b.dataset.q); }));
+  $$('.quick button').forEach(b => b.addEventListener('click', () => { $('#tDate').value = b.dataset.k; $$('.quick button').forEach(x => x.classList.toggle('is-on', x === b)); }));
   $('#tSave').addEventListener('click', () => {
-    const v = $('#tDate').value || today;
-    const ds = store.get('days', []).filter(x => x.date !== v);
+    const v = $('#tDate').value;
+    if (!inRange(v)) return;
+    const ds = store.get('days', []).filter(x => x.date !== v && x.date >= minD);
     ds.push({ date: v, label: $('#tLabel').value.trim() });
     store.set('days', ds.slice(-30)); $('#tLabel').value = ''; list(); toast(`${U.saveDay} ✓`);
   });
-  if (g.data) draw(g.data);
+  if (shown) draw(shown);
   bindGate(app(), 'time', () => renderTime());
   list(); pushAds(app());
 }
@@ -747,9 +1011,11 @@ ${isGift ? '' : `<p class="charm-rec">${esc(U.charmRec)}</p>`}
 ${raw ? `<div class="gift"><h3>${esc(U.charmGift)}</h3><div class="save-row"><input id="giftTo" maxlength="20" placeholder="${esc(U.giftTo)}"><button class="btn-ghost sm" type="button" id="cGift">${esc(U.charmGift)}</button></div></div>` : ''}
 </section>
 ${!raw ? `<section class="sec share-row"><a class="btn-primary" href="/${C}/">${esc(U.submit)}</a></section>` : ''}
-${adSlot('tab')}`;
+${adSlot('tab')}
+<section class="sec board" id="boardSec"></section>`;
 
   store.set('charm', sel);
+  mountBoard($('#boardSec'), { C, L, U, getName: () => (activeRaw()?.name || '').trim(), isAdmin, getGate: () => gate('board'), onWrote: () => { const g = gate('board'); g.save({ used: g.used + 1 }); } });
   $('#cSave').addEventListener('click', () => saveCharm(sel, false));
   $('#cHq')?.addEventListener('click', () => showRewarded(() => saveCharm(sel, true)));
   $('#cGift')?.addEventListener('click', () => {
@@ -788,7 +1054,8 @@ else if (body.classList.contains('page-result')) {
     if (qs.get('inv')) session.set('inv', qs.get('inv'));
     location.replace(`/${C}/`);
   } else {
-    const render = { fortune: renderFortune, saju: renderSaju, love: renderLove, time: renderTime, charm: renderCharm }[tab];
+    const render = HAS_M ? { fortune: renderFortune, master: renderMaster, saju: renderMaster, love: renderMaster, time: renderTime, charm: renderCharm }[tab]
+      : { fortune: renderFortune, saju: renderSaju, love: renderLove, time: renderTime, charm: renderCharm }[tab];
     if (lockedOther()) {
       const n = document.createElement('p'); n.className = 'lock-note'; n.setAttribute('role', 'status');
       n.textContent = fmt(U.lockNote, { t: hhmm(E.period().next) });

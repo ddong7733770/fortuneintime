@@ -1,6 +1,9 @@
 // Kumpulan kalimat Bahasa Indonesia (struktur sama dengan ko.js)
 export default {
   ui: {
+    boardAdminName: "Admin",
+    boardTitle: "Papan", boardSub: "Bagikan cerita ramalan, ulasan jimat, atau tekad hari ini.", boardAll: "Semua", boardWrite: "Tulis", boardBy: "Menulis sebagai", boardTitleLabel: "Judul", boardTitlePh: "Masukkan judul", boardBodyLabel: "Pesan", boardBodyPh: "Tulis pesanmu", boardImg: "Gambar", boardImgNote: "(1 gambar; di atas 500KB diperkecil otomatis)", boardImgRemove: "Hapus gambar", boardPw: "Kata sandi", boardPwPh: "Kata sandi untuk ubah/hapus (min. 4 karakter)", boardSubmit: "Kirim", boardCancel: "Batal", boardMore: "Muat lagi", boardEmpty: "Belum ada tulisan. Jadilah yang pertama!", boardEdit: "Ubah", boardDel: "Hapus", boardDelConfirm: "Yakin hapus? Ketuk sekali lagi", boardOk: "OK", boardPwNeed: "Masukkan kata sandi min. 4 karakter.", boardDenied: "Kata sandi salah.", boardLimit: "Kamu sudah menulis di slot waktu ini. Coba lagi di slot berikutnya (06.00 / 18.00).", boardEmptyField: "Isi judul dan pesan.", boardImgBig: "Gambar tidak bisa diperkecil di bawah 500KB. Pilih gambar lain.", boardErr: "Coba lagi sebentar lagi.", boardOffline: "Papan sedang disiapkan.", boardNote: "Tulisan yang tidak sesuai tujuan situs ini atau tidak pantas dapat dihapus oleh pengelola.", boardAnon: "Anonim", boardGateLeft: "Kamu bisa menulis 1 tulisan di slot waktu ini.", boardGateUsed: "Kamu sudah menulis di slot waktu ini.",
+    weekend: "Akhir pekan ini", nextMonth1: "Tanggal 1 bulan depan", myBirthday: "Ulang tahunku", pickDate: "Pilih tanggal", importantDays: "Hari penting", bestHours: "Jam terbaik", seeToday: "Lihat hari ini",
     lockNote: "Di slot waktu ini kamu hanya bisa melihat ramalan dari data yang pertama kali dipakai. Ramalan data baru muncul mulai pukul {t}.",
     charmRec: "Jimat rekomendasi slot waktu ini",
     sfxOn: "Suara aktif", sfxOff: "Suara mati",

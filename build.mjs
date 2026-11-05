@@ -7,6 +7,15 @@ import config from './site.config.mjs';
 import { LANGS, TZ, SLUG, SIGN_GLYPH, BLOOD_LABEL, fmt, esc, sijinRange, dialLabels, dialSVG, todayIn, genericReading, readingHTML, indexListHTML, fmtDate } from './src/content.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
+// 게시판 개인정보 안내(개인정보처리방침에 추가)
+const BOARD_PRIVACY = {
+  ko: ['게시판', '게시판에 글을 쓰면 작성자 이름(운세를 볼 때 입력한 이름), 제목, 내용, 첨부 이미지, 국가(접속 위치로 추정한 국가 코드), 작성 시각, 비밀번호의 해시값이 저장됩니다. 비밀번호 원문과 IP 주소는 저장하지 않습니다. 같은 시간대에 여러 번 쓰는 것을 막기 위해 IP 주소를 알아볼 수 없게 바꾼 값(해시)을 그 시간대가 끝나는 6시 또는 18시까지만 보관한 뒤 자동으로 지웁니다. 글은 작성자가 비밀번호로 직접 수정·삭제할 수 있고, 목적에 맞지 않거나 부적절한 글은 운영진이 삭제할 수 있습니다. 이미지는 올리기 전에 기기에서 다시 저장되어 사진 속 위치 정보가 지워집니다.'],
+  ja: ['掲示板', '掲示板に投稿すると、投稿者名（占いで入力した名前）、タイトル、本文、添付画像、国（接続位置から推定した国コード）、投稿時刻、パスワードのハッシュ値が保存されます。パスワードの原文とIPアドレスは保存しません。同じ時間帯の連続投稿を防ぐため、IPアドレスを判別できない形に変換した値（ハッシュ）をその時間帯が終わる6時または18時まで保管し、自動で削除します。投稿は投稿者がパスワードで編集・削除でき、目的に合わない・不適切な投稿は運営者が削除することがあります。画像はアップロード前に端末で再保存され、写真の位置情報は削除されます。'],
+  zh: ['留言板', '发帖时会保存作者名（看运势时输入的名字）、标题、内容、附加图片、国家（根据访问位置推测的国家代码）、发帖时间和密码的哈希值。不保存密码原文和IP地址。为防止同一时段多次发帖，会将IP地址转换为无法识别的值（哈希），仅保存至该时段结束（6点或18点）后自动删除。作者可凭密码修改或删除帖子，不符合宗旨或不当的帖子运营方可删除。图片在上传前会在设备上重新保存，照片中的位置信息会被删除。'],
+  en: ['Board', 'When you post, we store the author name (the name you entered for your fortune), title, message, attached image, country (a country code estimated from your connection) and post time, plus a hash of your password. We do not store your password itself or your IP address. To limit posting to once per time slot, we keep an irreversible hash of your IP address only until that slot ends (6:00 or 18:00) and then delete it automatically. Authors can edit or delete posts with their password, and operators may remove posts that are inappropriate or off-topic. Images are re-saved on your device before upload, which removes location data from photos.'],
+  es: ['Tablón', 'Al publicar guardamos el nombre del autor (el que introdujiste para tu fortuna), título, mensaje, imagen adjunta, país (código estimado por tu conexión), hora de publicación y un hash de tu contraseña. No guardamos la contraseña ni tu dirección IP. Para limitar las publicaciones a una por franja, conservamos un hash irreversible de tu IP solo hasta que termina la franja (6:00 o 18:00) y luego se borra automáticamente. Los autores pueden editar o borrar con su contraseña, y los administradores pueden retirar publicaciones inapropiadas. Las imágenes se vuelven a guardar en tu dispositivo antes de subirse, lo que elimina los datos de ubicación de las fotos.'],
+  id: ['Papan', 'Saat menulis, kami menyimpan nama penulis (nama yang kamu isi untuk ramalan), judul, pesan, gambar lampiran, negara (kode negara dari perkiraan koneksi), waktu kirim, dan hash kata sandi. Kami tidak menyimpan kata sandi asli maupun alamat IP. Untuk membatasi satu tulisan per slot waktu, kami menyimpan hash IP yang tidak bisa dikembalikan hanya sampai slot berakhir (06.00 atau 18.00), lalu dihapus otomatis. Penulis dapat mengubah atau menghapus dengan kata sandi, dan pengelola dapat menghapus tulisan yang tidak pantas. Gambar disimpan ulang di perangkat sebelum diunggah sehingga data lokasi pada foto terhapus.'],
+};
 const DIST = path.join(ROOT, 'dist');
 const L = {};
 for (const c of LANGS) {
@@ -16,6 +25,8 @@ for (const c of LANGS) {
   L[c].lines = lines;
   L[c].lines.love = (await import(`./src/i18n/love/${c}.js`)).default;
   // 사주 풀이 문장(현재 한국어만). 있으면 '사주' 탭과 근거 문장을 보여 줌
+  // 명인 풀이 문장(현재 한국어만). 있으면 '명인' 탭(해운정사·하나·도한)을 보여 줌
+  if (fs.existsSync(path.join(ROOT, `src/i18n/masters/${c}.js`))) { L[c].masters = (await import(`./src/i18n/masters/${c}.js`)).default; L[c].ui.tabs = { ...L[c].ui.tabs, master: L[c].masters.ui.tab || '명인' }; }
   if (fs.existsSync(path.join(ROOT, `src/i18n/saju/${c}.js`))) { L[c].saju = (await import(`./src/i18n/saju/${c}.js`)).default; L[c].ui.tabs = { ...L[c].ui.tabs, saju: L[c].saju.ui.tab }; }
   // 태어난 나라: 전 세계 국가를 이 언어의 이름으로 (기존 '기타'는 저장된 정보 표시용으로만 유지)
   {
@@ -33,7 +44,7 @@ for (const c of LANGS) {
   const reason = (await import(`./src/i18n/places/reason/${c}.js`)).default;
   L[c].placesData = { ui: pl.live, places: { ...pl.places, ...more }, forYou: pl.forYou, reason };
   const pv = L[c].policy.privacy;
-  pv.splice(pv.length - 1, 0, pl.privacyAdd); // '문의' 항목 앞에 위치 안내 추가
+  pv.splice(pv.length - 1, 0, pl.privacyAdd, BOARD_PRIVACY[c]); // '문의' 항목 앞에 위치·게시판 안내 추가
 }
 // ── 문장 가짓수 검사: 요청 기준보다 적으면 빌드를 멈춤
 for (const c of LANGS) {
@@ -58,7 +69,18 @@ const VERSION = Date.now().toString(36);
 // 언어 선택은 국기 대신 언어 코드와 이름으로 표시 (특정 나라와 언어를 묶지 않음)
 const LANG_EN = { ko: 'Korean', ja: 'Japanese', zh: 'Chinese', en: 'English', es: 'Spanish', id: 'Indonesian' };
 const GLOBE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg>';
-const HEAD_FONT = { ko: 'Gowun+Batang:wght@700', ja: 'Shippori+Mincho:wght@700', zh: 'Noto+Serif+SC:wght@700', en: 'Gowun+Batang:wght@700', es: 'Gowun+Batang:wght@700', id: 'Gowun+Batang:wght@700' };
+// 제목: Noto Serif(언어별), 본문: Pretendard(한글·라틴) → 6개 언어를 같은 느낌으로
+const HEAD_FONT = { ko: 'Noto+Serif+KR:wght@600;700', ja: 'Noto+Serif+JP:wght@600;700', zh: 'Noto+Serif+SC:wght@600;700', en: 'Noto+Serif:wght@600;700', es: 'Noto+Serif:wght@600;700', id: 'Noto+Serif:wght@600;700' };
+const PRETENDARD = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css';
+// 하단 탭 아이콘(선 아이콘)
+const TAB_ICON = {
+  fortune: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
+  master: '<circle cx="12" cy="8.2" r="3.6"/><path d="M4.8 20.5c1.1-4 4-6.2 7.2-6.2s6.1 2.2 7.2 6.2"/>',
+  saju: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12h17"/>',
+  love: '<path d="M12 20s-7.2-4.4-7.2-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.2 2.6C19.2 15.6 12 20 12 20z"/>',
+  time: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.2V12l3.2 2.1"/><path d="M19.5 4.5v3.2h-3.2"/>',
+  charm: '<rect x="7" y="2.8" width="10" height="18.4" rx="1.2"/><path d="M10 7.2h4M12 7.2v9.6M10 12h4M10 16.8h4"/>',
+};
 
 // ── 언어 파일 점검: 한국어에 있는 화면 문구가 빠진 언어가 있으면 알려 줌
 for (const c of LANGS) {
@@ -108,13 +130,14 @@ ${alts ? alts.map(a => `<link rel="alternate" hreflang="${a.hl}" href="${SITE}${
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta property="og:locale" content="${Lc.ogLocale}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#141B36">
+<meta name="theme-color" content="#FFFFFF">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${font}&display=swap">
-${font.includes('Gowun') ? '' : `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&text=${encodeURIComponent(BRAND)}&display=swap">`}
+${font.includes('Noto+Serif+KR') ? '' : `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&text=${encodeURIComponent(BRAND)}&display=swap">`}
+<link rel="stylesheet" href="${PRETENDARD}">
 <link rel="stylesheet" href="/assets/style.css?v=${VERSION}">
 ${client ? `<meta name="google-adsense-account" content="${client}">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}" crossorigin="anonymous"></script>` : ''}
@@ -253,7 +276,7 @@ ${footer(c)}
 function clientData(c, withLines = true) {
   const { policy, lines, placesData, ...rest } = L[c];
   if (withLines) rest.lines = lines;
-  else delete rest.saju;
+  else { delete rest.saju; delete rest.masters; }
   return {
     L: rest,
     images: config.images,
@@ -267,16 +290,20 @@ function clientData(c, withLines = true) {
 }
 
 // ── 3) 결과 화면 4탭 (/ko/result/fortune/ 등) — 개인 결과라 검색 제외
+// 한국어(명인 풀이가 있는 언어): 오늘 / 명인 / 미래 / 부적. 예전 주소(saju, love)는 명인 화면으로 넘겨 줌
 const BASE_TABS = ['fortune', 'love', 'time', 'charm'];
 function buildResult(c) {
   const Lc = L[c], U = Lc.ui;
-  const TABS = Lc.saju ? ['fortune', 'saju', 'love', 'time', 'charm'] : BASE_TABS;
-  for (const t of TABS) {
-    const nav = TABS.map(x => `<a href="/${c}/result/${x}/" class="tab${x === t ? ' is-on' : ''}"${x === t ? ' aria-current="page"' : ''}>${esc(U.tabs[x])}</a>`).join('');
+  const HAS_M = !!(Lc.saju && Lc.masters);
+  const NAV = HAS_M ? ['fortune', 'master', 'time', 'charm'] : BASE_TABS;
+  const PAGES = HAS_M ? [...NAV, 'saju', 'love'] : NAV;
+  for (const t of PAGES) {
+    const on = HAS_M && (t === 'saju' || t === 'love') ? 'master' : t;
+    const nav = NAV.map(x => `<a href="/${c}/result/${x}/" class="tab${x === on ? ' is-on' : ''}"${x === on ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICON[x]}</svg><span>${esc(U.tabs[x])}</span></a>`).join('');
     const html = `${head({ lang: c, title: `${U.tabs[t]} | ${BRAND} ${Lc.subBrand}`, desc: Lc.siteDesc, canonical: `/${c}/`, noindex: true })}
-<body class="page-result tab-${t}" data-lang="${c}" data-tab="${t}">
+<body class="page-result has-bnav tab-${t}" data-lang="${c}" data-tab="${t}">
 ${header(c, { edit: true })}
-<nav class="tabs" aria-label="tabs">${nav}</nav>
+<nav class="tabs" aria-label="menu">${nav}</nav>
 <main class="wrap" id="app" aria-live="polite"><div class="loading"><span></span></div></main>
 ${footer(c)}
 <div class="modal" id="modal" hidden><div class="modal-box" role="dialog" aria-modal="true"><p id="modalText"></p><button class="btn-ghost" id="modalClose">${esc(U.close)}</button></div></div>
@@ -386,7 +413,7 @@ ${pages.map(p => `<url><loc>${SITE}${p.loc}</loc><lastmod>${today}</lastmod>${p.
 </urlset>`);
   write('robots.txt', `User-agent: *\nAllow: /\nDisallow: /*/result/\n\nSitemap: ${SITE}/sitemap.xml\n`);
   if (ADS.client) write('ads.txt', `google.com, ${ADS.client.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n`);
-  write('manifest.webmanifest', JSON.stringify({ name: `${BRAND} 시운`, short_name: BRAND, id: '/', start_url: '/?source=home', scope: '/', display: 'standalone', lang: 'ko', description: 'Your fortune, hour by hour', background_color: '#141B36', theme_color: '#141B36', icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }] }));
+  write('manifest.webmanifest', JSON.stringify({ name: `${BRAND} 시운`, short_name: BRAND, id: '/', start_url: '/?source=home', scope: '/', display: 'standalone', lang: 'ko', description: 'Your fortune, hour by hour', background_color: '#FFFFFF', theme_color: '#FFFFFF', icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }] }));
   write('_headers', `/assets/*\n  Cache-Control: public, max-age=86400\n/images/*\n  Cache-Control: public, max-age=86400\n/sw.js\n  Cache-Control: no-cache\n/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n`);
   write('404.html', `${head({ lang: 'ko', title: `404 | ${BRAND}`, desc: L.ko.siteDesc, canonical: '/404', noindex: true })}
 <body class="page-root"><main class="root-wrap"><h1 class="root-title"><span class="wordmark">${esc(BRAND)}</span></h1><p class="root-tag">404</p>
@@ -398,7 +425,7 @@ rm(DIST);
 mk(DIST);
 copyDir(path.join(ROOT, 'public'), DIST);
 mk(path.join(DIST, 'assets'));
-for (const f of ['engine.js', 'content.js', 'countries.js', 'saju.js', 'jieqi.js']) fs.copyFileSync(path.join(ROOT, 'src', f), path.join(DIST, 'assets', f));
+for (const f of ['engine.js', 'content.js', 'countries.js', 'saju.js', 'jieqi.js', 'masters.js']) fs.copyFileSync(path.join(ROOT, 'src', f), path.join(DIST, 'assets', f));
 copyDir(path.join(ROOT, 'src/client'), path.join(DIST, 'assets'));
 fs.copyFileSync(path.join(ROOT, 'node_modules/korean-lunar-calendar/dist/korean-lunar-calendar.mjs'), path.join(DIST, 'assets/lunar.mjs'));
 for (const c of LANGS) { const { policy, placesData, ...rest } = L[c]; write(`assets/i18n/${c}.json`, JSON.stringify(rest)); }
@@ -427,7 +454,7 @@ for (const c of LANGS) { const { policy, placesData, ...rest } = L[c]; write(`as
   write('assets/world-land.txt', land);
 }
 // 브라우저 캐시 문제 방지: 스크립트끼리 불러오는 주소에도 버전을 붙임 (배포할 때마다 새 파일로 인식)
-for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js', 'saju.js', 'saju-view.js', 'jieqi.js']) {
+for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js', 'saju.js', 'saju-view.js', 'jieqi.js', 'masters.js', 'masters-view.js', 'board.js']) {
   const fp = path.join(DIST, 'assets', f);
   const src = fs.readFileSync(fp, 'utf8')
     .replace(/(from\s+'\.\/[\w-]+\.m?js)'/g, `$1?v=${VERSION}'`)

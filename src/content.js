@@ -40,9 +40,11 @@ export const levelOf = v => (v <= 2 ? 0 : v === 3 ? 1 : 2);
 
 // 점수(15~99) → 쪽빛에서 놋쇠 금빛으로
 export function heat(v) {
+  // 흰 바탕용: 낮음(옅은 한지) → 보통(연분홍) → 높음(인주)
   const t = Math.max(0, Math.min(1, (v - 20) / 75));
-  const a = [43, 58, 107], b = [227, 179, 65];
-  const c = a.map((x, i) => Math.round(x + (b[i] - x) * t));
+  const st = [[237, 234, 227], [242, 208, 192], [214, 104, 86]];
+  const [a, b, k] = t < 0.5 ? [st[0], st[1], t * 2] : [st[1], st[2], (t - 0.5) * 2];
+  const c = a.map((x, i) => Math.round(x + (b[i] - x) * k));
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 

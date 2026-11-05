@@ -1,14 +1,14 @@
 // 사주 화면 조각: 운세 탭의 '오늘의 사주 근거', 분야별 근거 문장, 내일 미리보기, 사주 탭
 import { SJ } from './engine.js';
 
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // {키} 치환 + 한국어 조사 자동 선택: {키:은/는} → 앞말의 받침에 따라 '은' 또는 '는'
-const hasBatchim = w => { const t = String(w).replace(/\([^)]*\)\s*$/, '').trim(); const c = t.charCodeAt(t.length - 1); return c >= 0xAC00 && c <= 0xD7A3 ? (c - 0xAC00) % 28 !== 0 : false; };
-const fmt = (s, o = {}) => String(s).replace(/\{(\w+)(?::([^}/]+)\/([^}]+))?\}/g, (_, k, a, b) => { const v = o[k] ?? ''; return a ? v + (hasBatchim(v) ? a : b) : v; });
-const pickR = (arr, r) => arr[Math.floor((r || 0) * arr.length) % arr.length];
-const EL_CLS = ['el-wood', 'el-fire', 'el-earth', 'el-metal', 'el-water'];
-const gzH = g => SJ.STEM_H[g.stem] + SJ.BRANCH_H[g.branch];
-const gzK = g => SJ.STEM_K[g.stem] + SJ.BRANCH_K[g.branch];
+export const hasBatchim = w => { const t = String(w).replace(/\([^)]*\)\s*$/, '').trim(); const c = t.charCodeAt(t.length - 1); return c >= 0xAC00 && c <= 0xD7A3 ? (c - 0xAC00) % 28 !== 0 : false; };
+export const fmt = (s, o = {}) => String(s).replace(/\{(\w+)(?::([^}/]+)\/([^}]+))?\}/g, (_, k, a, b) => { const v = o[k] ?? ''; return a ? v + (hasBatchim(v) ? a : b) : v; });
+export const pickR = (arr, r) => arr[Math.floor((r || 0) * arr.length) % arr.length];
+export const EL_CLS = ['el-wood', 'el-fire', 'el-earth', 'el-metal', 'el-water'];
+export const gzH = g => SJ.STEM_H[g.stem] + SJ.BRANCH_H[g.branch];
+export const gzK = g => SJ.STEM_K[g.stem] + SJ.BRANCH_K[g.branch];
 const POS_ORDER = ['day', 'month', 'year', 'hour'];
 
 // 오늘 근거 문장(한국어). 다른 언어는 한자 요약만
@@ -27,27 +27,28 @@ export function basisLines(S, d) {
 // ── 해운정사의 오늘 풀이: ① 전체 흐름 ② 눈여겨볼 대목 ③ 실천 조언 ④ 여운 있는 한마디
 const REL_PRI = { chung: 0, hyeong: 1, hap: 2, samhap: 3, hae: 4 };
 const DOMS = ['wealth', 'love', 'work', 'health'];
-export function todayReading(S, d) {
-  const H = S.hw, { chart, ev } = d.saju, r = d.rolls;
+// P: 문장 묶음(없으면 해운정사 말투 S.hw). 오늘 탭은 중립 안내형 묶음(masters.fortune)을 넘김
+export function todayReading(S, d, P = null) {
+  const H = P || S.hw, TD = (P && P.tenDay) || S.tenDay, RL = (P && P.rel) || S.rel, { chart, ev } = d.saju, r = d.rolls;
   const vs = SJ.elValue(chart, SJ.STEM_EL[ev.stem]);
-  const flow = `${pickR(H.flow[d.band], r[31])} ${S.tenDay[ev.tgS][vs >= 0 ? 0 : 1]}`;
+  const flow = `${pickR(H.flow[d.band], r[31])} ${TD[ev.tgS][vs >= 0 ? 0 : 1]}`;
   let focus;
   const rels = [...ev.rels].sort((a, b2) => REL_PRI[a.type] - REL_PRI[b2.type] || POS_ORDER.indexOf(a.pos) - POS_ORDER.indexOf(b2.pos));
   if (rels.length) {
     const x = rels[0];
-    focus = fmt(S.rel[x.type], { b: branchName(S, ev.branch), nb: branchName(S, x.with), pos: S.pos[x.pos] });
-  } else if (ev.stemChungDay) focus = fmt(S.rel.stemChung, { s: stemName(S, ev.stem) });
-  else if (ev.stemHapDay) focus = fmt(S.rel.stemHap, { s: stemName(S, ev.stem) });
+    focus = fmt(RL[x.type], { b: branchName(S, ev.branch), nb: branchName(S, x.with), pos: S.pos[x.pos] });
+  } else if (ev.stemChungDay) focus = fmt(RL.stemChung, { s: stemName(S, ev.stem) });
+  else if (ev.stemHapDay) focus = fmt(RL.stemHap, { s: stemName(S, ev.stem) });
   else {
     const lo = DOMS.reduce((a, k) => (d.domains[k] < d.domains[a] ? k : a)), hi = DOMS.reduce((a, k) => (d.domains[k] > d.domains[a] ? k : a));
     focus = d.domains[lo] <= 2 ? fmt(H.focusNone.weak, { dom: H.domName[lo] }) : fmt(H.focusNone.strong, { dom: H.domName[hi] });
   }
-  if (r[32] < 0.4) focus = `${pickR(H.focusLead, r[33])} ${focus}`;
+  if (H.focusLead && r[32] < 0.4) focus = `${pickR(H.focusLead, r[33])} ${focus}`;
   const weak = DOMS.reduce((a, k) => (d.domains[k] < d.domains[a] ? k : a));
   const Y = S.yong[chart.fav.yong];
   const advice = [pickR(H.adviceDom[weak], r[34])];
   if (r[35] < 0.6) advice.push(fmt(pickR(H.adviceYong, r[36]), { act: Y.act.split(', ')[0], yong: S.el[chart.fav.yong] }));
-  const closing = pickR(H.closing[d.band <= 0 ? 0 : d.band === 1 ? 1 : 2], r[37]);
+  const closing = H.closing ? pickR(H.closing[d.band <= 0 ? 0 : d.band === 1 ? 1 : 2], r[37]) : '';
   return { flow, focus, advice: advice.join(' '), closing };
 }
 export function todayReadingHTML(S, d, withFlow = true) {
@@ -60,8 +61,10 @@ ${withFlow ? `<p class="hw-flow">${esc(t.flow)}</p>` : ''}
 }
 
 // ── 분야별 풀이(재물·애정·직장·건강): 흐름 → 왜 그런지(사주 근거) → 주의·가능성 → 현실 조언
-export function domainReading(S, d, k) {
-  const D = S.dom2[k], { chart, ev } = d.saju, ds = chart.dayStem;
+// D: 분야 문장 묶음(없으면 S.dom2[k]). 오늘 탭은 중립 묶음, 하나는 하나 말투 묶음을 넘김
+export function domainReading(S, d, k, D = null) {
+  D = D || S.dom2[k];
+  const { chart, ev } = d.saju, ds = chart.dayStem;
   const i = DOMS.indexOf(k), r = j => d.rolls[(10 + i * 5 + j) % 40];
   const v = d.domains[k], c = v <= 2 ? 0 : v === 3 ? 1 : 2;
   const gs = SJ.groupOf(ev.tgS), gb = SJ.groupOf(ev.tgB);
@@ -81,7 +84,7 @@ export function domainReading(S, d, k) {
     if (has(g)) why = fav(g) ? fmt(D.why.star, { star }) : D.why.bad;
     else if (ev.dohwa) why = D.why.dohwa; else if (relAt('day', 'hap')) why = D.why.dayHap; else if (relAt('day', 'chung')) why = D.why.dayChung;
     else if (ev.stemHapDay) why = D.why.stemHap; else why = D.why.none;
-    out.push(why); if (c >= 1 || r(1) < 0.5) out.push(pickR(D.chance, r(3))); out.push(pickR(D.tip, r(2)));
+    out.push(why); if (c === 0 && D.caution) out.push(pickR(D.caution, r(1))); else if (c >= 1 || r(1) < 0.5) out.push(pickR(D.chance, r(3))); out.push(pickR(D.tip, r(2)));
   } else if (k === 'work') {
     if (has(3)) why = fav(3) ? D.why.kwan : D.why.kwanBad;
     else if (relAt('month', 'chung')) why = D.why.monthChung;
@@ -186,8 +189,8 @@ function lifeHTML(S, chart) {
 }
 
 // ── 해운정사의 종합 풀이: 타고난 기질 → 강점과 약점 → 지금의 흐름 → 앞으로의 변화 → 삶의 방향
-export function overallTexts(S, chart, nowMs = Date.now()) {
-  const O = S.ov, out = {};
+export function overallTexts(S, chart, nowMs = Date.now(), O = null) {
+  O = O || S.ov; const out = {};
   out.nature = S.dayMaster[chart.dayStem];
   const top = [...chart.tgCount.keys()].filter(i => chart.tgCount[i] > 0).sort((a, b) => chart.tgCount[b] - chart.tgCount[a])[0];
   const lackE = chart.count.findIndex(c => c === 0), manyE = chart.count.findIndex(c => c >= 3);
@@ -215,10 +218,10 @@ export function overallTexts(S, chart, nowMs = Date.now()) {
   out.way = fmt(O.way, { el: S.el[chart.fav.yong], why: Y.why, close: O.wayClose[(chart.dayStem + chart.pillars.month.branch) % O.wayClose.length] });
   return out;
 }
-function overallHTML(S, chart) {
-  const t = overallTexts(S, chart), U = S.ui;
+function overallHTML(S, chart, O = null, title = null) {
+  const t = overallTexts(S, chart, Date.now(), O), U = S.ui;
   const row = (h, v) => (v ? `<h3>${esc(h)}</h3><p>${esc(v)}</p>` : '');
-  return `<section class="sec hw"><h2>${esc(U.overall)}</h2>${row(U.ovNature, t.nature)}${row(U.ovStrong, t.strong)}${row(U.ovNow, t.now)}${row(U.ovNext, t.next)}${row(U.ovWay, t.way)}</section>`;
+  return `<section class="sec hw" id="sec-overall"><h2>${esc(title || U.overall)}</h2>${row(U.ovNature, t.nature)}${row(U.ovStrong, t.strong)}${row(U.ovNow, t.now)}${row(U.ovNext, t.next)}${row(U.ovWay, t.way)}</section>`;
 }
 
 // ── 사주 탭
@@ -234,7 +237,8 @@ function pillarCell(S, chart, pos) {
 <p class="pc-ch ${EL_CLS[bE]}"><b>${SJ.BRANCH_H[pl.branch]}</b><small>${SJ.BRANCH_K[pl.branch]}·${esc(S.elShort[bE])}</small></p>
 <p class="pc-ten">${esc(S.ten[t.branch].split('(')[0])}</p></div>`;
 }
-export function sajuTabHTML(S, chart, name, nowMs = Date.now()) {
+// 사주 화면을 섹션 단위로: 해운정사 화면에서 방문 횟수에 따라 순서를 바꿈
+export function sajuSections(S, chart, { O = null, overallTitle = null, nowMs = Date.now() } = {}) {
   const U = S.ui;
   const pad = n => String(n).padStart(2, '0');
   const max = Math.max(...chart.count, 1);
@@ -256,13 +260,13 @@ export function sajuTabHTML(S, chart, name, nowMs = Date.now()) {
 <p class="dy-tone">${esc(U[tone])}</p><p class="dy-txt">${esc(S.daeunText[grp][tone === 'bad' ? 1 : 0])}</p><p class="dy-when">${esc(U[when === 'now' ? 'now' : when])}</p></li>`;
   }).join('') : '';
   const johu = chart.johu === 4 ? S.johu.split('|')[0] : chart.johu === 1 ? S.johu.split('|')[1] : '';
-  return `<section class="sec"><h1 class="page-h">${esc(name ? `${name}의 ${U.title.replace('나의 ', '')}` : U.title)}</h1><p class="muted">${esc(U.sub)}</p></section>
-<section class="sec"><h2>${esc(U.pillars)}</h2>
+  return {
+    pillars: `<section class="sec" id="sec-pillars"><h2>${esc(U.pillars)}</h2>
 <div class="pillars">${['hour', 'day', 'month', 'year'].map(pos => pillarCell(S, chart, pos)).join('')}</div>
 ${chart.solarHM ? `<p class="muted small">${esc(fmt(U.solar, { t: `${pad(chart.solarHM[0])}:${pad(chart.solarHM[1])}` }))}</p>` : ''}
-${chart.hasHour ? '' : `<p class="muted small">${esc(U.unknownHour)}</p>`}</section>
-${overallHTML(S, chart)}
-<section class="sec"><h2>${esc(U.dayMaster)}</h2>
+${chart.hasHour ? '' : `<p class="muted small">${esc(U.unknownHour)}</p>`}</section>`,
+    overall: overallHTML(S, chart, O, overallTitle),
+    basic: `<section class="sec"><h2>${esc(U.dayMaster)}</h2>
 <p class="dm"><b class="${EL_CLS[chart.me]}">${SJ.STEM_H[chart.dayStem]}</b><span>${esc(SJ.STEM_K[chart.dayStem])}${esc(S.el[chart.me].slice(0, 1))} · ${esc(S.el[chart.me])}</span></p>
 <p class="lead-s">${esc(S.dayMaster[chart.dayStem])}</p></section>
 <section class="sec"><h2>${esc(U.elements)}</h2>
@@ -278,6 +282,11 @@ ${many.map(i => `<p class="lead-s">${esc(S.many[i])}</p>`).join('')}${none.map(i
 <section class="sec"><h2>${esc(U.tenGods)}</h2>${topTen.map(i => `<p class="lead-s"><b>${esc(S.ten[i])}</b> ${esc(S.tenTrait[i])}</p>`).join('')}</section>
 ${sal.length ? `<section class="sec"><h2>${esc(U.sinsal)}</h2>${sal.map(([n, t]) => `<p class="lead-s"><b>${esc(n)}</b> ${esc(t)}</p>`).join('')}</section>` : ''}
 ${lifeHTML(S, chart)}
-${dae ? `<section class="sec"><h2>${esc(U.daeun)}</h2><ol class="daeun">${dae}</ol></section>` : ''}
-<section class="sec"><p class="disc-inline">${esc(U.disclaimer)}</p></section>`;
+${dae ? `<section class="sec"><h2>${esc(U.daeun)}</h2><ol class="daeun">${dae}</ol></section>` : ''}`,
+  };
+}
+// 예전 사주 탭(한 번에 전부)
+export function sajuTabHTML(S, chart, name, nowMs = Date.now()) {
+  const U = S.ui, x = sajuSections(S, chart, { nowMs });
+  return `<section class="sec"><h1 class="page-h">${esc(name ? `${name}의 ${U.title.replace('나의 ', '')}` : U.title)}</h1><p class="muted">${esc(U.sub)}</p></section>${x.pillars}${x.overall}${x.basic}<section class="sec"><p class="disc-inline">${esc(U.disclaimer)}</p></section>`;
 }
