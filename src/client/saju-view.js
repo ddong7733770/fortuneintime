@@ -57,7 +57,6 @@ export function todayReadingHTML(S, d, withFlow = true) {
   const t = todayReading(S, d);
   return `<section class="sec hw"><h2>${esc(S.ui.hwTitle)}</h2>
 ${withFlow ? `<p class="hw-flow">${esc(t.flow)}</p>` : ''}
-<h3>${esc(S.ui.focus)}</h3><p>${esc(t.focus)}</p>
 <h3>${esc(S.ui.advice)}</h3><p>${esc(t.advice)}</p>
 <p class="hw-close">“${esc(t.closing)}”<span>— ${esc(S.ui.hwSay)}</span></p></section>`;
 }

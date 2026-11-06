@@ -1130,3 +1130,9 @@ html.leaving main, html.leaving .foot { opacity: 0; transition: opacity .17s eas
 .y-share { background: #C8372D; color: #fff; box-shadow: 0 6px 16px rgba(169, 42, 34, .28); }
 .y-promo-g { background: #FFF6E8; display: grid; place-items: center; overflow: hidden; }
 .y-promo-g .goat { width: 46px; height: 54px; object-fit: contain; }
+
+/* 글자 크기 조정: 제목 90% · 키워드 80% · 공유 창 버튼 60% */
+.y-title { font-size: 22.5px; }
+.y-static .y-title { font-size: 21.6px; }
+.y-kw li { font-size: 14.4px; padding: 7px 12px; }
+.y-card-btns .btn-primary, .y-card-btns .btn-ghost { font-size: 9.6px; min-height: 34px; padding: 6px 12px; }

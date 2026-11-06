@@ -140,9 +140,22 @@ export function peopleOf(chart) {
 // ── 해운정사 신년운세 (그 해의 세운 + 그 해 대운 + 12달 월운 + 달마다 좋은 날)
 // 같은 사주면 언제나 같은 결과. 점수는 0~100, 단계는 0(버티는 해)~4(활짝 핀 해)
 const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
-const KW_GOOD = [['독립', '동료', '자립'], ['표현', '창작', '도전'], ['수확', '기회', '실속'], ['인정', '승진', '책임'], ['배움', '자격', '회복']];
-const KW_HARD = [['절제', '경쟁', '거리 두기'], ['말조심', '선택과 집중', '마무리'], ['지출 관리', '욕심 덜기', '점검'], ['체력 관리', '버티기', '규칙'], ['결단', '실행', '정리']];
-const REL_KW = { hap: '귀인', samhap: '협력', chung: '변화', hyeong: '꼼꼼함', hae: '오해 풀기' };
+// 키워드 묶음 (그룹마다 도움일 때 6개 · 부담일 때 6개)
+const KW_GOOD = [
+  ['독립', '동료', '자립', '내 편', '연대', '자신감'],
+  ['표현', '창작', '도전', '재능', '발견', '무대'],
+  ['수확', '기회', '실속', '부수입', '목돈', '거래'],
+  ['인정', '승진', '책임', '명예', '자리', '신뢰'],
+  ['배움', '자격', '회복', '스승', '문서운', '여유'],
+];
+const KW_HARD = [
+  ['절제', '경쟁', '거리 두기', '내 몫 지키기', '양보', '혼자만의 시간'],
+  ['말조심', '선택과 집중', '마무리', '완급 조절', '한 우물', '숨 고르기'],
+  ['지출 관리', '욕심 덜기', '점검', '저축', '계약 확인', '현금 지키기'],
+  ['체력 관리', '버티기', '규칙', '거절', '기본기', '페이스 조절'],
+  ['결단', '실행', '정리', '홀로서기', '첫걸음', '미니멀'],
+];
+const REL_KW = { hap: ['귀인', '인연'], samhap: ['협력', '팀워크'], chung: ['변화', '이동'], hyeong: ['꼼꼼함', '재확인'], hae: ['오해 풀기', '대화'] };
 export function yearFortune(chart, y = 2027) {
   const yi = yearInfo(chart, y);
   const mid = Date.UTC(y, 6, 1);
@@ -172,16 +185,17 @@ export function yearFortune(chart, y = 2027) {
   const best = byScore.slice(0, 3).map(x => x.m).sort((a, b) => a - b);
   const worst = byScore.slice(-2).map(x => x.m).sort((a, b) => a - b);
   // 키워드 3개: 천간의 기운, 지지의 기운, 원국과의 관계(없으면 신살·용신)
-  const seed = (chart.dayStem * 7 + chart.pillars.day.branch * 3 + (chart.pillars.month?.branch || 0)) % 3;
+  const seed = (chart.dayStem * 7 + chart.pillars.day.branch * 3 + (chart.pillars.month?.branch || 0)) % 6;
   const kw = [];
-  const pick = (g, i) => (favG(chart, g) ? KW_GOOD : KW_HARD)[g][i % 3];
+  const pick = (g, i) => (favG(chart, g) ? KW_GOOD : KW_HARD)[g][i % 6];
   kw.push(pick(yi.grpS, seed));
   const k2 = pick(yi.grpB, seed + 1); if (!kw.includes(k2)) kw.push(k2);
   const rel = ev.rels.find(r => r.pos === 'day') || ev.rels.find(r => r.pos === 'month');
-  if (rel && !kw.includes(REL_KW[rel.type])) kw.push(REL_KW[rel.type]);
-  else if (ev.dohwa) kw.push('매력');
-  else if (ev.yeokma) kw.push('이동');
-  const FILL = ['성장', '균형', '새 출발', '용기', '여유', '단단함'];
+  const rk = rel && REL_KW[rel.type][(seed + chart.pillars.year.branch) % 2];
+  if (rk && !kw.includes(rk)) kw.push(rk);
+  else if (ev.dohwa) kw.push(seed % 2 ? '매력' : '설렘');
+  else if (ev.yeokma) kw.push(seed % 2 ? '이동' : '여행');
+  const FILL = ['성장', '균형', '새 출발', '용기', '여유', '단단함', '반전', '꾸준함', '설렘', '단짠', '레벨업', '행운'];
   for (let j = 0; j < FILL.length; j++) { const extra = FILL[(seed * 2 + chart.pillars.year.branch + j) % FILL.length]; if (kw.length < 3 && !kw.includes(extra)) kw.push(extra); }
   return { y, gz: yi.gz, ev, grpS: yi.grpS, grpB: yi.grpB, favS: favG(chart, yi.grpS), favB: favG(chart, yi.grpB), dae, score, band, dom, months, best, worst, kw: kw.slice(0, 3), rel };
 }

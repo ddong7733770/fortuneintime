@@ -76,8 +76,15 @@ ${graphSVG(Y, yf)}
 export function yearDetailHTML(Y, yf, chart) {
   const seed = seedOf(chart);
   return `<ol class="y-mlist">${yf.months.map((mo, i) => {
-    const t = [Y.month.season[mo.m - 1], pickS(Y.month.band[mo.band], seed, i), mo.band <= 1 ? Y.month.relief[mo.top] : pickS(Y.month.top[mo.top], seed, i + 3)];
+    // 한 달 풀이: 계절 → 그 달의 흐름(2) → 천간 기운 → 원국과의 관계 → 가장 나은 분야 → 조심할 분야 → 좋은 날 활용
+    const b1 = Math.abs(seed * 13 + i * 7) % 5, b2 = (b1 + 1 + (seed + i) % 4) % 5;
+    const favS = SJ.elValue(chart, SJ.elOfGroup(chart.dayStem, mo.grpS)) >= 0;
+    const r = mo.ev.rels.find(x => x.pos === 'day') || mo.ev.rels.find(x => x.pos === 'month');
+    const t = [Y.month.season[mo.m - 1], Y.month.band[mo.band][b1], Y.month.band[mo.band][b2], pickS(Y.month.tg[mo.grpS][favS ? 0 : 1], seed, i + 1)];
+    if (r) t.push(fmt(Y.month.rel[r.type], { pos: Y.posName[r.pos] }));
+    t.push(mo.band <= 1 ? Y.month.relief[mo.top] : pickS(Y.month.top[mo.top], seed, i + 3));
     if (mo.ev.domRaw[mo.low] < 2.6) t.push(Y.month.low[mo.low]);
+    t.push(pickS(Y.month.dayTip, seed, i + 2));
     const tag = yf.best.includes(mo.m) ? ' is-best' : yf.worst.includes(mo.m) ? ' is-worst' : '';
     return `<li class="y-mo${tag}"><div class="y-mh"><b>${esc(mName(Y, mo.m))}</b><span class="y-gz">${SJ.STEM_H[mo.gz.stem]}${SJ.BRANCH_H[mo.gz.branch]}月</span><em>${mo.score}</em></div>
 <p>${t.map(esc).join(' ')}</p><p class="y-days"><small>${esc(Y.month.goodDays)}</small>${mo.good.map(d => `<span>${esc(fmt(Y.month.dayFmt, { m: mo.m, d }))}</span>`).join('')}</p></li>`;

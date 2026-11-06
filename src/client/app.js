@@ -1131,8 +1131,19 @@ function adThen(done) {
   }
   adGate(done);
 }
+// 같은 사람(이름·생년월일·시간·국가·성별)이 다시 와도 점수·문장이 바뀌지 않도록 처음 결과를 기기에 고정
+function fixedYear(chart) {
+  const raw = activeRaw(), key = `${(raw?.name || '').trim()}|${E.profileSeed(raw || {})}`;
+  const all = store.get(`y${YEAR}fix`, {});
+  if (all[key] && all[key].v === 1) return all[key].yf;
+  const yf = yearFortune(chart, YEAR);
+  const keys = Object.keys(all); if (keys.length >= 6) delete all[keys[0]]; // 최근 6명만
+  all[key] = { v: 1, yf };
+  try { store.set(`y${YEAR}fix`, all); } catch { /* 저장 공간이 없으면 그대로 계산값 사용 */ }
+  return yf;
+}
 function renderYear() {
-  const Y = M.year, p = P(), chart = E.SJ.chartOf(p), yf = yearFortune(chart, YEAR);
+  const Y = M.year, p = P(), chart = E.SJ.chartOf(p), yf = fixedYear(chart);
   const t = YV.yearTopHTML(Y, S, chart, yf, (activeRaw()?.name || '').trim());
   const open = yearOpen();
   app().innerHTML = `<div class="y27">${t.hero}${t.overall}${t.dom}${adSlot('tab')}${t.months}
@@ -1156,8 +1167,8 @@ async function shareYearCard(Y, chart, yf) {
   const ov = document.createElement('div');
   ov.className = 'y-card-ov';
   ov.innerHTML = `<div class="y-card-box" role="dialog" aria-modal="true" aria-label="${esc(Y.hero.kwTitle)}"><img src="${url}" alt="${esc(Y.hero.kwTitle)}">
-<div class="y-card-btns">${canShare ? `<button type="button" class="btn-primary" data-a="share">${esc(Y.card.shareBtn)}</button>` : ''}<a class="${canShare ? 'btn-ghost' : 'btn-primary'}" href="${url}" download="fortune-${YEAR}.png">${esc(Y.card.saveBtn)}</a><button type="button" class="btn-ghost" data-a="close">${esc(Y.card.close)}</button></div>
-<p class="muted small">${esc(Y.card.hold)}</p></div>`;
+<div class="y-card-btns">${canShare ? `<button type="button" class="btn-primary" data-a="share">${esc(Y.card.shareBtn)}</button><button type="button" class="btn-ghost" data-a="save">${esc(Y.card.saveBtn)}</button>` : `<a class="btn-primary" href="${url}" download="fortune-${YEAR}.png">${esc(Y.card.saveBtn)}</a>`}<button type="button" class="btn-ghost" data-a="close">${esc(Y.card.close)}</button></div>
+<p class="muted small">${esc(canShare ? Y.card.saveHint : Y.card.hold)}</p></div>`;
   document.body.append(ov);
   document.documentElement.classList.add('adgate-on');
   requestAnimationFrame(() => ov.classList.add('on'));
@@ -1166,6 +1177,8 @@ async function shareYearCard(Y, chart, yf) {
     const a = e.target.closest('[data-a]')?.dataset.a;
     if (e.target === ov || a === 'close') close();
     if (a === 'share') navigator.share({ files: [file], text: `${Y.card.shareText} ${location.origin}/${C}/${YEAR}/` }).catch(() => {});
+    // 이미지만 넘기면 휴대폰 공유 창에 '이미지 저장'(아이폰 → 사진 앱) · '갤러리에 저장'이 뜸
+    if (a === 'save') navigator.share({ files: [file] }).catch(() => {});
   });
 }
 
