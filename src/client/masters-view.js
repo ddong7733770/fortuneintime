@@ -173,7 +173,9 @@ export function compatReading(M, S, a, b, kind) {
   const elA = SJ.STEM_EL[A.dayStem];
   return {
     score, band, axes, A, B,
-    lines: [pickR(C.lead, (A.dayStem + B.dayStem) / 20), C.score[band], C.starOf[grp], elLine, C.day[dayRel || 'none'], kindT],
+    lines: [pickR(C.lead, (A.dayStem + B.dayStem) / 20), C.starOf[grp], elLine, C.day[dayRel || 'none']],
+    kindLine: kindT,
+    more: ((C.kindMore || {})[kind] || { good: [], bad: [] })[band >= 2 ? 'good' : 'bad'],
     doList: C.doList[bEl], dontList: C.dontList[elA],
   };
 }
@@ -267,3 +269,37 @@ export const ORDER = {
   dohan: { early: ['style', 'fields', 'hours', 'flow', 'collab'], late: ['hours', 'flow', 'collab'], fold: ['style', 'fields'] },
 };
 export { stemName };
+
+// 궁합 공유 카드 (1080×1920, 하나의 연분홍)
+export async function makeCompatCard(M, cp, n1, n2, kind, site) {
+  const CP = M.hana.compat, serif = '"Noto Serif KR", serif', sans = '"Pretendard Variable", Pretendard, system-ui, sans-serif';
+  try { await Promise.all([document.fonts.load(`700 80px ${serif}`, '궁합'), document.fonts.load(`600 40px ${sans}`, '궁합')]); } catch { /* */ }
+  const W = 1080, H = 1920, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d'), pk = '#C0566B';
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#FFF7F8'); g.addColorStop(1, '#FBD9E0'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(192,86,107,.08)';
+  for (let i = 0; i < 18; i++) { const x = (i * 271) % W, y = (i * 433) % H, r = 18 + (i % 4) * 10; ctx.beginPath(); ctx.moveTo(x, y + r * .3); ctx.bezierCurveTo(x, y - r * .5, x - r, y - r * .5, x - r, y + r * .2); ctx.bezierCurveTo(x - r, y + r * .7, x, y + r, x, y + r * 1.2); ctx.bezierCurveTo(x, y + r, x + r, y + r * .7, x + r, y + r * .2); ctx.bezierCurveTo(x + r, y - r * .5, x, y - r * .5, x, y + r * .3); ctx.fill(); }
+  ctx.textAlign = 'center';
+  ctx.fillStyle = pk; ctx.font = `700 44px ${sans}`; ctx.fillText(`${CP.cardTitle} · ${M.ui.relKinds[kind]}`, W / 2, 220);
+  const cut = t => (t.length > 8 ? t.slice(0, 8) + '…' : t);
+  ctx.fillStyle = '#2A1A1E'; ctx.font = `700 76px ${serif}`; ctx.fillText(`${cut(n1)}  ${kind === 'idol' ? '★' : '♥'}  ${cut(n2)}`, W / 2, 360);
+  ctx.beginPath(); ctx.arc(W / 2, 700, 230, 0, Math.PI * 2); ctx.fillStyle = '#FFFFFF'; ctx.fill();
+  ctx.lineWidth = 18; ctx.strokeStyle = 'rgba(192,86,107,.15)'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(W / 2, 700, 230, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * cp.score / 100); ctx.strokeStyle = pk; ctx.lineCap = 'round'; ctx.stroke();
+  ctx.fillStyle = pk; ctx.font = `700 190px ${serif}`; ctx.fillText(String(cp.score), W / 2, 760);
+  ctx.fillStyle = '#8A6A72'; ctx.font = `600 40px ${sans}`; ctx.fillText('/ 100', W / 2, 830);
+  // 한 줄
+  const wrap = (t, y, max = 820, lh = 66) => { const ws = t.split(' '); let line = ''; for (const w of ws) { const tt = line ? `${line} ${w}` : w; if (ctx.measureText(tt).width > max) { ctx.fillText(line, W / 2, y); y += lh; line = w; } else line = tt; } ctx.fillText(line, W / 2, y); return y; };
+  ctx.fillStyle = '#2A1A1E'; ctx.font = `700 50px ${sans}`;
+  let y = wrap(CP.score[cp.band], 1050);
+  // 네 지표
+  ctx.font = `600 38px ${sans}`;
+  Object.entries(CP.axes).forEach(([k, t], i) => {
+    const yy = y + 130 + i * 92;
+    ctx.textAlign = 'left'; ctx.fillStyle = '#6E5A60'; ctx.fillText(t, 200, yy);
+    for (let j = 0; j < 5; j++) { ctx.beginPath(); ctx.arc(560 + j * 70, yy - 13, 20, 0, Math.PI * 2); ctx.fillStyle = j < cp.axes[k] ? pk : 'rgba(192,86,107,.18)'; ctx.fill(); }
+  });
+  ctx.textAlign = 'center'; ctx.fillStyle = pk; ctx.font = `700 40px ${serif}`; ctx.fillText('Fortune in Time', W / 2, 1790);
+  ctx.fillStyle = '#8A6A72'; ctx.font = `500 30px ${sans}`; ctx.fillText(site, W / 2, 1840);
+  return new Promise(ok => cv.toBlob(ok, 'image/png'));
+}

@@ -199,3 +199,19 @@ export function yearFortune(chart, y = 2027) {
   for (let j = 0; j < FILL.length; j++) { const extra = FILL[(seed * 2 + chart.pillars.year.branch + j) % FILL.length]; if (kw.length < 3 && !kw.includes(extra)) kw.push(extra); }
   return { y, gz: yi.gz, ev, grpS: yi.grpS, grpB: yi.grpB, favS: favG(chart, yi.grpS), favB: favG(chart, yi.grpB), dae, score, band, dom, months, best, worst, kw: kw.slice(0, 3), rel };
 }
+
+// ── 60타입(일주): 태어난 날의 천간·지지
+const ST_SLUG = ['gap', 'eul', 'byeong', 'jeong', 'mu', 'gi', 'gyeong', 'sin', 'im', 'gye'];
+const BR_SLUG = ['ja', 'chuk', 'in', 'myo', 'jin', 'sa', 'o', 'mi', 'sin', 'yu', 'sul', 'hae'];
+const LIUHE = [1, 0, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2]; // 육합 짝 (子丑 寅亥 卯戌 辰酉 巳申 午未)
+export const typeSlug = (s, b) => `${ST_SLUG[s]}-${BR_SLUG[b]}`;
+// 60갑자 순서 (갑자, 을축, …, 계해)
+export const TYPES60 = Array.from({ length: 60 }, (_, i) => ({ s: i % 10, b: i % 12 }));
+export function typeOf(s, b) {
+  const se = SJ.STEM_EL[s], be = SJ.BRANCH_EL[b];
+  const combo = se === be ? 0 : (se + 1) % 5 === be ? 1 : (be + 1) % 5 === se ? 2 : (se + 2) % 5 === be ? 3 : 4;
+  // 찰떡: 천간합(갑기·을경·병신·정임·무계) + 지지 육합 / 부딪힘: 나를 치는 천간 + 지지 충
+  const best = { s: (s + 5) % 10, b: LIUHE[b] };
+  const clash = { s: (s + 6) % 10, b: (b + 6) % 12 };
+  return { s, b, el: se, combo, slug: typeSlug(s, b), best, clash, idx: TYPES60.findIndex(t => t.s === s && t.b === b) };
+}

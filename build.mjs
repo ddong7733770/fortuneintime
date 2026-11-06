@@ -7,6 +7,9 @@ import config from './site.config.mjs';
 import Z27 from './src/i18n/masters/ko-zodiac27.js';
 import { GOAT } from './src/client/goat.js';
 import { branchRel } from './src/saju.js';
+import T60 from './src/i18n/masters/ko-types.js';
+import { typeOf, TYPES60 } from './src/masters.js';
+import * as TV from './src/client/types-view.js';
 import { LANGS, TZ, SLUG, SIGN_GLYPH, BLOOD_LABEL, fmt, esc, sijinRange, dialLabels, dialSVG, todayIn, genericReading, readingHTML, indexListHTML, fmtDate } from './src/content.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -306,6 +309,7 @@ function clientData(c, withLines = true) {
   return {
     L: rest,
     images: config.images,
+    typeImgs: TYPE_IMGS,
     ads: { on: !!ADS.client, client: ADS.client || '', slots: ADS.slots || {} },
     rewarded: !!config.rewarded,
     site: SITE,
@@ -418,6 +422,8 @@ function otherIndexLinks(c, except) {
 // ── 4-2) 2027 정미년 띠별 운세 (한국어 먼저) — 검색 노출용 공개 페이지
 // 좋은 달: 그 달(15일 기준 월지)이 내 띠와 합·삼합 / 조심할 달: 충·형. 양력 1월=丑 … 12월=子
 const Y27 = 2027;
+// 60타입 띠 동물 그림: public/images/animals/{rat,ox,…}.webp 가 있는 것만 씀 (없으면 한자 배지)
+const TYPE_IMGS = ['rat', 'ox', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'goat', 'monkey', 'rooster', 'dog', 'pig'].filter(a => fs.existsSync(path.join(ROOT, 'public/images/animals', `${a}.webp`)));
 function monthsFor(a) {
   const good = [], care = [];
   for (let m = 1; m <= 12; m++) { const r = branchRel(m % 12, a); if (r === 'hap' || r === 'samhap') good.push(m); if (r === 'chung' || r === 'hyeong') care.push(m); }
@@ -459,6 +465,34 @@ ${adSlot('content', Lc.ui.ad)}
     const desc = fmt(Z.pageDesc, { a: n, hook: A.hook }).slice(0, 155);
     write(`${c}/${Y27}/${SLUG.zodiac[i]}/index.html`, staticShell(c, { title: `${title} | ${BRAND}`, desc, canonical: `/${c}/${Y27}/${SLUG.zodiac[i]}/`, alts: null, h1: '', bodyHTML }));
     addPage(`/${c}/${Y27}/${SLUG.zodiac[i]}/`, null);
+  });
+}
+
+// ── 4-3) 60타입(일주) 공개 페이지 (한국어 먼저)
+function buildTypes(c) {
+  if (c !== 'ko') return;
+  const T = T60, base = `/${c}/type/`;
+  const cta = `<div class="y-cta"><a class="btn-primary" href="/${c}/result/master/?m=haewoon">${esc(T.cta)}</a></div>`;
+  // 모음: 천간(10)별로 묶어 6개씩
+  const groups = T.stems.map((st, si) => {
+    const list = TYPES60.filter(x => x.s === si).sort((a, b) => a.b - b.b).map(x => typeOf(x.s, x.b));
+    return `<section class="sec t-group"><h2>${esc(st.ko)}(${'甲乙丙丁戊己庚辛壬癸'[si]}) · ${esc(st.img)}</h2><div class="t-grid">${list.map(t => `<a class="tc-mini" href="${base}${t.slug}/">${TV.typeBadge(t, TYPE_IMGS, 'sm')}<span><b>${esc(TV.typeKo(T, t))}일주</b><small>${esc(TV.typeName(T, t))}</small></span></a>`).join('')}</div></section>`;
+  }).join('');
+  const hub = `<h1 class="page-h">${esc(T.hubTitle)}</h1><p class="lead">${esc(T.hubLead)}</p>${cta}${groups}${adSlot('content', L[c].ui.ad)}`;
+  write(`${c}/type/index.html`, staticShell(c, { title: `${T.hubTitle} | ${BRAND}`, desc: T.hubDesc, canonical: base, alts: null, h1: '', bodyHTML: hub }));
+  addPage(base, null);
+  TYPES60.forEach(x => {
+    const t = typeOf(x.s, x.b);
+    const title = fmt(T.pageTitle, { ko: TV.typeKo(T, t), h: TV.typeH(t), name: TV.typeName(T, t) });
+    const body = `<nav class="crumbs"><a href="${base}">${esc(T.hubTitle.split(' —')[0])}</a></nav>
+<section class="sec tcard" style="--ta:${TV.EL_AC[t.el]};--tb:${TV.EL_BG[t.el]}">
+<div class="tc-top">${TV.typeBadge(t, TYPE_IMGS, 'lg')}<div><p class="tc-ko">${esc(TV.typeKo(T, t))}일주 <small>${TV.typeH(t)}</small></p><h1 class="tc-name">${esc(TV.typeName(T, t))}</h1><p class="tc-tag">${esc(TV.typeTag(T, t))}</p></div></div>
+<ul class="tc-kw">${TV.typeKw(T, t).map(k => `<li>#${esc(k)}</li>`).join('')}</ul>
+${TV.typeDetailHTML(T, t, TYPE_IMGS, base)}</section>
+${cta}${adSlot('content', L[c].ui.ad)}`;
+    const desc = fmt(T.pageDesc, { ko: TV.typeKo(T, t), h: TV.typeH(t), tag: TV.typeTag(T, t) }).slice(0, 155);
+    write(`${c}/type/${t.slug}/index.html`, staticShell(c, { title: `${title} | ${BRAND}`, desc, canonical: `${base}${t.slug}/`, alts: null, h1: '', bodyHTML: body }));
+    addPage(`${base}${t.slug}/`, null);
   });
 }
 
@@ -543,7 +577,7 @@ for (const c of LANGS) { const { policy, placesData, ...rest } = L[c]; write(`as
   write('assets/world-land.txt', land);
 }
 // 브라우저 캐시 문제 방지: 스크립트끼리 불러오는 주소에도 버전을 붙임 (배포할 때마다 새 파일로 인식)
-for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js', 'saju.js', 'saju-view.js', 'jieqi.js', 'masters.js', 'masters-view.js', 'board.js', 'contact.js', 'date-icons.js', 'year-view.js', 'goat.js']) {
+for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js', 'saju.js', 'saju-view.js', 'jieqi.js', 'masters.js', 'masters-view.js', 'board.js', 'contact.js', 'date-icons.js', 'year-view.js', 'goat.js', 'types-view.js']) {
   const fp = path.join(DIST, 'assets', f);
   const src = fs.readFileSync(fp, 'utf8')
     .replace(/(from\s+'\.\/[\w-]+\.m?js)'/g, `$1?v=${VERSION}'`)
@@ -553,7 +587,7 @@ for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'p
 }
 
 buildRoot();
-for (const c of LANGS) { buildInput(c); buildResult(c); buildStatic(c); buildYear(c); buildPolicy(c); }
+for (const c of LANGS) { buildInput(c); buildResult(c); buildStatic(c); buildYear(c); buildTypes(c); buildPolicy(c); }
 buildMisc();
 
 const count = fs.readdirSync(DIST, { recursive: true }).filter(f => f.endsWith('.html')).length;

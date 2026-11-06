@@ -6,6 +6,8 @@ import { basisHTML, domainReading, sajuTabHTML, todayReading, todayReadingHTML }
 import * as MV from './masters-view.js';
 import { freeMaster, MASTERS, yearFortune } from './masters.js';
 import * as YV from './year-view.js';
+import * as TV from './types-view.js';
+import { typeOf } from './masters.js';
 import { dialSVG, dialLabels, fmt, esc, pips, sijinRange, fmtDate, BLOOD_LABEL, SIGN_GLYPH, domainText, hourText, summaryText, loveTexts, startHands } from './content.js';
 
 const D = JSON.parse(document.getElementById('ttf-data').textContent);
@@ -629,8 +631,13 @@ function renderMaster() {
     const teaser = m === 'haewoon' ? MV.haewoonTeaser(M, S, chart) : m === 'hana' ? MV.hanaTeaser(M, S, chart) : MV.dohanTeaser(M, chart);
     content = `<section class="sec locked"><p class="lk-teaser">${esc(teaser)}</p><div class="lk-blur" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 <div class="lk-box"><button class="btn-accent btn-primary" type="button" id="unlockBtn">${esc(MU.unlock)}</button><p class="muted small">${esc(fmt(MU.unlockNote, { t: hhmm(per.next) }))}</p>${m !== 'haewoon' ? `<p class="muted small">${esc(MU.unlockFree)}</p>` : ''}</div></section>${adSlot('tab')}`;
+    if (m === 'hana') content += compatBlock(!!inv); // 궁합 요약은 하나 풀이가 잠겨 있어도 무료
   }
-  app().innerHTML = `<nav class="mpick" aria-label="${esc(MU.pick)}">${pick}</nav><div class="mview m-${m}">${head}${content}</div>`;
+  // 해운: 맨 위에 '나의 타입'(60타입) 카드 — 광고 잠금과 상관없이 보임
+  const ty = m === 'haewoon' && M.types ? typeOf(chart.dayStem, chart.pillars.day.branch) : null;
+  const typeCard = ty ? TV.typeCardHTML(M.types, ty, D.typeImgs, `/${C}/type/`) : '';
+  app().innerHTML = `<nav class="mpick" aria-label="${esc(MU.pick)}">${pick}</nav><div class="mview m-${m}">${head}${typeCard}${content}</div>`;
+  $('#typeShare')?.addEventListener('click', () => makeAndShowCard($('#typeShare'), () => TV.makeTypeCard(M.types, ty, D.typeImgs, location.host), `type-${ty.slug}.png`, `나의 60타입은 ${TV.typeName(M.types, ty)} ${location.origin}/${C}/type/${ty.slug}/`));
   $('#unlockBtn')?.addEventListener('click', () => unlockWithAd(m, () => renderMaster()));
   // 시운 다이얼: 칸(시간대)을 누르면 그 시간의 풀이 하나만 아래에 보여 줌 (화면은 움직이지 않음)
   const selHour = i => {
@@ -644,7 +651,7 @@ function renderMaster() {
   if ($('#sdial')) selHour(Math.floor(((nowMin() + 60) % 1440) / 120));
   if ($('#sdial')) requestAnimationFrame(() => requestAnimationFrame(() => $('#sdial')?.classList.add('is-in')));
   const now = $('.daeun .is-now'); if (now) now.parentElement.scrollLeft = now.offsetLeft - now.parentElement.offsetLeft - 16;
-  if (m === 'hana' && open) bindCompat(p, inv);
+  if (m === 'hana') bindCompat(p, inv);
   if ((tab === 'love' || location.hash === '#compat') && $('#compat')) setTimeout(() => $('#compat').scrollIntoView({ block: 'start' }), 60);
   $$('.mpick a').forEach(a => a.addEventListener('click', e => { e.preventDefault(); goMaster(a.dataset.m); }));
   fab(m);
@@ -672,17 +679,20 @@ function fab(cur = null) {
 }
 
 // ── 하나의 궁합 (광고 별도). 초대 링크로 들어온 결과는 광고 없이 보여 줌
+// ── 하나의 궁합: 관계 7종(썸·연인·최애·친구·동료·상사·가족). 요약(점수·한 줄·공유 카드)은 무료, 상세는 광고 1번(같은 두 사람·관계는 계속 열림)
+// 링크로 보내면 받은 사람은 자기 정보만 넣으면 바로 두 사람 요약을 봄. 정보는 링크 안에만 있고 서버에 저장하지 않음
+const KIND_ORDER = ['some', 'lover', 'idol', 'friend', 'coworker', 'boss', 'family'];
 function compatBlock(viaInvite) {
-  const MU = M.ui, open = viaInvite || isOpen('compat');
+  const MU = M.ui, CP = M.hana.compat;
   const pv = store.get('partner', null) || {};
   const thisYear = new Date().getFullYear();
   const opt = (from, to, sel) => { let s = ''; for (let i = from; to >= from ? i <= to : i >= to; to >= from ? i++ : i--) s += `<option value="${i}"${i === sel ? ' selected' : ''}>${i}</option>`; return s; };
-  if (!open) return `<section class="sec compat" id="compat"><h2>${esc(MU.compatTitle)}</h2><p class="muted">${esc(MU.compatSub)}</p>
-<div class="lk-box"><button class="btn-accent btn-primary" type="button" id="compatUnlock">${esc(MU.compatUnlock)}</button><p class="muted small">${esc(fmt(MU.compatNote, { t: hhmm(E.period().next) }))}</p></div></section>`;
+  const kind = pv.kind || 'some';
   return `<section class="sec compat" id="compat"><h2>${esc(MU.compatTitle)}</h2><p class="muted">${esc(MU.compatSub)}</p>
 <form id="compatForm" class="form compact"${viaInvite ? ' hidden' : ''}>
-<label class="field"><span>${esc(MU.relKind)}</span><select name="kind">${Object.entries(MU.relKinds).map(([k, v]) => `<option value="${k}"${pv.kind === k ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
-<label class="field"><span>${esc(U.partnerName)} <small>${esc(U.optional)}</small></span><input name="name" maxlength="20" value="${esc(pv.name || '')}"></label>
+<div class="ck-row" role="radiogroup" aria-label="${esc(MU.relKind)}">${KIND_ORDER.map(k => `<label class="ck"><input type="radio" name="kind" value="${k}"${k === kind ? ' checked' : ''}><span>${esc(MU.relKinds[k])}</span></label>`).join('')}</div>
+<p class="muted small ck-idol"${kind === 'idol' ? '' : ' hidden'}>${esc(CP.idolNote)}</p>
+<label class="field"><span id="ptNameLbl">${esc(kind === 'idol' ? CP.idolName : U.partnerName)} <small>${esc(U.optional)}</small></span><input name="name" maxlength="20" value="${esc(pv.name || '')}"></label>
 <fieldset class="field"><legend>${esc(U.gender)}</legend><div class="seg-ctl"><label><input type="radio" name="gender" value="M"${pv.gender !== 'F' ? ' checked' : ''}><span>${esc(U.male)}</span></label><label><input type="radio" name="gender" value="F"${pv.gender === 'F' ? ' checked' : ''}><span>${esc(U.female)}</span></label></div></fieldset>
 <fieldset class="field"><legend>${esc(U.birth)}</legend><div class="ymd">
 <select name="y" aria-label="${esc(U.year)}"><option value="">${esc(U.year)}</option>${opt(thisYear, 1930, pv.y || 2000)}</select>
@@ -693,35 +703,58 @@ function compatBlock(viaInvite) {
 <button class="btn-primary" type="submit">${esc(U.analyze)}</button>
 </form>
 <div id="compatOut"></div>
-<div class="share-row"><button class="btn-ghost" type="button" id="inviteBtn">${esc(U.invite)}</button></div>
+<div class="cp-invite"><p>${esc(CP.inviteLead)}</p><button class="btn-ghost" type="button" id="inviteBtn">${esc(U.invite)}</button></div>
 </section>`;
 }
+const pairKey = (a, b, kind) => `${E.profileSeed(a)}~${E.profileSeed(b)}~${kind}`;
+function compatOpen(k) { return isAdmin() || !!store.get('cpOpen', {})[k]; }
+function setCompatOpen(k) { const o = store.get('cpOpen', {}); const ks = Object.keys(o); if (ks.length > 30) delete o[ks[0]]; o[k] = 1; store.set('cpOpen', o); }
 function bindCompat(p, inv) {
-  $('#compatUnlock')?.addEventListener('click', () => unlockWithAd('compat', () => { renderMaster(); setTimeout(() => $('#compat')?.scrollIntoView({ block: 'start' }), 60); }));
   const out = $('#compatOut'); if (!out) return;
+  const CP = M.hana.compat;
   const show = (pt, scroll) => {
     const raw = activeRaw();
+    const kind = KIND_ORDER.includes(pt.kind) ? pt.kind : 'lover';
     const partner = E.profileFrom({ name: pt.name || '', y: pt.y, m: pt.m, d: pt.d, sijin: pt.sijin ?? null, timeMode: pt.sijin === null || pt.sijin === undefined ? 'unknown' : 'sijin', country: raw.country, gender: pt.gender || null });
-    const cp = MV.compatReading(M, S, p, partner, pt.kind || 'lover');
-    const C2 = M.hana.compat;
-    const da = E.daily(p, todayKey(), 0, C).hours, db = E.daily(partner, todayKey(), 0, C).hours;
-    const tog = da.map((h, i) => Math.round((h + db[i]) / 2));
-    const bh = [4, 5, 6, 7, 8, 9, 10, 11].reduce((a, i) => (tog[i] > tog[a] ? i : a), 4);
-    const nm1 = esc(p.name || U.me || '나'), nm2 = esc(pt.name || M.ui.relKinds[pt.kind || 'lover']);
-    const bar = v => pips(v);
-    out.innerHTML = `<div class="love-res">
-<p class="pair"><span>${nm1}</span><i aria-hidden="true">+</i><span>${nm2}</span></p>
-<p class="big-score"><span id="loveNum">0</span><small>/100</small></p><p class="score-label">${esc(U.loveScore)}</p></div>
-<ul class="axes">${Object.entries(C2.axes).map(([k, t]) => `<li><span>${esc(t)}</span>${bar(cp.axes[k])}</li>`).join('')}</ul>
+    const cp = MV.compatReading(M, S, p, partner, kind);
+    const key = pairKey(p, partner, kind), opened = compatOpen(key);
+    const nm1 = p.name || U.me || '나', nm2 = pt.name || M.ui.relKinds[kind];
+    // 무료 요약
+    let html = `<div class="love-res cp-sum"><p class="cp-kind">${esc(M.ui.relKinds[kind])}</p>
+<p class="pair"><span>${esc(nm1)}</span><i aria-hidden="true">${kind === 'idol' ? '★' : '+'}</i><span>${esc(nm2)}</span></p>
+<p class="big-score"><span id="loveNum">0</span><small>/100</small></p><p class="score-label">${esc(U.loveScore)}</p>
+<p class="cp-one">${esc(CP.score[cp.band])} ${esc(cp.kindLine)}</p>
+<button type="button" class="btn-primary sm cp-share" id="cpShare">${esc(CP.shareBtn)}</button></div>`;
+    if (opened) {
+      const C2 = M.hana.compat;
+      const da = E.daily(p, todayKey(), 0, C).hours, db = E.daily(partner, todayKey(), 0, C).hours;
+      const tog = da.map((h, i) => Math.round((h + db[i]) / 2));
+      const bh = [4, 5, 6, 7, 8, 9, 10, 11].reduce((a, i) => (tog[i] > tog[a] ? i : a), 4);
+      html += `<div class="cp-detail"><h3 class="cp-h">${esc(CP.detailTitle)}</h3>
+<ul class="axes">${Object.entries(C2.axes).map(([k, t]) => `<li><span>${esc(t)}</span>${pips(cp.axes[k])}</li>`).join('')}</ul>
 ${cp.lines.map(t => `<p class="m-p">${esc(t)}</p>`).join('')}
+${cp.more.map(t => `<p class="m-p">${esc(t)}</p>`).join('')}
 <div class="dodont"><div><h3>${esc(C2.do)}</h3><ul>${cp.doList.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div><div><h3>${esc(C2.dont)}</h3><ul>${cp.dontList.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></div>
-<p class="m-p">${esc(fmt(C2.hour, { h: `${L.sijin[bh]} (${sijinRange(bh)})` }))}</p>`;
+<p class="m-p">${esc(fmt(C2.hour, { h: `${L.sijin[bh]} (${sijinRange(bh)})` }))}</p></div>`;
+    } else {
+      html += `<div class="cp-lock"><div class="lk-blur" aria-hidden="true"><i></i><i></i><i></i></div><div class="lk-box"><p class="muted small">${esc(CP.lockDesc)}</p><button class="btn-accent btn-primary" type="button" id="cpUnlock">${esc(CP.lockBtn)}</button></div></div>`;
+    }
+    out.innerHTML = html;
     countUp($('#loveNum'), cp.score);
+    $('#cpUnlock')?.addEventListener('click', () => adThen(() => { setCompatOpen(key); show(pt, false); setTimeout(() => $('.cp-detail')?.scrollIntoView({ block: 'start' }), 60); }));
+    $('#cpShare')?.addEventListener('click', () => makeAndShowCard($('#cpShare'), () => MV.makeCompatCard(M, cp, nm1, nm2, kind, location.host), 'compat.png', `${CP.shareText} ${location.origin}/${C}/result/love/`));
     if (scroll) out.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   };
-  if (inv) show({ name: inv.n, y: inv.y, m: inv.m, d: inv.d, sijin: inv.s ?? null, gender: inv.g, kind: 'lover' }, false);
+  if (inv) show({ name: inv.n, y: inv.y, m: inv.m, d: inv.d, sijin: inv.s ?? null, gender: inv.g, kind: inv.k || 'lover' }, false);
   else { const pv = store.get('partner', null); if (pv && pv.y) show(pv, false); }
-  $('#compatForm')?.addEventListener('submit', e => {
+  const form = $('#compatForm');
+  form?.addEventListener('change', e => {
+    if (e.target.name !== 'kind') return;
+    const idol = e.target.value === 'idol';
+    $('.ck-idol', form).hidden = !idol;
+    $('#ptNameLbl').innerHTML = `${esc(idol ? CP.idolName : U.partnerName)} <small>${esc(U.optional)}</small>`;
+  });
+  form?.addEventListener('submit', e => {
     e.preventDefault();
     const f = e.target, y = +f.y.value, mo = +f.m.value, dd = +f.d.value;
     if (!y || !mo || !dd || new Date(y, mo - 1, dd).getMonth() !== mo - 1) { $('#loveErr').hidden = false; return; }
@@ -730,9 +763,11 @@ ${cp.lines.map(t => `<p class="m-p">${esc(t)}</p>`).join('')}
     store.set('partner', pt);
     show(pt, true);
   });
+  // 초대 링크: 내 생년월일과 고른 관계만 링크에 담음(서버 저장 없음)
   $('#inviteBtn')?.addEventListener('click', () => {
     const raw = activeRaw();
-    const code = b64e({ n: raw.name || '', y: raw.y, m: raw.m, d: raw.d, s: raw.sijin, g: raw.gender, b: raw.blood });
+    const k = form ? (new FormData(form).get('kind') || 'some') : (inv?.k || 'lover');
+    const code = b64e({ n: raw.name || '', y: raw.y, m: raw.m, d: raw.d, s: raw.sijin, g: raw.gender, b: raw.blood, k: k === 'idol' ? 'friend' : k });
     shareLink(`${location.origin}/${C}/result/love/?inv=${code}`, fmt(U.invitedBy, { n: raw.name || '' }));
   });
 }
@@ -1156,19 +1191,24 @@ ${t.luck}<section class="sec y-sec y-zlink"><a class="btn-ghost" href="/${C}/${Y
 }
 // 공유 카드: 이미지를 만들어 미리 보여 주고 공유·저장
 async function shareYearCard(Y, chart, yf) {
-  const btn = $('#yShare'), old = btn.innerHTML;
-  btn.disabled = true; btn.textContent = Y.card.making;
-  const blob = await YV.makeCard(Y, S, chart, yf).catch(() => null);
-  btn.disabled = false; btn.innerHTML = old;
-  if (!blob) { toast(Y.card.fail); return; }
-  const file = new File([blob], `fortune-${YEAR}.png`, { type: 'image/png' });
+  await makeAndShowCard($('#yShare'), () => YV.makeCard(Y, S, chart, yf), `fortune-${YEAR}.png`, `${Y.card.shareText} ${location.origin}/${C}/${YEAR}/`);
+}
+// 공유 카드 공통: 버튼을 '만드는 중'으로 바꾸고 → 이미지 생성 → 미리보기 창(공유하기 · 이미지 저장 · 닫기)
+async function makeAndShowCard(btn, make, fname, shareText) {
+  const Yc = M.year.card;
+  const old = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = Yc.making; }
+  const blob = await make().catch(() => null);
+  if (btn) { btn.disabled = false; btn.innerHTML = old; }
+  if (!blob) { toast(Yc.fail); return; }
+  const file = new File([blob], fname, { type: 'image/png' });
   const url = URL.createObjectURL(blob);
   const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
   const ov = document.createElement('div');
   ov.className = 'y-card-ov';
-  ov.innerHTML = `<div class="y-card-box" role="dialog" aria-modal="true" aria-label="${esc(Y.hero.kwTitle)}"><img src="${url}" alt="${esc(Y.hero.kwTitle)}">
-<div class="y-card-btns">${canShare ? `<button type="button" class="btn-primary" data-a="share">${esc(Y.card.shareBtn)}</button><button type="button" class="btn-ghost" data-a="save">${esc(Y.card.saveBtn)}</button>` : `<a class="btn-primary" href="${url}" download="fortune-${YEAR}.png">${esc(Y.card.saveBtn)}</a>`}<button type="button" class="btn-ghost" data-a="close">${esc(Y.card.close)}</button></div>
-<p class="muted small">${esc(canShare ? Y.card.saveHint : Y.card.hold)}</p></div>`;
+  ov.innerHTML = `<div class="y-card-box" role="dialog" aria-modal="true"><img src="${url}" alt="">
+<div class="y-card-btns">${canShare ? `<button type="button" class="btn-primary" data-a="share">${esc(Yc.shareBtn)}</button><button type="button" class="btn-ghost" data-a="save">${esc(Yc.saveBtn)}</button>` : `<a class="btn-primary" href="${url}" download="${fname}">${esc(Yc.saveBtn)}</a>`}<button type="button" class="btn-ghost" data-a="close">${esc(Yc.close)}</button></div>
+<p class="muted small">${esc(canShare ? Yc.saveHint : Yc.hold)}</p></div>`;
   document.body.append(ov);
   document.documentElement.classList.add('adgate-on');
   requestAnimationFrame(() => ov.classList.add('on'));
@@ -1176,7 +1216,7 @@ async function shareYearCard(Y, chart, yf) {
   ov.addEventListener('click', e => {
     const a = e.target.closest('[data-a]')?.dataset.a;
     if (e.target === ov || a === 'close') close();
-    if (a === 'share') navigator.share({ files: [file], text: `${Y.card.shareText} ${location.origin}/${C}/${YEAR}/` }).catch(() => {});
+    if (a === 'share') navigator.share({ files: [file], text: shareText }).catch(() => {});
     // 이미지만 넘기면 휴대폰 공유 창에 '이미지 저장'(아이폰 → 사진 앱) · '갤러리에 저장'이 뜸
     if (a === 'save') navigator.share({ files: [file] }).catch(() => {});
   });
