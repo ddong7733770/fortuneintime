@@ -28,6 +28,8 @@ export function basisLines(S, d) {
 const REL_PRI = { chung: 0, hyeong: 1, hap: 2, samhap: 3, hae: 4 };
 const DOMS = ['wealth', 'love', 'work', 'health'];
 // P: 문장 묶음(없으면 해운정사 말투 S.hw). 오늘 탭은 중립 안내형 묶음(masters.fortune)을 넘김
+// 문장이 여러 개면 그날 값으로 하나 고름
+const W = (v, x) => (Array.isArray(v) ? pickR(v, x) : v);
 export function todayReading(S, d, P = null) {
   const H = P || S.hw, TD = (P && P.tenDay) || S.tenDay, RL = (P && P.rel) || S.rel, { chart, ev } = d.saju, r = d.rolls;
   const vs = SJ.elValue(chart, SJ.STEM_EL[ev.stem]);
@@ -36,12 +38,12 @@ export function todayReading(S, d, P = null) {
   const rels = [...ev.rels].sort((a, b2) => REL_PRI[a.type] - REL_PRI[b2.type] || POS_ORDER.indexOf(a.pos) - POS_ORDER.indexOf(b2.pos));
   if (rels.length) {
     const x = rels[0];
-    focus = fmt(RL[x.type], { b: branchName(S, ev.branch), nb: branchName(S, x.with), pos: S.pos[x.pos] });
-  } else if (ev.stemChungDay) focus = fmt(RL.stemChung, { s: stemName(S, ev.stem) });
-  else if (ev.stemHapDay) focus = fmt(RL.stemHap, { s: stemName(S, ev.stem) });
+    focus = fmt(W(RL[x.type], r[38]), { b: branchName(S, ev.branch), nb: branchName(S, x.with), pos: S.pos[x.pos] });
+  } else if (ev.stemChungDay) focus = fmt(W(RL.stemChung, r[38]), { s: stemName(S, ev.stem) });
+  else if (ev.stemHapDay) focus = fmt(W(RL.stemHap, r[38]), { s: stemName(S, ev.stem) });
   else {
     const lo = DOMS.reduce((a, k) => (d.domains[k] < d.domains[a] ? k : a)), hi = DOMS.reduce((a, k) => (d.domains[k] > d.domains[a] ? k : a));
-    focus = d.domains[lo] <= 2 ? fmt(H.focusNone.weak, { dom: H.domName[lo] }) : fmt(H.focusNone.strong, { dom: H.domName[hi] });
+    focus = d.domains[lo] <= 2 ? fmt(W(H.focusNone.weak, r[39]), { dom: H.domName[lo] }) : fmt(W(H.focusNone.strong, r[39]), { dom: H.domName[hi] });
   }
   if (H.focusLead && r[32] < 0.4) focus = `${pickR(H.focusLead, r[33])} ${focus}`;
   const weak = DOMS.reduce((a, k) => (d.domains[k] < d.domains[a] ? k : a));

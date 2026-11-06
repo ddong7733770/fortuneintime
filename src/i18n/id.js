@@ -6,6 +6,7 @@ export default {
   intro: 'Fortune in Time memadukan zodiak, shio, dan dua belas waktu tradisional Korea untuk menunjukkan bagaimana keberuntunganmu mengalir jam demi jam. Kamu bisa mengubah takdir sekali setiap pukul 6 pagi dan 6 sore.',
   disclaimer: 'Semua ramalan hanya untuk hiburan dan tidak boleh dijadikan dasar keputusan penting.',
 
+  contactForm: {"name": "Nama (opsional)", "email": "Email untuk balasan", "kind": "Topik", "kinds": ["Penggunaan layanan", "Laporan masalah", "Kerja sama / iklan", "Lainnya"], "msg": "Pesan", "send": "Kirim pesan", "ok": "Pesanmu sudah kami terima. Kami akan membalas ke email yang kamu tinggalkan.", "alt": "Atau kirim email langsung ke alamat di bawah.", "need": "Isi email dan pesan (min. 5 karakter).", "err": "Coba lagi sebentar lagi.", "limit": "Terlalu banyak pesan sekaligus. Coba lagi nanti."},
   ui: {
     chooseLang: 'Pilih bahasamu', recommended: 'Disarankan', nowIs: 'Sekarang: {s}', untilChange: 'Kesempatan ubah takdir berikutnya',
     name: 'Nama', namePh: 'Nama panggilan juga boleh', gender: 'Jenis kelamin', male: 'Laki-laki', female: 'Perempuan',
@@ -135,6 +136,6 @@ export default {
       ['Dua kesempatan sehari', 'Ubah takdirmu sekali setiap pukul 6 pagi dan 6 sore, lalu pakai wallpaper keberuntungan untuk menjaga energinya.'],
       ['Enam bahasa', 'Tersedia dalam bahasa Korea, Jepang, Mandarin, Inggris, Spanyol, dan Indonesia.'],
     ],
-    contact: [['Hubungi kami', 'Untuk pertanyaan, laporan masalah, atau kerja sama, kirim email ke alamat di bawah. Kami membalas dalam 3 hari kerja.']],
+    contact: [['Hubungi kami', 'Untuk pertanyaan, laporan masalah, atau kerja sama, kirim email ke alamat di bawah.']],
   },
 };

@@ -16,6 +16,15 @@ const BOARD_PRIVACY = {
   es: ['Tablón', 'Al publicar guardamos el nombre del autor (el que introdujiste para tu fortuna), título, mensaje, imagen adjunta, país (código estimado por tu conexión), hora de publicación y un hash de tu contraseña. No guardamos la contraseña ni tu dirección IP. Para limitar las publicaciones a una por franja, conservamos un hash irreversible de tu IP solo hasta que termina la franja (6:00 o 18:00) y luego se borra automáticamente. Los autores pueden editar o borrar con su contraseña, y los administradores pueden retirar publicaciones inapropiadas. Las imágenes se vuelven a guardar en tu dispositivo antes de subirse, lo que elimina los datos de ubicación de las fotos.'],
   id: ['Papan', 'Saat menulis, kami menyimpan nama penulis (nama yang kamu isi untuk ramalan), judul, pesan, gambar lampiran, negara (kode negara dari perkiraan koneksi), waktu kirim, dan hash kata sandi. Kami tidak menyimpan kata sandi asli maupun alamat IP. Untuk membatasi satu tulisan per slot waktu, kami menyimpan hash IP yang tidak bisa dikembalikan hanya sampai slot berakhir (06.00 atau 18.00), lalu dihapus otomatis. Penulis dapat mengubah atau menghapus dengan kata sandi, dan pengelola dapat menghapus tulisan yang tidak pantas. Gambar disimpan ulang di perangkat sebelum diunggah sehingga data lokasi pada foto terhapus.'],
 };
+// 문의하기 양식으로 받는 정보
+const CONTACT_PRIVACY = {
+  ko: ['문의하기', '문의하기 양식을 보내면 이메일, 이름(선택), 문의 종류와 내용, 언어, 국가 코드, 접수 시간을 답변을 위해서만 보관합니다. 답변이 끝난 문의는 운영자가 삭제하며, 같은 곳에서 너무 자주 보내는 것을 막기 위해 접속 정보를 되돌릴 수 없게 바꾼 값만 10분 동안 보관합니다.'],
+  ja: ['お問い合わせ', 'お問い合わせフォームを送信すると、メールアドレス、お名前（任意）、種類と内容、言語、国コード、受付時刻を回答のためだけに保管します。回答が済んだお問い合わせは運営者が削除します。短時間の連続送信を防ぐため、接続情報を元に戻せない形に変えた値のみ10分間保管します。'],
+  zh: ['联系我们', '提交联系表单时，我们仅为回复而保存电子邮箱、姓名（选填）、咨询类型与内容、语言、国家代码和提交时间。回复完成后由运营者删除。为防止短时间内重复提交，仅将访问信息转换为不可还原的值并保存10分钟。'],
+  en: ['Contact', 'When you send the contact form, we keep your email, name (optional), inquiry type and message, language, country code and time only to reply to you. Inquiries are deleted by the operator once answered. To prevent repeated sending, we keep only an irreversible value derived from your connection for 10 minutes.'],
+  es: ['Contacto', 'Al enviar el formulario de contacto guardamos tu correo, nombre (opcional), tipo y contenido de la consulta, idioma, código de país y hora solo para responderte. El operador elimina las consultas ya respondidas. Para evitar envíos repetidos, guardamos solo un valor irreversible derivado de tu conexión durante 10 minutos.'],
+  id: ['Kontak', 'Saat kamu mengirim formulir kontak, kami menyimpan email, nama (opsional), jenis dan isi pertanyaan, bahasa, kode negara, dan waktu hanya untuk membalas. Pertanyaan yang sudah dijawab dihapus oleh operator. Untuk mencegah pengiriman berulang, kami hanya menyimpan nilai tak terbalikkan dari koneksimu selama 10 menit.'],
+};
 const DIST = path.join(ROOT, 'dist');
 const L = {};
 for (const c of LANGS) {
@@ -45,7 +54,7 @@ for (const c of LANGS) {
   const extra = (await import(`./src/i18n/places/extra/${c}.js`)).default; // 2차 추가 40곳
   L[c].placesData = { ui: pl.live, places: { ...pl.places, ...more, ...extra }, forYou: pl.forYou, reason };
   const pv = L[c].policy.privacy;
-  pv.splice(pv.length - 1, 0, pl.privacyAdd, BOARD_PRIVACY[c]); // '문의' 항목 앞에 위치·게시판 안내 추가
+  pv.splice(pv.length - 1, 0, pl.privacyAdd, BOARD_PRIVACY[c], CONTACT_PRIVACY[c]); // '문의' 항목 앞에 위치·게시판 안내 추가
 }
 // ── 여행지 검사: 좌표·사진·문구가 6개 언어 모두 있어야 함
 {
@@ -235,9 +244,9 @@ function buildInput(c) {
   const showBlood = c === 'ja';
   const sijinOpts = Lc.sijin.map((s, i) => `<option value="${i}">${esc(s)} (${sijinRange(i)})</option>`).join('');
   const coll = new Intl.Collator(Lc.htmlLang);
-  const rest = Object.entries(Lc.countries).filter(([k]) => k !== 'OTHER' && k !== Lc.defaultCountry).sort((a, b) => coll.compare(a[1], b[1]));
-  const countryOpts = `<option value="${Lc.defaultCountry}" selected>${esc(Lc.countries[Lc.defaultCountry])}</option><option disabled>──────────</option>`
-    + rest.map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
+  // 모든 나라를 이름순으로(대한민국도 이름순 자리). 접속 위치(IP) 나라는 화면에서 맨 위로 올려 선택해 둠
+  const rest = Object.entries(Lc.countries).filter(([k]) => k !== 'OTHER').sort((a, b) => coll.compare(a[1], b[1]));
+  const countryOpts = rest.map(([k, v]) => `<option value="${k}"${k === Lc.defaultCountry ? ' selected' : ''}>${esc(v)}</option>`).join('');
   const body = `${head({ lang: c, title: `${BRAND} ${Lc.subBrand} | ${Lc.tagline}`, desc: Lc.siteDesc, canonical: `/${c}/`, alts: langAlts('/') })}
 <body class="page-input" data-lang="${c}">
 ${header(c)}
@@ -406,7 +415,19 @@ function buildPolicy(c) {
   const Lc = L[c], U = Lc.ui;
   for (const key of ['about', 'privacy', 'terms', 'contact']) {
     const secs = Lc.policy[key].map(([h, p]) => `<section><h2>${esc(h)}</h2><p>${esc(fmt(p, { email: config.contactEmail, brand: BRAND }))}</p></section>`).join('\n');
-    const extra = key === 'contact' ? `<p class="mail"><a href="mailto:${esc(config.contactEmail)}">${esc(config.contactEmail)}</a></p>` : '';
+    const F = Lc.contactForm || {};
+    const extra = key === 'contact' ? `<form class="form compact ct-form" id="ctForm" novalidate data-lang="${c}" data-need="${esc(F.need)}" data-err="${esc(F.err)}" data-limit="${esc(F.limit)}">
+<label class="field"><span>${esc(F.name)}</span><input name="name" maxlength="30" autocomplete="name"></label>
+<label class="field"><span>${esc(F.email)}</span><input name="email" type="email" maxlength="100" autocomplete="email" required></label>
+<label class="field"><span>${esc(F.kind)}</span><select name="kind">${(F.kinds || []).map((k, i) => `<option value="${i}">${esc(k)}</option>`).join('')}</select></label>
+<label class="field"><span>${esc(F.msg)}</span><textarea name="msg" rows="6" maxlength="3000" required></textarea></label>
+<input name="hp" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+<p class="form-err" id="ctErr" hidden></p>
+<button class="btn-primary" type="submit">${esc(F.send)}</button>
+<p class="ct-ok" id="ctOk" hidden>${esc(F.ok)}</p>
+</form>
+<p class="muted small">${esc(F.alt)}</p><p class="mail"><a href="mailto:${esc(config.contactEmail)}">${esc(config.contactEmail)}</a></p>
+<script type="module" src="/assets/contact.js?v=${VERSION}"></script>` : '';
     const body = `${head({ lang: c, title: `${U[key]} | ${BRAND}`, desc: `${U[key]} – ${BRAND} ${Lc.subBrand}`, canonical: `/${c}/${key}/`, alts: langAlts(`/${key}/`) })}
 <body class="page-policy" data-lang="${c}">
 ${header(c)}
@@ -470,7 +491,7 @@ for (const c of LANGS) { const { policy, placesData, ...rest } = L[c]; write(`as
   write('assets/world-land.txt', land);
 }
 // 브라우저 캐시 문제 방지: 스크립트끼리 불러오는 주소에도 버전을 붙임 (배포할 때마다 새 파일로 인식)
-for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js', 'saju.js', 'saju-view.js', 'jieqi.js', 'masters.js', 'masters-view.js', 'board.js']) {
+for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js', 'saju.js', 'saju-view.js', 'jieqi.js', 'masters.js', 'masters-view.js', 'board.js', 'contact.js']) {
   const fp = path.join(DIST, 'assets', f);
   const src = fs.readFileSync(fp, 'utf8')
     .replace(/(from\s+'\.\/[\w-]+\.m?js)'/g, `$1?v=${VERSION}'`)

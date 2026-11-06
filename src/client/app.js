@@ -178,7 +178,19 @@ ${p.blood !== null && p.blood !== undefined ? `<div><dt>${esc(U.blood)}</dt><dd>
       form.reset(); showForm(true);
     });
     showForm(qs.has('edit'));
-  } else showForm(true);
+  } else {
+    showForm(true);
+    // 처음 오는 사람: 접속 국가를 목록 맨 위에 올리고 선택해 둠 (IP는 저장하지 않음)
+    fetch('/api/geo').then(r => r.json()).then(g => {
+      const cc = String(g.country || '').toUpperCase(), sel = form.country;
+      const opt = sel && [...sel.options].find(o => o.value === cc);
+      if (!opt || profile()) return;
+      sel.prepend(opt);
+      const sep = document.createElement('option'); sep.disabled = true; sep.textContent = '──────────';
+      opt.after(sep);
+      sel.value = cc;
+    }).catch(() => {});
+  }
   if (inv) {
     const o = b64d(inv);
     if (o) { const b = $('#inviteBanner'); b.textContent = fmt(U.invitedBy, { n: o.n || '?' }); b.hidden = false; }
@@ -736,7 +748,8 @@ function renderAdmin() {
   const BY = { day: '일별', week: '주별', month: '월별', year: '연별' };
   const RG = { 7: '최근 7일', 30: '최근 30일', 90: '최근 90일', 365: '최근 1년', all: '전체' };
   const num = n => Number(n || 0).toLocaleString('ko-KR');
-  app().innerHTML = `<section class="sec adm"><h1 class="page-h">접속 트래픽</h1><p class="muted small">개인 정보 없이 날짜·국가·언어·기기별 숫자만 집계합니다. 날짜는 한국 시간 기준이며, 관리자 본인의 접속은 빠집니다.</p>
+  app().innerHTML = `<section class="sec adm" id="admInq"><h1 class="page-h">문의함 <span class="adm-new" id="inqNew" hidden></span></h1><p class="muted small">사이트 '문의하기' 양식으로 들어온 내용입니다. 새 문의가 위에 표시되고, 펼치면 읽음으로 바뀝니다.</p><div id="inqOut"><p class="muted">불러오는 중…</p></div></section>
+<section class="sec adm"><h1 class="page-h">접속 트래픽</h1><p class="muted small">개인 정보 없이 날짜·국가·언어·기기별 숫자만 집계합니다. 날짜는 한국 시간 기준이며, 관리자 본인의 접속은 빠집니다.</p>
 <div class="adm-ctl"><div class="adm-seg" id="admBy">${Object.entries(BY).map(([k, v]) => `<button type="button" data-v="${k}" aria-pressed="${k === st.by}">${v}</button>`).join('')}</div>
 <select id="admRange">${Object.entries(RG).map(([k, v]) => `<option value="${k}"${k === st.range ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
 <div id="admOut"><p class="muted">불러오는 중…</p></div></section>`;
@@ -770,6 +783,36 @@ function renderAdmin() {
       out.innerHTML = `<p class="muted">${e.message === 'denied' ? 'Cloudflare에 설정한 관리자 이름(ADMIN_NAME)과 지금 이름이 달라 볼 수 없습니다.' : e.message === 'no_db' ? '데이터베이스(DB)가 연결되어 있지 않습니다.' : '통계를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'}</p>`;
     }
   };
+  const hdr = { 'x-admin': encodeURIComponent((profile()?.name || '').trim()) };
+  const KD = { ko: '한국어', ja: '일본어', zh: '중국어', en: '영어', es: '스페인어', id: '인도네시아어' };
+  const loadInq = async () => {
+    const out = $('#inqOut');
+    try {
+      const r = await fetch('/api/contact', { headers: hdr }).then(x => x.json());
+      if (!r.ok) throw new Error(r.error);
+      const unread = r.items.filter(i => !i.read).length;
+      $('#inqNew').hidden = !unread; $('#inqNew').textContent = `새 문의 ${unread}`;
+      setAdminBadge(unread);
+      const items = [...r.items].sort((a, b) => a.read - b.read || b.id - a.id);
+      out.innerHTML = items.length ? items.map(i => `<details class="inq${i.read ? '' : ' is-new'}" data-id="${i.id}"><summary>${i.read ? '' : '<b class="inq-dot">NEW</b>'}<span class="inq-k">${esc(i.kind || '문의')}</span><span class="inq-s">${esc(i.msg.slice(0, 40))}</span><time>${new Date(i.created).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time></summary>
+<dl class="inq-meta"><div><dt>이름</dt><dd>${esc(i.name || '-')}</dd></div><div><dt>이메일</dt><dd>${esc(i.email)}</dd></div><div><dt>언어·국가</dt><dd>${esc(KD[i.lang] || i.lang || '-')} · ${esc(i.country ? ((dn && dn.of(i.country)) || i.country) : '-')}</dd></div></dl>
+<p class="inq-msg">${esc(i.msg)}</p><p class="inq-act"><a class="btn-primary sm" href="mailto:${encodeURIComponent(i.email)}?subject=${encodeURIComponent('[Fortune in Time] 문의 답변')}">메일로 답장</a><button type="button" class="btn-ghost sm" data-del="${i.id}">삭제</button></p></details>`).join('') : '<p class="muted">아직 들어온 문의가 없습니다.</p>';
+      $$('details.inq', out).forEach(d => d.addEventListener('toggle', async () => {
+        if (!d.open || !d.classList.contains('is-new')) return;
+        d.classList.remove('is-new'); $('.inq-dot', d)?.remove();
+        await fetch(`/api/contact/${d.dataset.id}/read`, { method: 'POST', headers: hdr }).catch(() => {});
+        const n = $$('details.inq.is-new', out).length; $('#inqNew').hidden = !n; $('#inqNew').textContent = `새 문의 ${n}`; setAdminBadge(n);
+      }));
+      $$('[data-del]', out).forEach(b => b.addEventListener('click', async () => {
+        if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = '한 번 더 누르면 삭제'; return; }
+        await fetch(`/api/contact/${b.dataset.del}/delete`, { method: 'POST', headers: hdr }).catch(() => {});
+        loadInq();
+      }));
+    } catch (e) {
+      out.innerHTML = `<p class="muted">${e.message === 'no_db' ? '데이터베이스(DB)가 연결되어 있지 않습니다.' : '문의를 불러오지 못했습니다.'}</p>`;
+    }
+  };
+  loadInq();
   $$('#admBy button').forEach(b => b.addEventListener('click', () => { st.by = b.dataset.v; session.set('adm_by', st.by); $$('#admBy button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); load(); }));
   $('#admRange').addEventListener('change', e => { st.range = e.target.value; session.set('adm_range', st.range); load(); });
   load();
@@ -1195,6 +1238,18 @@ if (isAdmin() && $('.tabs') && !$('.tabs .tab-admin')) {
   a.href = `/${C}/result/admin/`; a.className = `tab tab-admin${body.dataset.tab === 'admin' ? ' is-on' : ''}`;
   a.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>${esc((U.tabs && U.tabs.admin) || 'Admin')}</span>`;
   $('.tabs').append(a);
+}
+// 관리자: 새 문의가 있으면 관리자 탭에 숫자 알림
+function setAdminBadge(n) {
+  const a = $('.tabs .tab-admin'); if (!a) return;
+  let b = $('.tab-badge', a);
+  if (!n) { b?.remove(); return; }
+  if (!b) { b = document.createElement('i'); b.className = 'tab-badge'; a.append(b); }
+  b.textContent = n > 99 ? '99+' : String(n);
+  b.setAttribute('aria-label', `새 문의 ${n}건`);
+}
+if (isAdmin() && !document.prerendering) {
+  fetch('/api/contact/count', { headers: { 'x-admin': encodeURIComponent((profile()?.name || '').trim()) } }).then(r => r.json()).then(r => { if (r.ok) setAdminBadge(r.unread); }).catch(() => {});
 }
 if (body.classList.contains('page-input')) initInput();
 else if (body.classList.contains('page-result')) {

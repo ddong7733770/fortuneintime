@@ -1,3 +1,4 @@
+import { REL, FOCUS_NONE, ADVICE_DOM, ADVICE_YONG } from './ko-focus.js';
 // 명인 풀이 문장 (한국어). 페르소나 설정은 docs/haewoon-persona.md — 화면에 설명하지 않고 말투로만 드러냄
 // · fortune(오늘 탭): 중립 안내형 해요체
 // · haewoon: 직설적·짧게 끊는 합니다체 / hana: 밝고 다정한 해요체 / dohan: 간결·전략적 합니다체, 단정 금지
@@ -370,4 +371,6 @@ for (const k of Object.keys(FORTUNE_DOM)) mergeDom(KO.fortune.dom[k], FORTUNE_DO
 mergeDom(KO.hana.today, HANA_TODAY);
 KO.hana.date = DATE; // 하나의 추천하는 데이트
 KO.ui.secs.date = DATE.title;
+// 눈여겨볼 점·조언 5배 묶음
+KO.fortune.rel = REL; KO.fortune.focusNone = FOCUS_NONE; KO.fortune.adviceDom = ADVICE_DOM; KO.fortune.adviceYong = ADVICE_YONG;
 export default KO;

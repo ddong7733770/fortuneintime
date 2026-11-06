@@ -6,6 +6,7 @@ export default {
   intro: 'Fortune in Time blends your Western star sign with the Korean and Chinese zodiac and the twelve traditional two-hour periods (sijin) to show how your luck flows hour by hour. You can change your destiny once every morning and evening at 6.',
   disclaimer: 'All fortunes are for entertainment only and should not be used as the basis for important decisions.',
 
+  contactForm: {"name": "Name (optional)", "email": "Email for our reply", "kind": "Topic", "kinds": ["Using the service", "Bug report", "Partnership / ads", "Other"], "msg": "Message", "send": "Send message", "ok": "Your message has been received. We will reply to the email you left.", "alt": "Or email us directly at the address below.", "need": "Please enter your email and a message (5+ characters).", "err": "Please try again in a moment.", "limit": "Too many messages at once. Please try again later."},
   ui: {
     chooseLang: 'Choose your language', recommended: 'Suggested', nowIs: 'Now: {s}', untilChange: 'Next destiny change in',
     name: 'Name', namePh: 'A nickname is fine', gender: 'Gender', male: 'Male', female: 'Female',
@@ -135,6 +136,6 @@ export default {
       ['Two chances a day', 'Change your destiny once every day at 6 AM and 6 PM, and keep a lucky charm as your wallpaper to carry its energy.'],
       ['Six languages', 'Available in Korean, Japanese, Chinese, English, Spanish and Indonesian.'],
     ],
-    contact: [['Get in touch', 'For questions, bug reports or partnerships, email us at the address below. We reply within 3 business days.']],
+    contact: [['Get in touch', 'For questions, bug reports or partnerships, email us at the address below.']],
   },
 };

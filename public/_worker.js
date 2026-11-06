@@ -50,6 +50,8 @@ async function ensure(db) {
     db.prepare('CREATE TABLE IF NOT EXISTS imgs (post_id INTEGER PRIMARY KEY, type TEXT, data BLOB)'),
     db.prepare('CREATE TABLE IF NOT EXISTS limits (h TEXT PRIMARY KEY, exp INTEGER)'),
     // 접속 통계: 개인 정보 없이 날짜·국가·언어·기기별 숫자만 (pv=페이지뷰, uv=그날 첫 방문)
+    // 문의하기: 관리자 탭에서 확인 (read=0 새 문의)
+    db.prepare('CREATE TABLE IF NOT EXISTS inquiries (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, kind TEXT, msg TEXT, lang TEXT, country TEXT, created INTEGER, read INTEGER DEFAULT 0)'),
     db.prepare('CREATE TABLE IF NOT EXISTS stats (day TEXT, country TEXT, lang TEXT, device TEXT, pv INTEGER DEFAULT 0, uv INTEGER DEFAULT 0, PRIMARY KEY (day, country, lang, device))'),
   ]);
   ready = true;
@@ -190,6 +192,47 @@ async function stats(request, env, url) {
   return json({ ok: true, from, to, series, country, lang, device, total: total[0] || {} });
 }
 
+// ── 문의하기 (사이트 폼 → 데이터베이스 → 관리자 탭)
+async function contact(request, env, url) {
+  const db = env.DB;
+  if (!db) return err('no_db', 503);
+  await ensure(db);
+  const path = url.pathname.replace(/^\/api\/contact\/?/, '');
+  if (request.method === 'POST' && path === '') {
+    let b = {}; try { b = await request.json(); } catch { return err('bad_form'); }
+    if (b.hp) return json({ ok: true }); // 자동 입력 봇(숨은 칸을 채움)은 저장하지 않음
+    const email = clean(b.email, 100), msg = clean(b.msg, 3000);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || msg.length < 5) return err('empty');
+    // 같은 접속(IP 해시)에서 10분에 한 번만. IP 원문은 저장하지 않음
+    const ip = request.headers.get('cf-connecting-ip') || '';
+    const h = await sha(`ct|${ip}|${env.ADMIN_NAME || 'fit'}`);
+    await db.prepare('DELETE FROM limits WHERE exp < ?').bind(Date.now()).run();
+    if (await db.prepare('SELECT h FROM limits WHERE h = ?').bind(h).first()) return err('limit', 429);
+    await db.batch([
+      db.prepare('INSERT INTO inquiries (name, email, kind, msg, lang, country, created) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(clean(b.name, 30), email, clean(b.kind, 30), msg, LANGS.includes(b.lang) ? b.lang : '', String((request.cf || {}).country || '').slice(0, 2), Date.now()),
+      db.prepare('INSERT OR REPLACE INTO limits (h, exp) VALUES (?, ?)').bind(h, Date.now() + 10 * 60e3),
+    ]);
+    return json({ ok: true });
+  }
+  // 아래는 관리자만
+  if (!isAdmin(env, decodeURIComponent(request.headers.get('x-admin') || ''))) return err('denied', 403);
+  if (request.method === 'GET' && path === 'count') {
+    const r = await db.prepare('SELECT COUNT(*) AS n FROM inquiries WHERE read = 0').first();
+    return json({ ok: true, unread: r ? r.n : 0 });
+  }
+  if (request.method === 'GET' && path === '') {
+    const { results } = await db.prepare('SELECT id, name, email, kind, msg, lang, country, created, read FROM inquiries ORDER BY id DESC LIMIT 100').all();
+    return json({ ok: true, items: results });
+  }
+  const m = path.match(/^(\d+)\/(read|delete)$/);
+  if (request.method === 'POST' && m) {
+    if (m[2] === 'read') await db.prepare('UPDATE inquiries SET read = 1 WHERE id = ?').bind(+m[1]).run();
+    else await db.prepare('DELETE FROM inquiries WHERE id = ?').bind(+m[1]).run();
+    return json({ ok: true });
+  }
+  return err('not_found', 404);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -205,6 +248,7 @@ export default {
       return json(body);
     }
     if (url.pathname === '/api/hit' && request.method === 'POST') { try { return await hit(request, env); } catch { return new Response(null, { status: 204 }); } }
+    if (url.pathname === '/api/contact' || url.pathname.startsWith('/api/contact/')) { try { return await contact(request, env, url); } catch { return err('server', 500); } }
     if (url.pathname === '/api/stats') { try { return await stats(request, env, url); } catch { return err('server', 500); } }
     if (url.pathname === '/api/board' || url.pathname.startsWith('/api/board/')) {
       try { return await board(request, env, url); } catch { return err('server', 500); }
