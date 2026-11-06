@@ -24,7 +24,7 @@ export function fortuneDomain(M, S, d, k) {
 export function fortuneBasicHTML(M, S, d, dateK = null) {
   const t = fortuneReading(M, S, d), F = M.fortune;
   const wk = dateK ? weekendText(M, d, dateK) : '';
-  return `<h3>${esc(F.advice)}</h3><p class="m-p">${esc(t.advice)}</p>${wk ? `<div class="wkend"><h3>${esc(F.weekend.title)}</h3><p class="m-p">${esc(wk)}</p></div>` : ''}`;
+  return `<div class="advice-box"><h3>${esc(F.advice)}</h3><p class="m-p">${esc(t.advice)}</p></div>${wk ? `<div class="wkend"><h3>${esc(F.weekend.title)}</h3><p class="m-p">${esc(wk)}</p></div>` : ''}`;
 }
 // 토·일요일에만: 외출·여행·외식·데이트 등 휴일 운세 (점수 구간 · 오늘의 십신 · 용신 · 약한 분야 · 애정 단계로 고름)
 export function weekendText(M, d, dateK) {

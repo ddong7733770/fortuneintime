@@ -348,20 +348,30 @@ ${footer(c)}
 }
 
 // ── 4) 정적 운세 페이지 (띠, 별자리, 시진, 혈액형) — 매일 재빌드, 브라우저에서 날짜가 다르면 다시 계산
-function staticShell(c, { title, desc, canonical, alts, h1, bodyHTML, crumbs = '' }) {
+function staticShell(c, { title, desc, canonical, alts, h1, bodyHTML, crumbs = '', bnav = false, sticky = true, cls = '', script = '' }) {
   return `${head({ lang: c, title, desc, canonical, alts })}
-<body class="page-static" data-lang="${c}">
+<body class="page-static${bnav ? ' has-bnav' : ''}${cls ? ` ${cls}` : ''}" data-lang="${c}">
 ${header(c)}
+${bnav ? `<nav class="tabs" aria-label="menu">${bottomNav(c)}</nav>` : ''}
 <main class="wrap static">
 ${crumbs}
 ${h1 ? `<h1 class="page-h">${esc(h1)}</h1>` : ''}
 ${bodyHTML}
-<div class="sticky-cta"><a class="btn-primary" href="/${c}/">${esc(L[c].ui.cta)}</a></div>
+${sticky ? `<div class="sticky-cta"><a class="btn-primary" href="/${c}/">${esc(L[c].ui.cta)}</a></div>` : ''}
 </main>
+${bnav ? `<div class="fab" id="fabTop"><button type="button" class="fab-top" aria-label="${esc(L[c].ui.toTop || 'Top')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>` : ''}
 ${footer(c)}
 ${pushAds}
 <script type="module" src="/assets/static.js?v=${VERSION}"></script>
+${script}
 </body></html>`;
+}
+// 하단 고정 탭 (결과 화면과 같은 구성, 공개 페이지에서는 선택된 탭 없음)
+function bottomNav(c, on = '') {
+  const Lc = L[c], U = Lc.ui, HAS_M = !!(Lc.saju && Lc.masters);
+  const NAV = HAS_M ? ['fortune', 'master', 'year', 'time', 'charm'] : BASE_TABS;
+  const ico = x => (x === 'master' ? `<img class="tab-face" src="${config.images.master}" alt="" width="26" height="26">` : `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICON[x]}</svg>`);
+  return NAV.map(x => `<a href="/${c}/result/${x}/" class="tab${x === on ? ' is-on' : ''}"${x === on ? ' aria-current="page"' : ''}>${ico(x)}<span>${esc(U.tabs[x])}</span></a>`).join('');
 }
 const KIND_NAMES = c => ({ zodiac: L[c].animals, horoscope: L[c].signs, hour: L[c].sijin, blood: BLOOD_LABEL.map(b => (c === 'ja' ? `${b}型` : `${b}`)) });
 const KIND_INDEX_TITLE = (c, k) => ({ zodiac: L[c].ui.zodiacIndex, horoscope: L[c].ui.signIndex, hour: L[c].ui.hourIndex, blood: L[c].ui.bloodIndex }[k]);
@@ -472,14 +482,15 @@ ${adSlot('content', Lc.ui.ad)}
 function buildTypes(c) {
   if (c !== 'ko') return;
   const T = T60, base = `/${c}/type/`;
-  const cta = `<div class="y-cta"><a class="btn-primary" href="/${c}/result/master/?m=haewoon">${esc(T.cta)}</a></div>`;
+  const cta = `<div class="y-cta"><a class="btn-primary t-find" href="/${c}/" data-hub="${base}">${esc(T.cta)}</a></div>`;
+  const tScript = `<script type="module" src="/assets/type-find.js?v=${VERSION}"></script>`;
   // 모음: 천간(10)별로 묶어 6개씩
   const groups = T.stems.map((st, si) => {
     const list = TYPES60.filter(x => x.s === si).sort((a, b) => a.b - b.b).map(x => typeOf(x.s, x.b));
-    return `<section class="sec t-group"><h2>${esc(st.ko)}(${'甲乙丙丁戊己庚辛壬癸'[si]}) · ${esc(st.img)}</h2><div class="t-grid">${list.map(t => `<a class="tc-mini" href="${base}${t.slug}/">${TV.typeBadge(t, TYPE_IMGS, 'sm')}<span><b>${esc(TV.typeKo(T, t))}일주</b><small>${esc(TV.typeName(T, t))}</small></span></a>`).join('')}</div></section>`;
+    return `<section class="sec t-group"><h2>${esc(st.ko)}(${'甲乙丙丁戊己庚辛壬癸'[si]}) · ${esc(st.img)}</h2><div class="t-grid">${list.map(t => `<a class="tc-mini" data-slug="${t.slug}" style="--ta:${TV.EL_AC[t.el]};--tb:${TV.EL_BG[t.el]}" href="${base}${t.slug}/">${TV.typeBadge(t, TYPE_IMGS, 'sm')}<span><b>${esc(TV.typeKo(T, t))}일주</b><small>${esc(TV.typeName(T, t))}</small></span></a>`).join('')}</div></section>`;
   }).join('');
   const hub = `<h1 class="page-h">${esc(T.hubTitle)}</h1><p class="lead">${esc(T.hubLead)}</p>${cta}${groups}${adSlot('content', L[c].ui.ad)}`;
-  write(`${c}/type/index.html`, staticShell(c, { title: `${T.hubTitle} | ${BRAND}`, desc: T.hubDesc, canonical: base, alts: null, h1: '', bodyHTML: hub }));
+  write(`${c}/type/index.html`, staticShell(c, { title: `${T.hubTitle} | ${BRAND}`, desc: T.hubDesc, canonical: base, alts: null, h1: '', bodyHTML: hub, bnav: true, sticky: false, cls: 'page-type', script: tScript }));
   addPage(base, null);
   TYPES60.forEach(x => {
     const t = typeOf(x.s, x.b);
@@ -491,7 +502,7 @@ function buildTypes(c) {
 ${TV.typeDetailHTML(T, t, TYPE_IMGS, base)}</section>
 ${cta}${adSlot('content', L[c].ui.ad)}`;
     const desc = fmt(T.pageDesc, { ko: TV.typeKo(T, t), h: TV.typeH(t), tag: TV.typeTag(T, t) }).slice(0, 155);
-    write(`${c}/type/${t.slug}/index.html`, staticShell(c, { title: `${title} | ${BRAND}`, desc, canonical: `${base}${t.slug}/`, alts: null, h1: '', bodyHTML: body }));
+    write(`${c}/type/${t.slug}/index.html`, staticShell(c, { title: `${title} | ${BRAND}`, desc, canonical: `${base}${t.slug}/`, alts: null, h1: '', bodyHTML: body, bnav: true, sticky: false, cls: 'page-type', script: tScript }));
     addPage(`${base}${t.slug}/`, null);
   });
 }
@@ -577,7 +588,7 @@ for (const c of LANGS) { const { policy, placesData, ...rest } = L[c]; write(`as
   write('assets/world-land.txt', land);
 }
 // 브라우저 캐시 문제 방지: 스크립트끼리 불러오는 주소에도 버전을 붙임 (배포할 때마다 새 파일로 인식)
-for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js', 'saju.js', 'saju-view.js', 'jieqi.js', 'masters.js', 'masters-view.js', 'board.js', 'contact.js', 'date-icons.js', 'year-view.js', 'goat.js', 'types-view.js']) {
+for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js', 'saju.js', 'saju-view.js', 'jieqi.js', 'masters.js', 'masters-view.js', 'board.js', 'contact.js', 'date-icons.js', 'year-view.js', 'goat.js', 'types-view.js', 'type-find.js']) {
   const fp = path.join(DIST, 'assets', f);
   const src = fs.readFileSync(fp, 'utf8')
     .replace(/(from\s+'\.\/[\w-]+\.m?js)'/g, `$1?v=${VERSION}'`)

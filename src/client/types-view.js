@@ -31,7 +31,7 @@ export function typeCardHTML(T, t, imgs, hrefBase) {
 <div class="tc-top">${typeBadge(t, imgs, 'lg')}<div><p class="tc-ko">${e(typeKo(T, t))}일주 <small>${typeH(t)}</small></p><h2 class="tc-name">${e(typeName(T, t))}</h2><p class="tc-tag">${e(typeTag(T, t))}</p></div></div>
 <ul class="tc-kw">${kw.map(k => `<li>#${e(k)}</li>`).join('')}</ul>
 <details class="tc-more"><summary>${e(T.ui.more)}</summary>${typeDetailHTML(T, t, imgs, hrefBase)}</details>
-<div class="tc-btns"><button type="button" class="btn-primary sm tc-share" id="typeShare">${e(T.ui.share)}</button><a class="btn-ghost sm" href="${hrefBase}">${e(T.ui.page)}</a></div>
+<div class="tc-btns"><button type="button" class="btn-primary sm tc-share" id="typeShare">${e(T.ui.share)}</button><a class="btn-ghost sm" href="${hrefBase}#mine">${e(T.ui.page)}</a></div>
 </section>`;
 }
 

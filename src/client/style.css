@@ -1190,3 +1190,25 @@ html.leaving main, html.leaving .foot { opacity: 0; transition: opacity .17s eas
 .tcard .tc-name { display: block; }
 .cp-lock .btn-primary { background: var(--hn) !important; border-color: var(--hn) !important; }
 .tcard .tc-name { font-size: 23px !important; margin: 2px 0 !important; color: #1A1A1A !important; font-family: var(--serif) !important; }
+
+/* 오늘의 조언: 박스로 구분 */
+.advice-box { margin: 14px 0 6px; padding: 14px 16px; border-radius: 16px; background: #EEF6F3; border: 1px solid #CFE5DD; }
+.advice-box h3 { margin: 0 0 6px !important; color: #2F6F6A !important; display: flex; align-items: center; gap: 6px; }
+.advice-box h3::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #2F6F6A; flex: none; }
+.advice-box .m-p { margin: 0; }
+/* 60타입 공개 페이지: 글자 90% */
+.page-type .page-h { font-size: 21.6px; }
+.page-type .lead { font-size: 17.1px; }
+.page-type .t-group h2 { font-size: 15.3px; }
+.page-type .tc-mini b { font-size: 12.6px; } .page-type .tc-mini small { font-size: 10.8px; }
+.page-type .tcard .tc-name { font-size: 20.7px !important; }
+.page-type .tc-tag { font-size: 13px; } .page-type .tc-ko { font-size: 11.7px; }
+.page-type .tc-kw li { font-size: 12.2px; }
+.page-type .tc-detail p { font-size: 13.5px; } .page-type .tc-dl dd { font-size: 13px; } .page-type .tc-dl dt { font-size: 11.3px; }
+.page-type .crumbs { font-size: 12.6px; }
+.page-type .y-cta .btn-primary { font-size: 14.4px; }
+/* 내 타입 강조 */
+.tc-mini.is-mine { position: relative; border: 2px solid var(--ta); background: var(--tb); box-shadow: 0 6px 18px color-mix(in srgb, var(--ta) 30%, transparent); animation: mineGlow 1.6s ease-in-out 2; }
+.tc-mini.is-mine::after { content: '나의 타입'; position: absolute; top: -9px; right: 8px; padding: 2px 8px; border-radius: 999px; background: var(--ta); color: #fff; font-size: 10.5px; font-weight: 700; }
+@keyframes mineGlow { 0%, 100% { transform: none; } 50% { transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { .tc-mini.is-mine { animation: none; } }
