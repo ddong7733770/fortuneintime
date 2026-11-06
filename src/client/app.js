@@ -4,7 +4,8 @@ import { mountPlace } from './place.js';
 import { mountBoard } from './board.js';
 import { basisHTML, domainReading, sajuTabHTML, todayReading, todayReadingHTML } from './saju-view.js';
 import * as MV from './masters-view.js';
-import { freeMaster, MASTERS } from './masters.js';
+import { freeMaster, MASTERS, yearFortune } from './masters.js';
+import * as YV from './year-view.js';
 import { dialSVG, dialLabels, fmt, esc, pips, sijinRange, fmtDate, BLOOD_LABEL, SIGN_GLYPH, domainText, hourText, summaryText, loveTexts, startHands } from './content.js';
 
 const D = JSON.parse(document.getElementById('ttf-data').textContent);
@@ -1118,6 +1119,56 @@ ${adSlot('tab')}`;
   list(); pushAds(app());
 }
 
+// ── 2027 신년운세 탭 (해운정사): 요약은 무료, 12달 상세는 광고 1번 보면 그 해 내내 열림(기기에만 기록)
+const YEAR = 2027;
+function yearOpen() { if (isAdmin()) return true; const raw = activeRaw(); return !!(raw && store.get(`y${YEAR}`, {})[E.profileSeed(raw)]); }
+function setYearOpen() { const raw = activeRaw(); if (!raw) return; const a = store.get(`y${YEAR}`, {}); a[E.profileSeed(raw)] = 1; store.set(`y${YEAR}`, a); }
+// 보상형 광고가 연결돼 있으면 그것을, 아니면 배너 광고 창(5초)을 보여 준 뒤 열림
+function adThen(done) {
+  if (typeof window.ttfShowRewarded === 'function') {
+    try { window.ttfShowRewarded(done, () => { toast(M.ui.adFail); done(); }); } catch { done(); }
+    return;
+  }
+  adGate(done);
+}
+function renderYear() {
+  const Y = M.year, p = P(), chart = E.SJ.chartOf(p), yf = yearFortune(chart, YEAR);
+  const t = YV.yearTopHTML(Y, S, chart, yf, (activeRaw()?.name || '').trim());
+  const open = yearOpen();
+  app().innerHTML = `<div class="y27">${t.hero}${t.overall}${t.dom}${adSlot('tab')}${t.months}
+<section class="sec y-sec" id="yDetail"><h2>${esc(Y.secs.detail)}</h2>${open ? YV.yearDetailHTML(Y, yf, chart) : YV.yearLockHTML(Y)}</section>
+${t.luck}<section class="sec y-sec y-zlink"><a class="btn-ghost" href="/${C}/${YEAR}/">${esc(Y.zodiacCta)}</a></section>
+<section class="sec"><p class="disc-inline">${esc(S.ui.disclaimer)}</p></section></div>`;
+  $('#yUnlock')?.addEventListener('click', () => adThen(() => { setYearOpen(); renderYear(); setTimeout(() => $('#yDetail')?.scrollIntoView({ block: 'start' }), 60); }));
+  $('#yShare')?.addEventListener('click', () => shareYearCard(Y, chart, yf));
+  pushAds(app());
+}
+// 공유 카드: 이미지를 만들어 미리 보여 주고 공유·저장
+async function shareYearCard(Y, chart, yf) {
+  const btn = $('#yShare'), old = btn.innerHTML;
+  btn.disabled = true; btn.textContent = Y.card.making;
+  const blob = await YV.makeCard(Y, S, chart, yf).catch(() => null);
+  btn.disabled = false; btn.innerHTML = old;
+  if (!blob) { toast(Y.card.fail); return; }
+  const file = new File([blob], `fortune-${YEAR}.png`, { type: 'image/png' });
+  const url = URL.createObjectURL(blob);
+  const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+  const ov = document.createElement('div');
+  ov.className = 'y-card-ov';
+  ov.innerHTML = `<div class="y-card-box" role="dialog" aria-modal="true" aria-label="${esc(Y.hero.kwTitle)}"><img src="${url}" alt="${esc(Y.hero.kwTitle)}">
+<div class="y-card-btns">${canShare ? `<button type="button" class="btn-primary" data-a="share">${esc(Y.card.shareBtn)}</button>` : ''}<a class="${canShare ? 'btn-ghost' : 'btn-primary'}" href="${url}" download="fortune-${YEAR}.png">${esc(Y.card.saveBtn)}</a><button type="button" class="btn-ghost" data-a="close">${esc(Y.card.close)}</button></div>
+<p class="muted small">${esc(Y.card.hold)}</p></div>`;
+  document.body.append(ov);
+  document.documentElement.classList.add('adgate-on');
+  requestAnimationFrame(() => ov.classList.add('on'));
+  const close = () => { ov.classList.remove('on'); document.documentElement.classList.remove('adgate-on'); setTimeout(() => { ov.remove(); URL.revokeObjectURL(url); }, 250); };
+  ov.addEventListener('click', e => {
+    const a = e.target.closest('[data-a]')?.dataset.a;
+    if (e.target === ov || a === 'close') close();
+    if (a === 'share') navigator.share({ files: [file], text: `${Y.card.shareText} ${location.origin}/${C}/${YEAR}/` }).catch(() => {});
+  });
+}
+
 // 광고 창(미래 운세 결과 전): 배너 광고 + 5초 로딩 게이지 → 닫기(X) 버튼이 나타남
 function adGate(done) {
   const ov = document.createElement('div');
@@ -1258,7 +1309,7 @@ else if (body.classList.contains('page-result')) {
     if (qs.get('inv')) session.set('inv', qs.get('inv'));
     location.replace(`/${C}/`);
   } else {
-    const render = tab === 'admin' ? renderAdmin : HAS_M ? { fortune: renderFortune, master: renderMaster, saju: renderMaster, love: renderMaster, time: renderTime, charm: renderCharm }[tab]
+    const render = tab === 'admin' ? renderAdmin : HAS_M ? { fortune: renderFortune, master: renderMaster, year: renderYear, saju: renderMaster, love: renderMaster, time: renderTime, charm: renderCharm }[tab]
       : { fortune: renderFortune, saju: renderSaju, love: renderLove, time: renderTime, charm: renderCharm }[tab];
     if (lockedOther()) {
       const n = document.createElement('p'); n.className = 'lock-note'; n.setAttribute('role', 'status');

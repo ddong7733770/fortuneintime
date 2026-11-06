@@ -136,3 +136,52 @@ export function peopleOf(chart) {
     dayGrp: SJ.groupOf(chart.tens.day.branch), // 배우자 자리의 십신 그룹
   };
 }
+
+// ── 해운정사 신년운세 (그 해의 세운 + 그 해 대운 + 12달 월운 + 달마다 좋은 날)
+// 같은 사주면 언제나 같은 결과. 점수는 0~100, 단계는 0(버티는 해)~4(활짝 핀 해)
+const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
+const KW_GOOD = [['독립', '동료', '자립'], ['표현', '창작', '도전'], ['수확', '기회', '실속'], ['인정', '승진', '책임'], ['배움', '자격', '회복']];
+const KW_HARD = [['절제', '경쟁', '거리 두기'], ['말조심', '선택과 집중', '마무리'], ['지출 관리', '욕심 덜기', '점검'], ['체력 관리', '버티기', '규칙'], ['결단', '실행', '정리']];
+const REL_KW = { hap: '귀인', samhap: '협력', chung: '변화', hyeong: '꼼꼼함', hae: '오해 풀기' };
+export function yearFortune(chart, y = 2027) {
+  const yi = yearInfo(chart, y);
+  const mid = Date.UTC(y, 6, 1);
+  const dae = currentDaeun(chart, mid);
+  const ev = yi.ev, dv = dae ? dae.ev.val : 0;
+  const score = clampN(Math.round(ev.raw * 0.9 + 14 + dv * 2.2), 40, 97);
+  const band = score >= 82 ? 4 : score >= 72 ? 3 : score >= 62 ? 2 : score >= 52 ? 1 : 0;
+  // 분야: 세운 + 대운 바탕
+  const dom = {};
+  for (const k of ['wealth', 'love', 'work', 'health']) {
+    const base = ev.domRaw[k] + (dae ? 0.35 * (dae.ev.domRaw[k] - 3) : 0);
+    dom[k] = clampN(Math.round(base), 1, 5);
+  }
+  // 12달 (양력 1~12월, 각 달 15일이 속한 절기의 월주)
+  const months = monthScan(chart, y, 1, 12).map(mo => {
+    const s = clampN(Math.round(mo.ev.raw * 0.85 + 13 + (score - 68) * 0.35), 32, 98);
+    const md = mo.ev.domRaw;
+    const order = Object.keys(md).sort((a, b) => md[b] - md[a]);
+    // 이 달의 좋은 날 2개(그날 일진이 원국과 가장 잘 맞는 날)
+    const dim = new Date(Date.UTC(y, mo.m, 0)).getUTCDate();
+    const days = [];
+    for (let d = 1; d <= dim; d++) { const g = SJ.dateGZ(y, mo.m, d); days.push({ d, v: SJ.evalGZ(chart, g.stem, g.branch, chart.male).raw }); }
+    const good = days.sort((a, b) => b.v - a.v || a.d - b.d).slice(0, 2).map(x => x.d).sort((a, b) => a - b);
+    return { ...mo, score: s, band: s >= 80 ? 4 : s >= 70 ? 3 : s >= 60 ? 2 : s >= 50 ? 1 : 0, top: order[0], low: order[order.length - 1], good };
+  });
+  const byScore = [...months].sort((a, b) => b.score - a.score || a.m - b.m);
+  const best = byScore.slice(0, 3).map(x => x.m).sort((a, b) => a - b);
+  const worst = byScore.slice(-2).map(x => x.m).sort((a, b) => a - b);
+  // 키워드 3개: 천간의 기운, 지지의 기운, 원국과의 관계(없으면 신살·용신)
+  const seed = (chart.dayStem * 7 + chart.pillars.day.branch * 3 + (chart.pillars.month?.branch || 0)) % 3;
+  const kw = [];
+  const pick = (g, i) => (favG(chart, g) ? KW_GOOD : KW_HARD)[g][i % 3];
+  kw.push(pick(yi.grpS, seed));
+  const k2 = pick(yi.grpB, seed + 1); if (!kw.includes(k2)) kw.push(k2);
+  const rel = ev.rels.find(r => r.pos === 'day') || ev.rels.find(r => r.pos === 'month');
+  if (rel && !kw.includes(REL_KW[rel.type])) kw.push(REL_KW[rel.type]);
+  else if (ev.dohwa) kw.push('매력');
+  else if (ev.yeokma) kw.push('이동');
+  const FILL = ['성장', '균형', '새 출발', '용기', '여유', '단단함'];
+  for (let j = 0; j < FILL.length; j++) { const extra = FILL[(seed * 2 + chart.pillars.year.branch + j) % FILL.length]; if (kw.length < 3 && !kw.includes(extra)) kw.push(extra); }
+  return { y, gz: yi.gz, ev, grpS: yi.grpS, grpB: yi.grpB, favS: favG(chart, yi.grpS), favB: favG(chart, yi.grpB), dae, score, band, dom, months, best, worst, kw: kw.slice(0, 3), rel };
+}

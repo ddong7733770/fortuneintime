@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import config from './site.config.mjs';
+import Z27 from './src/i18n/masters/ko-zodiac27.js';
+import { GOAT } from './src/client/goat.js';
+import { branchRel } from './src/saju.js';
 import { LANGS, TZ, SLUG, SIGN_GLYPH, BLOOD_LABEL, fmt, esc, sijinRange, dialLabels, dialSVG, todayIn, genericReading, readingHTML, indexListHTML, fmtDate } from './src/content.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -99,6 +102,7 @@ const TAB_ICON = {
   love: '<path d="M12 20s-7.2-4.4-7.2-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.2 2.6C19.2 15.6 12 20 12 20z"/>',
   time: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.2V12l3.2 2.1"/><path d="M19.5 4.5v3.2h-3.2"/>',
   admin: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  year: '<path d="M8.6 7.6C7.8 4.6 4.4 4.2 4 6.6c-.3 1.9 1.6 2.6 2.8 1.6M15.4 7.6c.8-3 4.2-3.4 4.6-1 .3 1.9-1.6 2.6-2.8 1.6"/><path d="M7.2 9.2c0-1.6 2.1-2.7 4.8-2.7s4.8 1.1 4.8 2.7c0 4.8-2.1 9.6-4.8 11.3-2.7-1.7-4.8-6.5-4.8-11.3z"/><path d="M10 12.6h.01M14 12.6h.01M11 16.4h2"/>',
   charm: '<rect x="7" y="2.8" width="10" height="18.4" rx="1.2"/><path d="M10 7.2h4M12 7.2v9.6M10 12h4M10 16.8h4"/>',
 };
 
@@ -256,6 +260,7 @@ ${header(c)}
 <div class="now-text"><p class="now-is" id="nowIs"></p><p class="now-until">${esc(U.untilChange)} <b id="nowCount">--:--:--</b></p></div>
 </section>
 <h1 class="page-h">${esc(Lc.tagline)}</h1>
+${c === 'ko' ? `<a class="y-promo" href="/${c}/${Y27}/"><span class="y-promo-g">${GOAT}</span><span><b>${esc(Z27.promo.title)}</b><small>${esc(Z27.promo.sub)}</small></span><i aria-hidden="true">›</i></a>` : ''}
 <p class="invite-banner" id="inviteBanner" hidden></p>
 <section class="saved-card" id="savedCard" hidden>
 <h2>${esc(U.savedTitle)}</h2><p class="muted">${esc(U.savedNote)}</p>
@@ -316,7 +321,7 @@ const BASE_TABS = ['fortune', 'love', 'time', 'charm'];
 function buildResult(c) {
   const Lc = L[c], U = Lc.ui;
   const HAS_M = !!(Lc.saju && Lc.masters);
-  const NAV = HAS_M ? ['fortune', 'master', 'time', 'charm'] : BASE_TABS;
+  const NAV = HAS_M ? ['fortune', 'master', 'year', 'time', 'charm'] : BASE_TABS; // year: 2027 신년운세(한국어 먼저)
   const PAGES = [...(HAS_M ? [...NAV, 'saju', 'love'] : NAV), 'admin']; // admin: 관리자만 (탭은 화면에서 붙임)
   for (const t of PAGES) {
     const on = HAS_M && (t === 'saju' || t === 'love') ? 'master' : t;
@@ -345,7 +350,7 @@ function staticShell(c, { title, desc, canonical, alts, h1, bodyHTML, crumbs = '
 ${header(c)}
 <main class="wrap static">
 ${crumbs}
-<h1 class="page-h">${esc(h1)}</h1>
+${h1 ? `<h1 class="page-h">${esc(h1)}</h1>` : ''}
 ${bodyHTML}
 <div class="sticky-cta"><a class="btn-primary" href="/${c}/">${esc(L[c].ui.cta)}</a></div>
 </main>
@@ -408,6 +413,53 @@ function otherIndexLinks(c, except) {
   const all = [['zodiac', U.zodiacIndex], ['horoscope', U.signIndex]];
   if (c === 'ja') all.push(['blood', U.bloodIndex]);
   return `<nav class="more"><h2>${esc(U.moreLinks)}</h2>${all.filter(([k]) => k !== except).map(([k, t]) => `<a href="/${c}/${k}/">${esc(t)}</a>`).join('')}<a href="/${c}/">${esc(U.cta)}</a></nav>`;
+}
+
+// ── 4-2) 2027 정미년 띠별 운세 (한국어 먼저) — 검색 노출용 공개 페이지
+// 좋은 달: 그 달(15일 기준 월지)이 내 띠와 합·삼합 / 조심할 달: 충·형. 양력 1월=丑 … 12월=子
+const Y27 = 2027;
+function monthsFor(a) {
+  const good = [], care = [];
+  for (let m = 1; m <= 12; m++) { const r = branchRel(m % 12, a); if (r === 'hap' || r === 'samhap') good.push(m); if (r === 'chung' || r === 'hyeong') care.push(m); }
+  return { good, care };
+}
+function buildYear(c) {
+  if (c !== 'ko') return;
+  const Lc = L[c], Z = Z27, names = Lc.animals;
+  const star = n => `<span class="y-stars" aria-label="${n}/5">${'★'.repeat(n)}<i>${'★'.repeat(5 - n)}</i></span>`;
+  const years = i => { const ys = []; for (let y = 2014; y >= 1950; y--) if ((((y - 4) % 12) + 12) % 12 === i) ys.push(y); return ys.slice(0, 5).map(y => fmt(Z.bornIn, { y })).join(' · '); };
+  const cta = `<div class="y-cta"><a class="btn-primary y-btn" href="/${c}/result/year/">${esc(Z.cta)}</a></div>`;
+  const hero = (h, sub) => `<section class="y-hero y-hero-s"><p class="y-kick">2027 丁未年 · 붉은 양의 해</p><div class="y-goat sm">${GOAT}</div><h1 class="y-title">${esc(h)}</h1>${sub ? `<p class="y-who">${esc(sub)}</p>` : ''}</section>`;
+  // 모음
+  const grid = names.map((n, i) => `<a class="y-zc" href="/${c}/${Y27}/${SLUG.zodiac[i]}/"><b>${esc(n)}</b>${star(Z.animals[i].stars)}<small>${esc(Z.animals[i].hook)}</small></a>`).join('');
+  const hubBody = `<div class="y27 y-static">${hero(Z.hubTitle)}
+<section class="sec y-sec"><p>${esc(Z.hubLead)}</p></section>
+<div class="y-zgrid">${grid}</div>
+${cta}
+${adSlot('content', Lc.ui.ad)}
+<section class="sec y-sec"><p class="y-note">${esc(Z.note)}</p></section></div>`;
+  write(`${c}/${Y27}/index.html`, staticShell(c, { title: `${Z.hubTitle} | ${BRAND}`, desc: Z.hubDesc, canonical: `/${c}/${Y27}/`, alts: null, h1: '', bodyHTML: hubBody }));
+  addPage(`/${c}/${Y27}/`, null);
+  names.forEach((n, i) => {
+    const A = Z.animals[i], { good, care } = monthsFor(i), lb = Z.labels;
+    const mm = list => list.length ? list.map(m => fmt(Z.monthFmt, { m })).join(' · ') : '—';
+    const title = fmt(Z.pageTitle, { a: n });
+    const rows = [['money', A.money], ['love', A.love], ['work', A.work], ['health', A.health]];
+    const bodyHTML = `<div class="y27 y-static">${hero(title, A.hook)}
+<p class="years y-years">${esc(years(i))}</p>
+<section class="sec y-sec"><h2>${esc(lb.overall)}</h2><p class="y-starline">${esc(lb.stars)} ${star(A.stars)}</p><p>${esc(A.overall)}</p></section>
+<section class="sec y-sec"><ul class="y-dom">${rows.map(([k, t]) => `<li><div class="y-dh"><b>${esc(lb[k])}</b></div><p>${esc(t)}</p></li>`).join('')}</ul></section>
+<section class="sec y-sec"><div class="y-bw"><div class="b"><small>${esc(lb.good)}</small><b>${esc(mm(good))}</b></div><div class="w"><small>${esc(lb.care)}</small><b>${esc(mm(care))}</b></div></div>
+<dl class="y-mini"><div><dt>${esc(lb.color)}</dt><dd>${esc(A.color)}</dd></div></dl>
+<p class="y-close">${esc(A.tip)}</p></section>
+${cta}
+${adSlot('content', Lc.ui.ad)}
+<nav class="sibs" aria-label="${esc(Z.hubTitle)}">${names.map((n2, j) => `<a href="/${c}/${Y27}/${SLUG.zodiac[j]}/"${j === i ? ' aria-current="page"' : ''}>${esc(n2)}</a>`).join('')}</nav>
+<section class="sec y-sec"><p class="y-note">${esc(Z.note)}</p><p><a href="/${c}/${Y27}/">${esc(Z.hubTitle)} →</a></p></section></div>`;
+    const desc = fmt(Z.pageDesc, { a: n, hook: A.hook }).slice(0, 155);
+    write(`${c}/${Y27}/${SLUG.zodiac[i]}/index.html`, staticShell(c, { title: `${title} | ${BRAND}`, desc, canonical: `/${c}/${Y27}/${SLUG.zodiac[i]}/`, alts: null, h1: '', bodyHTML }));
+    addPage(`/${c}/${Y27}/${SLUG.zodiac[i]}/`, null);
+  });
 }
 
 // ── 5) 정책 페이지
@@ -491,7 +543,7 @@ for (const c of LANGS) { const { policy, placesData, ...rest } = L[c]; write(`as
   write('assets/world-land.txt', land);
 }
 // 브라우저 캐시 문제 방지: 스크립트끼리 불러오는 주소에도 버전을 붙임 (배포할 때마다 새 파일로 인식)
-for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js', 'saju.js', 'saju-view.js', 'jieqi.js', 'masters.js', 'masters-view.js', 'board.js', 'contact.js', 'date-icons.js']) {
+for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'place.js', 'place-photos.js', 'place-intro.js', 'sfx.js', 'countries.js', 'saju.js', 'saju-view.js', 'jieqi.js', 'masters.js', 'masters-view.js', 'board.js', 'contact.js', 'date-icons.js', 'year-view.js', 'goat.js']) {
   const fp = path.join(DIST, 'assets', f);
   const src = fs.readFileSync(fp, 'utf8')
     .replace(/(from\s+'\.\/[\w-]+\.m?js)'/g, `$1?v=${VERSION}'`)
@@ -501,7 +553,7 @@ for (const f of ['app.js', 'content.js', 'engine.js', 'root.js', 'static.js', 'p
 }
 
 buildRoot();
-for (const c of LANGS) { buildInput(c); buildResult(c); buildStatic(c); buildPolicy(c); }
+for (const c of LANGS) { buildInput(c); buildResult(c); buildStatic(c); buildYear(c); buildPolicy(c); }
 buildMisc();
 
 const count = fs.readdirSync(DIST, { recursive: true }).filter(f => f.endsWith('.html')).length;
