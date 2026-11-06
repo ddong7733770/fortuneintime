@@ -152,6 +152,9 @@ export function daily(p, dateK, turn = 0, lang = 'ko') {
   const my = SJ.monthYearGZAt(y, m, d);
   const evM = SJ.evalGZ(chart, my.month.stem, my.month.branch, chart.male);
   const domains = { ...ev.dom };
+  // 재물은 하루 기운만이 아니라 그 달(월운)·그 해(세운)의 재물 흐름 위에서 움직임
+  const evY = SJ.evalGZ(chart, my.year.stem, my.year.branch, chart.male);
+  domains.wealth = clamp(Math.round(ev.domRaw.wealth + 0.35 * (evM.domRaw.wealth - 3) + 0.25 * (evY.domRaw.wealth - 3)), 1, 5);
   const avg = (domains.wealth + domains.love + domains.work + domains.health) / 4;
   let base = 0.7 * (ev.raw + 0.25 * (evM.raw - 62)) + 0.3 * (30 + avg * 14);
   // 운명 바꾸기: 용신 기운을 보강하는 개운(開運) — 점수가 오르고 가장 약한 분야가 한 단계 나아짐
@@ -189,7 +192,7 @@ export function daily(p, dateK, turn = 0, lang = 'ko') {
     drain: { mbti: MBTI[drainM], blood: BLOOD[drainB] },
     charm: CHARMS[Math.floor(r() * CHARMS.length)],
     rolls: Array.from({ length: 40 }, () => r()), // 같은 뜻 안에서 문장 표현을 고르는 난수
-    saju: { chart, ev, evM, kai, gz: today },
+    saju: { chart, ev, evM, evY, kai, gz: today },
   };
 }
 

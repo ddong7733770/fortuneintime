@@ -82,7 +82,7 @@ export function domainReading(S, d, k, D = null) {
   if (k === 'wealth') {
     if (has(2)) why = fav(2) ? (ev.tgS === 4 || ev.tgB === 4 ? W(D.why.pyeon) : W(D.why.jeong)) : W(D.why.bad);
     else if (ev.tgS === 1 || ev.tgB === 1) why = W(D.why.rob);
-    else if (has(1)) why = W(D.why.output); else if (has(4)) why = W(D.why.doc); else why = W(D.why.none);
+    else if (has(1) && chart.gw[2] >= 0.6 && chart.strength >= 0) why = W(D.why.output); else if (has(4)) why = W(D.why.doc); else why = W(D.why.none); // 식상생재는 재성이 있고 감당할 힘이 있을 때만
     out.push(why); if (c <= 1) out.push(pickR(D.caution, r(1))); if (ext) out.push(pickR(D.act[c], r2(2))); out.push(pickR(D.tip, r(2)));
   } else if (k === 'love') {
     const g = chart.male === false ? 3 : 2;
@@ -135,6 +135,8 @@ ${link ? `<a class="txt-link" href="${link}">${esc(S.ui.seeSaju)} →</a>` : ''}
 
 
 // ── 타고난 분야별 운: 원국의 십신 무게·위치·용신·신살로 문장을 고름
+// 강약 막대 위치: 단계 경계(0.21·0.345·0.44·0.59)가 15·40·60·85%에 오도록
+const meterPos = v => { const X = [0, 0.21, 0.345, 0.44, 0.59, 1], Y = [3, 15, 40, 60, 85, 97]; let i = 1; while (i < 5 && v > X[i]) i++; return Math.round(Y[i - 1] + ((Math.min(1, v) - X[i - 1]) / (X[i] - X[i - 1])) * (Y[i] - Y[i - 1])); };
 export function lifeTexts(S, chart) {
   const T = S.life, ds = chart.dayStem, gw = chart.gw, tg = chart.tgCount, P = chart.pillars;
   const fav = g => SJ.elValue(chart, SJ.elOfGroup(ds, g)) >= 0;
@@ -143,11 +145,18 @@ export function lifeTexts(S, chart) {
   const out = {};
   // 재물운
   const w = [];
-  if (gw[2] >= 2) w.push(fav(2) && chart.strength >= 0 ? T.wealth.strongFav : chart.strength < 0 ? T.wealth.strongUnfav : T.wealth.strongFav);
-  else if (gw[1] >= 1.5) w.push(T.wealth.output); else w.push(T.wealth.weak);
+  // 재물 그릇: 재성의 양(지장간 포함)과 그것을 감당할 내 힘(신강·신약)을 함께 봄
+  const sg = chart.strength;
+  if (gw[2] < 0.35) w.push(T.wealth.noWealth);                                   // 무재: 겉으로 드러난 재성이 없음
+  else if (sg <= -1 && gw[2] >= 2.45) w.push(T.wealth.strongUnfav);               // 재다신약
+  else if (sg <= -1 && gw[2] >= 1.54) w.push(T.wealth.mid);                       // 재물 자리는 있으나 지키는 힘이 먼저
+  else if (sg >= 0 && gw[2] >= 1.54) w.push(T.wealth.strongFav);                  // 신왕재왕
+  else if (sg >= 0 && gw[1] >= 1.54) w.push(T.wealth.output);                     // 식상생재
+  else w.push(T.wealth.weak);
   if (tg[4] + tg[5] > 0) w.push(tg[4] > tg[5] ? T.wealth.pyeon : T.wealth.jeong);
   const wp = posOf(2); if (wp.length) w.push(T.wealth.where[wp.includes('month') ? 'month' : wp[0]]);
-  if (gw[0] >= 3 && chart.strength > 0) w.push(T.wealth.rob);
+  if (gw[0] >= 2.45 && sg >= 1) w.push(T.wealth.rob);                             // 군겁쟁재
+  if (Object.values(P).some(pl => pl && pl.branch === SJ.STORAGE[(SJ.STEM_EL[ds] + 2) % 5])) w.push(T.wealth.storage); // 재고
   w.push(fmt(T.wealth.tip, { el: yEl, act: Y.act }));
   out.wealth = w;
   // 직장·사업운
@@ -279,7 +288,7 @@ ${chart.hasHour ? '' : `<p class="muted small">${esc(U.unknownHour)}</p>`}</sect
 <ul class="el-bars">${chart.count.map((c, i) => `<li><span class="${EL_CLS[i]}">${esc(S.el[i])}</span><i><b class="bar ${EL_CLS[i]}" style="width:${(c / max) * 100}%"></b></i><em>${c}</em></li>`).join('')}</ul>
 ${many.map(i => `<p class="lead-s">${esc(S.many[i])}</p>`).join('')}${none.map(i => `<p class="lead-s">${esc(S.none[i])}</p>`).join('')}</section>
 <section class="sec"><h2>${esc(U.strength)}</h2>
-<div class="meter"><i style="left:${Math.round(chart.ratio * 100)}%"></i></div><p class="meter-ax"><span>${esc(S.strength[0][0].replace(/\(.*\)/, ''))}</span><span>${esc(S.strength[2][0].replace(/\(.*\)/, ''))}</span><span>${esc(S.strength[4][0].replace(/\(.*\)/, ''))}</span></p>
+<div class="meter"><i style="left:${meterPos(chart.ratio)}%"></i></div><p class="meter-ax"><span>${esc(S.strength[0][0].replace(/\(.*\)/, ''))}</span><span>${esc(S.strength[2][0].replace(/\(.*\)/, ''))}</span><span>${esc(S.strength[4][0].replace(/\(.*\)/, ''))}</span></p>
 <p class="tag-line"><b>${esc(st[0])}</b></p><p class="lead-s">${esc(st[1])}</p></section>
 <section class="sec"><h2>${esc(U.yongsin)}</h2>
 <p class="dm"><b class="${EL_CLS[chart.fav.yong]}">${SJ.EL_H[chart.fav.yong]}</b><span>${esc(S.el[chart.fav.yong])}</span></p>

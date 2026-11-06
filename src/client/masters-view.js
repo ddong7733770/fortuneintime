@@ -2,6 +2,7 @@
 // 문장은 L.masters(src/i18n/masters/ko.js), 계산은 masters.js. 같은 사람·같은 날이면 언제나 같은 결과
 import { SJ } from './engine.js';
 import * as MS from './masters.js';
+import { DATE_ICONS } from './date-icons.js';
 import { dialSVG, dialLabels, sijinRange, pips as gauge } from './content.js';
 import { esc, fmt, pickR, todayReading, domainReading, sajuSections, stemName } from './saju-view.js';
 
@@ -131,7 +132,7 @@ export function hanaDate(M, S, L, d, chart, now = new Date()) {
   const chips = [[U.mood, D.moodShort[grp][fav]], [U.time, `${L.sijin[bi]} ${sijinRange(bi)}`], [U.form, pl.form], [U.cost, D.costLv[pl.cost]], [U.season, seaName]];
   const stages = ['some', 'early', 'long'];
   const body = `<div class="dt-card"><p class="dt-intro">${esc(pick(D.intro[lv], 1))}</p>
-<h3 class="dt-name">${esc(pl.name)}</h3>
+<div class="dt-head">${DATE_ICONS[pl.name] ? `<span class="dt-ico">${DATE_ICONS[pl.name]}</span>` : ''}<h3 class="dt-name">${esc(pl.name)}</h3></div>
 <ul class="dt-chips">${chips.map(([k, v]) => `<li><span>${esc(k)}</span>${esc(v)}</li>`).join('')}</ul>
 <h4>${esc(U.why)}</h4><p class="m-p">${esc(pick(D.elWhy[el], 2))} ${esc(pick(pl.feature, 3))} ${esc(pick(pl.feature.filter(x => x !== pick(pl.feature, 3)), 4))}</p>
 <h4>${esc(U.how)}</h4><p class="m-p">${esc(fmt(D.moodLine, { m: mood }))} ${esc(fmt(pick(D.time[slot], 5), { h: hName }))} ${esc(pick(pl.course, 6))} ${esc(pick(pl.course.filter(x => x !== pick(pl.course, 6)), 7))}</p>

@@ -14,6 +14,10 @@ export const EL_H = ['木', '火', '土', '金', '水'];
 export const TEN_H = ['比肩', '劫財', '食神', '傷官', '偏財', '正財', '偏官', '正官', '偏印', '正印'];
 export const STEM_EL = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4];
 export const BRANCH_EL = [4, 2, 0, 0, 2, 1, 1, 2, 3, 3, 2, 4];
+// 지장간: 지지 속에 숨은 기운 [오행, 비율] (여기·중기·정기, 한 달 30일 기준 비율)
+export const HIDDEN = [[[4, 1]], [[4, .3], [3, .1], [2, .6]], [[2, .23], [1, .23], [0, .54]], [[0, 1]], [[0, .3], [4, .1], [2, .6]], [[2, .23], [3, .23], [1, .54]], [[1, .7], [2, .3]], [[1, .3], [0, .1], [2, .6]], [[2, .23], [4, .23], [3, .54]], [[3, 1]], [[3, .3], [1, .1], [2, .6]], [[2, .23], [0, .23], [4, .54]]];
+// 오행의 창고(고지): 목→미, 화→술, 토→술, 금→축, 수→진
+export const STORAGE = [7, 10, 10, 1, 4];
 const BRANCH_MAIN = [9, 5, 0, 1, 4, 2, 3, 5, 6, 7, 4, 8]; // 지지의 본기(정기) 천간
 const yang = s => s % 2 === 0;
 
@@ -111,15 +115,17 @@ export function chartOf(p) {
   items.forEach(it => { count[it.el]++; });
   const me = STEM_EL[ds];
   let sup = 0, tot = 0;
-  const gw = [0, 0, 0, 0, 0]; // 십신 그룹별 무게
-  items.forEach(it => {
-    if (!it.w) return;
-    const g = (it.el - me + 5) % 5; // 0 비겁 1 식상 2 재성 3 관성 4 인성
-    gw[g] += it.w; tot += it.w;
-    if (g === 0 || g === 4) sup += it.w;
-  });
-  const ratio = tot ? sup / tot : 0.5;
-  const strength = ratio >= 0.7 ? 2 : ratio >= 0.55 ? 1 : ratio > 0.45 ? 0 : ratio > 0.3 ? -1 : -2; // 극신강…극신약
+  const gw = [0, 0, 0, 0, 0]; // 십신 그룹별 무게 (천간 1 + 지지는 지장간 비율대로 나눔)
+  const add = (el, w) => { const g = (el - me + 5) % 5; gw[g] += w; tot += w; if (g === 0 || g === 4) sup += w; };
+  for (const [pos, pl] of Object.entries(pillars)) {
+    if (!pl) continue;
+    if (pos !== 'day') add(STEM_EL[pl.stem], 1);
+    const w = pos === 'month' ? 3 : pos === 'day' ? 1.5 : 1;
+    HIDDEN[pl.branch].forEach(([el, f]) => add(el, w * f));
+  }
+  const ratio = tot ? sup / tot : 0.4;
+  // 나를 돕는 기운(비겁·인성)은 다섯 기운 중 둘이라 평균이 약 0.4 → 0.4 근처를 중화로 봄 (약 15·25·20·25·15%로 나뉨)
+  const strength = ratio >= 0.59 ? 2 : ratio >= 0.44 ? 1 : ratio >= 0.345 ? 0 : ratio >= 0.21 ? -1 : -2; // 극신강…극신약
   // 억부용신(간단): 강하면 덜어 주는 기운, 약하면 돕는 기운
   let yongG;
   if (strength > 0) yongG = gw[4] > gw[0] ? 2 : (gw[3] < 1 ? 1 : 3);        // 인성 과다 → 재성 / 비겁 과다 → 관성(없으면 식상)
@@ -224,16 +230,23 @@ export function evalGZ(chart, stem, branch, male) {
   // 넘치는 오행: 3개 이상이면서 나에게 부담이 되는 기운(용신·희신 제외)
   const exc = chart.count.map((c, e) => c >= 3 && elValue(chart, e) < 0), lack = chart.count.map(c => c === 0);
   const els = [STEM_EL[stem], BRANCH_EL[branch]];
+  const wSt = STORAGE[(STEM_EL[ds] + 2) % 5];
+  const wOpen = Object.values(chart.pillars).some(pl => pl && pl.branch === wSt) && Math.abs(branch - wSt) === 6;
   const loveG = male === false ? 3 : 2; // 남성 재성, 여성 관성 (모르면 재성)
   const dom = {
-    wealth: 3 + 1.2 * has(2) * sign(gv(2)) - (tgS === 1 || tgB === 1 ? 0.7 : 0) + 0.22 * val,
+    wealth: 3 + 1.2 * has(2) * sign(gv(2))
+      + (has(1) && chart.gw[2] >= 0.6 && chart.strength >= 0 ? 0.6 : 0)                         // 식상생재: 재능이 돈으로 이어짐(재성이 있고 감당할 힘이 있을 때)
+      - (has(0) && chart.strength >= 0 ? 0.7 * has(0) : 0) + (has(0) && chart.strength < 0 && chart.gw[2] >= 2 ? 0.5 : 0) // 비겁: 신강엔 돈이 나눠지고, 재다신약엔 버틸 힘
+      + (wOpen ? 0.5 : 0)                                                                      // 재물 창고가 열림(충)
+      + 0.22 * val,
     work: 3 + 1.0 * has(3) * sign(gv(3)) + 0.6 * has(1) * sign(gv(1)) + 0.4 * has(4) - (relAt('month', 'chung') ? 1 : 0) + 0.22 * val,
     love: 3 + 1.1 * has(loveG) * sign(gv(loveG)) + (dohwa ? 0.8 : 0) + (relAt('day', 'hap') ? 0.8 : 0) - (relAt('day', 'chung') ? 1.2 : 0) + (stemHapDay ? 0.6 : 0) + 0.18 * val,
     health: 3 - 0.8 * els.filter(e => exc[e]).length + 0.6 * els.filter(e => lack[e]).length - (relAt('day', 'chung') ? 0.6 : 0) - (rels.some(r => r.type === 'hyeong') ? 0.4 : 0) + 0.28 * val,
   };
+  const domRaw = { ...dom };
   for (const k in dom) dom[k] = Math.max(1, Math.min(5, Math.round(dom[k])));
   const raw = 62 + val * 5.5 + relSum * 2.4;
-  return { stem, branch, vs, vb, val, tgS, tgB, rels, relSum, stemHapDay, stemChungDay, dohwa, yeokma, dom, raw };
+  return { stem, branch, vs, vb, val, tgS, tgB, rels, relSum, stemHapDay, stemChungDay, dohwa, yeokma, dom, domRaw, raw, wOpen };
 }
 
 // 날짜의 간지(일진) — 그날 정오 기준
