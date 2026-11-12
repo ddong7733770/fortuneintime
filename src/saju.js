@@ -18,6 +18,32 @@ export const BRANCH_EL = [4, 2, 0, 0, 2, 1, 1, 2, 3, 3, 2, 4];
 export const HIDDEN = [[[4, 1]], [[4, .3], [3, .1], [2, .6]], [[2, .23], [1, .23], [0, .54]], [[0, 1]], [[0, .3], [4, .1], [2, .6]], [[2, .23], [3, .23], [1, .54]], [[1, .7], [2, .3]], [[1, .3], [0, .1], [2, .6]], [[2, .23], [4, .23], [3, .54]], [[3, 1]], [[3, .3], [1, .1], [2, .6]], [[2, .23], [0, .23], [4, .54]]];
 // 오행의 창고(고지): 목→미, 화→술, 토→술, 금→축, 수→진
 export const STORAGE = [7, 10, 10, 1, 4];
+// 궁통보감 조후표: [일간 10][월지 12(子…亥)] = 필요한 천간 순서 (원문 대조, 2026-11)
+const JOHU = {
+  0: { 2: '丙癸', 3: '庚戊丁', 4: '庚壬', 5: '癸丁庚', 6: '癸丁庚', 7: '癸丁庚', 8: '丁庚壬', 9: '丁丙庚', 10: '丁癸戊', 11: '庚丁丙戊', 0: '丁庚丙', 1: '庚丁丙' },
+  1: { 2: '丙癸', 3: '丙癸', 4: '癸丙戊', 5: '癸', 6: '癸丙', 7: '癸丙', 8: '丙癸己', 9: '癸丙丁', 10: '癸辛', 11: '丙戊', 0: '丙', 1: '丙' },
+  2: { 2: '壬庚', 3: '壬己', 4: '壬甲', 5: '壬庚癸', 6: '壬庚', 7: '壬庚', 8: '壬戊', 9: '壬癸', 10: '甲壬', 11: '甲戊庚壬', 0: '壬戊己', 1: '壬甲' },
+  3: { 2: '甲庚', 3: '庚甲', 4: '甲庚', 5: '甲庚', 6: '壬庚癸', 7: '甲壬庚', 8: '甲庚丙戊', 9: '甲庚丙戊', 10: '甲庚戊', 11: '甲庚', 0: '甲庚', 1: '甲庚' },
+  4: { 2: '丙甲癸', 3: '丙甲癸', 4: '甲丙癸', 5: '甲丙癸', 6: '壬甲丙', 7: '癸丙甲', 8: '丙癸甲', 9: '丙癸', 10: '甲丙癸', 11: '甲丙', 0: '丙甲', 1: '丙甲' },
+  5: { 2: '丙庚甲', 3: '甲癸丙', 4: '丙癸甲', 5: '癸丙', 6: '癸丙', 7: '癸丙', 8: '癸丙辛', 9: '癸丙辛', 10: '甲丙癸', 11: '丙甲戊', 0: '丙甲戊', 1: '丙甲戊' },
+  6: { 2: '丙甲丁', 3: '丁甲庚丙', 4: '甲丁壬癸', 5: '壬戊丙丁', 6: '壬癸', 7: '丁甲', 8: '丁甲', 9: '丁甲丙', 10: '甲壬', 11: '丁丙', 0: '丁甲丙', 1: '丙丁甲' },
+  7: { 2: '己壬庚', 3: '壬甲', 4: '壬甲', 5: '壬甲癸', 6: '壬己癸', 7: '壬庚甲', 8: '壬甲戊', 9: '壬甲', 10: '壬甲', 11: '壬丙', 0: '丙壬戊甲', 1: '丙壬戊己' },
+  8: { 2: '庚丙戊', 3: '戊辛庚', 4: '甲庚', 5: '壬辛庚癸', 6: '癸庚辛', 7: '辛甲', 8: '戊丁', 9: '甲庚', 10: '甲丙', 11: '戊丙庚', 0: '戊丙', 1: '丙丁甲' },
+  9: { 2: '辛丙', 3: '庚辛', 4: '丙辛甲', 5: '辛', 6: '庚辛壬癸', 7: '庚辛壬癸', 8: '丁', 9: '辛丙', 10: '辛甲壬癸', 11: '庚辛戊丁', 0: '丙辛', 1: '丙丁' },
+};
+const STEM_CH = '甲乙丙丁戊己庚辛壬癸';
+// 조후 순서(오행)를 돌려줌. 원문이 조건을 단 칸은 사주를 보고 고름
+export function johuList(ds, mb, { count, strength, stems }) {
+  let seq = JOHU[ds][mb];
+  if (ds === 1 && mb === 7 && count[3] + count[4] >= 4) seq = '丙癸';                 // 乙 未월: 柱多金水 丙火為尊
+  if (ds === 1 && mb === 8 && !stems.includes(2) && !stems.includes(9)) seq = '己丙癸'; // 乙 申월: 不見丙癸 喜己土
+  if (ds === 2 && mb === 11 && strength >= 1) seq = '壬甲戊庚';                        // 丙 亥월: 火旺用壬
+  if (ds === 3 && mb === 2 && stems.filter(x => x === 0).length >= 2) seq = '庚甲';    // 丁 寅월: 甲多 姑用庚金
+  const ss = [...seq].map(ch => STEM_CH.indexOf(ch));
+  const els = []; ss.forEach(i => { const e = STEM_EL[i]; if (!els.includes(e)) els.push(e); });
+  els.stems = ss;
+  return els;
+}
 const BRANCH_MAIN = [9, 5, 0, 1, 4, 2, 3, 5, 6, 7, 4, 8]; // 지지의 본기(정기) 천간
 const yang = s => s % 2 === 0;
 
@@ -131,8 +157,32 @@ export function chartOf(p) {
   if (strength > 0) yongG = gw[4] > gw[0] ? 2 : (gw[3] < 1 ? 1 : 3);        // 인성 과다 → 재성 / 비겁 과다 → 관성(없으면 식상)
   else if (strength < 0) yongG = gw[2] > gw[3] + gw[1] ? 0 : 4;              // 재성 과다 → 비겁 / 그 외 → 인성
   else yongG = [0, 1, 2, 3, 4].reduce((a, g) => (gw[g] < gw[a] ? g : a), 1); // 중화 → 가장 부족한 기운
-  const yong = (me + yongG) % 5;
-  const fav = { yong, hee: (yong + 4) % 5, gi: (yong + 3) % 5, gu: (yong + 2) % 5, han: (yong + 1) % 5 };
+  const yongEok = (me + yongG) % 5; // 억부 용신
+  // ── 궁통보감 조후 + 우선순위 규칙 (2026-11 확정)
+  //  1) 중화(0) → 조후 1순위  2) 한여름(巳午未)·한겨울(亥子丑)생 → 조후 1순위
+  //  3) 단, 극신강·극신약(±2)인데 조후 1순위가 균형을 더 무너뜨리면 → 억부 유지
+  //  4) 봄·가을생 → 억부, 조후 1순위가 균형에도 도움이면 희신
+  const stems = Object.values(pillars).filter(Boolean).map(pl => pl.stem);
+  const jList = johuList(ds, month.branch, { count, strength, stems });
+  const helpful = el => { const g = (el - me + 5) % 5; return strength > 0 ? g === 1 || g === 2 || g === 3 : strength < 0 ? g === 0 || g === 4 : true; };
+  const extreme = [5, 6, 7, 11, 0, 1].includes(month.branch);
+  const j1 = jList[0], j2 = jList.find(e => e !== j1);
+  let yong = yongEok, yongRule = 'eok';
+  if (strength === 0) { yong = j1; yongRule = 'johu-mid'; }
+  else if (extreme) {
+    if (Math.abs(strength) === 2 && !helpful(j1)) yongRule = 'eok-extreme';
+    else { yong = j1; yongRule = 'johu-season'; }
+  }
+  let hee = (yong + 4) % 5;
+  if (yongRule === 'eok' && j1 !== yong && helpful(j1)) hee = j1;
+  else if (j2 !== undefined && j2 !== yong && helpful(j2)) hee = j2;
+  if (hee === (yong + 3) % 5) hee = (yong + 4) % 5; // 용신을 치는 기운은 희신이 될 수 없음
+  const rest = [0, 1, 2, 3, 4].filter(e => e !== yong && e !== hee);
+  // 기신: 용신을 치는 기운, 구신: 희신을 치는 기운(겹치면 남은 것), 한신: 나머지
+  const gi = (yong + 3) % 5;
+  const gu = rest.find(e => e !== gi && e === (hee + 3) % 5) ?? rest.find(e => e !== gi && e !== (yong + 1) % 5) ?? rest.find(e => e !== gi);
+  const han = rest.find(e => e !== gi && e !== gu);
+  const fav = { yong, hee, gi, gu, han };
   // 조후: 한여름생(巳午未월)에 수 부족, 한겨울생(亥子丑월)에 화 부족
   const season = [4, 2, 0, 0, 2, 1, 1, 2, 3, 3, 2, 4][month.branch];
   const johu = [5, 6, 7].includes(month.branch) && count[4] === 0 ? 4 : [11, 0, 1].includes(month.branch) && count[1] === 0 ? 1 : null;
@@ -174,7 +224,7 @@ export function chartOf(p) {
     }
     daeun = { forward: fwd, start, list };
   }
-  const res = { male: gch === 'M' ? true : gch === 'F' ? false : null, pillars, dayStem: ds, me, count, gw, ratio, strength, yongG, fav, johu, season, tens, tgCount, sal, daeun, solarHM, hasHour: !!hour, birthMs: ms };
+  const res = { male: gch === 'M' ? true : gch === 'F' ? false : null, pillars, dayStem: ds, me, count, gw, ratio, strength, yongG, yongEok, yongRule, johuStems: jList.stems, fav, johu, season, tens, tgCount, sal, daeun, solarHM, hasHour: !!hour, birthMs: ms };
   cache.set(key, res);
   return res;
 }

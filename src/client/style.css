@@ -1212,3 +1212,4 @@ html.leaving main, html.leaving .foot { opacity: 0; transition: opacity .17s eas
 .tc-mini.is-mine::after { content: '나의 타입'; position: absolute; top: -9px; right: 8px; padding: 2px 8px; border-radius: 999px; background: var(--ta); color: #fff; font-size: 10.5px; font-weight: 700; }
 @keyframes mineGlow { 0%, 100% { transform: none; } 50% { transform: scale(1.04); } }
 @media (prefers-reduced-motion: reduce) { .tc-mini.is-mine { animation: none; } }
+.yb-src { margin: 4px 0 0; font-size: 12.5px; color: #9A958B; }

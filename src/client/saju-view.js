@@ -136,6 +136,13 @@ ${link ? `<a class="txt-link" href="${link}">${esc(S.ui.seeSaju)} →</a>` : ''}
 // ── 타고난 분야별 운: 원국의 십신 무게·위치·용신·신살로 문장을 고름
 // 강약 막대 위치: 단계 경계(0.21·0.345·0.44·0.59)가 15·40·60·85%에 오도록
 const meterPos = v => { const X = [0, 0.21, 0.345, 0.44, 0.59, 1], Y = [3, 15, 40, 60, 85, 97]; let i = 1; while (i < 5 && v > X[i]) i++; return Math.round(Y[i - 1] + ((Math.min(1, v) - X[i - 1]) / (X[i] - X[i - 1])) * (Y[i] - Y[i - 1])); };
+// 용신 근거: 억부/조후 중 무엇으로 정했는지 + 궁통보감 원문 순서(회색)
+function yongBasisHTML(S, chart) {
+  const B = S.yongBasis; if (!B || !chart.yongRule) return '';
+  const season = [5, 6, 7].includes(chart.pillars.month.branch) ? B.season.summer : B.season.winter;
+  const list = (chart.johuStems || []).map(i => SJ.STEM_H[i]).join('·');
+  return `<p class="lead-s">${esc(fmt(B[chart.yongRule], { season }))}</p><p class="yb-src">${esc(fmt(B.src, { d: SJ.STEM_H[chart.dayStem], m: SJ.BRANCH_H[chart.pillars.month.branch], list }))}</p>`;
+}
 export function lifeTexts(S, chart) {
   const T = S.life, ds = chart.dayStem, gw = chart.gw, tg = chart.tgCount, P = chart.pillars;
   const fav = g => SJ.elValue(chart, SJ.elOfGroup(ds, g)) >= 0;
@@ -273,7 +280,6 @@ export function sajuSections(S, chart, { O = null, overallTitle = null, nowMs = 
 <p class="dy-gz"><b class="${EL_CLS[SJ.STEM_EL[g.stem]]}">${SJ.STEM_H[g.stem]}</b><b class="${EL_CLS[SJ.BRANCH_EL[g.branch]]}">${SJ.BRANCH_H[g.branch]}</b></p>
 <p class="dy-tone">${esc(U[tone])}</p><p class="dy-txt">${esc(S.daeunText[grp][tone === 'bad' ? 1 : 0])}</p><p class="dy-when">${esc(U[when === 'now' ? 'now' : when])}</p></li>`;
   }).join('') : '';
-  const johu = chart.johu === 4 ? S.johu.split('|')[0] : chart.johu === 1 ? S.johu.split('|')[1] : '';
   return {
     pillars: `<section class="sec" id="sec-pillars"><h2>${esc(U.pillars)}</h2>
 <div class="pillars">${['hour', 'day', 'month', 'year'].map(pos => pillarCell(S, chart, pos)).join('')}</div>
@@ -291,7 +297,7 @@ ${many.map(i => `<p class="lead-s">${esc(S.many[i])}</p>`).join('')}${none.map(i
 <p class="tag-line"><b>${esc(st[0])}</b></p><p class="lead-s">${esc(st[1])}</p></section>
 <section class="sec"><h2>${esc(U.yongsin)}</h2>
 <p class="dm"><b class="${EL_CLS[chart.fav.yong]}">${SJ.EL_H[chart.fav.yong]}</b><span>${esc(S.el[chart.fav.yong])}</span></p>
-<p class="lead-s">${esc(Y.why)}${johu ? ` ${esc(johu)}` : ''}</p>
+<p class="lead-s">${esc(Y.why)}</p>${yongBasisHTML(S, chart)}
 <h3>${esc(U.luckyTitle)}</h3><dl class="kw"><div><dt>색</dt><dd>${esc(Y.color)}</dd></div><div><dt>방향</dt><dd>${esc(Y.dir)}</dd></div><div><dt>숫자</dt><dd>${esc(Y.num)}</dd></div><div><dt>활동</dt><dd>${esc(Y.act)}</dd></div></dl></section>
 <section class="sec"><h2>${esc(U.tenGods)}</h2>${topTen.map(i => `<p class="lead-s"><b>${esc(S.ten[i])}</b> ${esc(S.tenTrait[i])}</p>`).join('')}</section>
 ${sal.length ? `<section class="sec"><h2>${esc(U.sinsal)}</h2>${sal.map(([n, t]) => `<p class="lead-s"><b>${esc(n)}</b> ${esc(t)}</p>`).join('')}</section>` : ''}
