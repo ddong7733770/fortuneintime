@@ -101,6 +101,16 @@ export default {
     ward: { name: "Jimat penolak bala 辟邪", desc: "Jimat yang mengusir energi buruk dan kesialan. Bawa saat urusan terus kusut atau gosip mengkhawatirkan, agar energimu tetap jernih." },
     wealth: { name: "Jimat rezeki 財運", desc: "Jimat yang mendoakan rezeki mengalir lancar dan bertambah. Saat memulai hal baru atau ingin mengubah aliran uang, jimat ini membuka jalan rezeki." },
     wish: { name: "Jimat harapan 所願", desc: "Jimat yang mendoakan keinginan tulusmu terkabul. Jika ada harapan yang lama kamu simpan, bawalah sambil membayangkan harapan itu." },
+    yeonbun: { name: "Jimat jodoh 緣分", desc: "Jimat yang mendoakan datangnya jodoh yang baik. Bawalah sebelum kencan buta atau pertemuan baru." },
+    hwahap: { name: "Jimat rukun 和合", desc: "Jimat yang mendoakan hubungan yang retak kembali tersambung. Jika ada orang yang ingin kamu ajak berdamai, bawalah sambil membayangkan wajahnya." },
+    dohwa: { name: "Jimat bunga persik 桃花", desc: "Jimat yang mendoakan pesonamu bersinar dan menarik perhatian. Bawalah di hari kesan pertama penting, sebelum kumpul-kumpul atau aktif di media sosial." },
+    munchang: { name: "Jimat belajar 文昌", desc: "Jimat yang mendoakan belajar dan menulis lancar tanpa hambatan. Bawalah menjelang ujian, sertifikasi, atau tulisan penting." },
+    yonggi: { name: "Jimat keberanian 勇氣", desc: "Jimat yang mendoakan gugup mereda dan hanya suara yang mantap tersisa. Bawalah di saat butuh keberanian, seperti wawancara, presentasi, atau menyatakan perasaan." },
+    mugusul: { name: "Jimat tolak gosip 無口舌", desc: "Jimat yang mendoakan gosip, pertengkaran, dan omongan buruk menjauh. Bawalah saat khawatir dengan lingkungan yang ramai omongan atau keributan online." },
+    haengro: { name: "Jimat perjalanan 行路", desc: "Jimat yang mendoakan keselamatan di setiap jalan. Bawalah saat bepergian, perjalanan dinas, atau menyetir." },
+    singi: { name: "Jimat awal baru 新起", desc: "Jimat yang mendoakan pintu baru terbuka lebar. Bawalah menjelang awal baru seperti pindah kerja, pindah rumah, membuka usaha, atau semester baru." },
+    beonchang: { name: "Jimat laris 繁昌", desc: "Jimat yang mendoakan pelanggan terus berdatangan ke toko atau usahamu. Bawalah menjelang pembukaan atau perluasan usaha." },
+    anmyeon: { name: "Jimat tidur nyenyak 安眠", desc: "Jimat yang mendoakan kamu melepas kekhawatiran dan tidur lelap. Bawalah di malam sebelum hari besar atau saat tidurmu tidak nyenyak." },
   },
 
 

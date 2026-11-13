@@ -8,7 +8,7 @@ export { SJ };
 export const MBTI = ['ISTJ','ISFJ','INFJ','INTJ','ISTP','ISFP','INFP','INTP','ESTP','ESFP','ENFP','ENTP','ESTJ','ESFJ','ENFJ','ENTJ'];
 export const BLOOD = ['A','B','O','AB'];
 export const COLOR_HEX = ['#E63946','#F4A261','#E9C46A','#2A9D8F','#264653','#6A4C93','#FF7FA8','#8AC926','#1982C4','#F1FAEE','#B08968','#D4AF37'];
-export const CHARMS = ['achieve','noble','health','luck','peace','guard','allwell','ward','wealth','wish'];
+export const CHARMS = ['achieve','noble','health','luck','peace','guard','allwell','ward','wealth','wish','yeonbun','hwahap','dohwa','munchang','yonggi','mugusul','haengro','singi','beonchang','anmyeon'];
 // 가장 좋은 시간·조심할 시간은 깨어 있는 시간대(6시~24시)의 시진에서만 고름: 辰(07~09)부터 亥(21~23)까지
 export const DAY_SIJIN = [4, 5, 6, 7, 8, 9, 10, 11];
 export function pickHour(hours, fn) {

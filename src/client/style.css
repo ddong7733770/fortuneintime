@@ -577,7 +577,7 @@ html.fate-on #app { opacity: .18; transition: opacity .5s cubic-bezier(.4,0,.2,1
 .place-why h4 { margin: 0 0 6px; font-size: 15px; color: var(--brass-hi); }
 .place-why p { margin: 0; line-height: 1.75; font-size: 15px; }
 .charm-rec { display: inline-block; margin: 0 0 14px; padding: 4px 14px; border-radius: 999px; background: var(--brass); color: var(--on-accent); font-size: 13px; font-weight: 600; }
-.charm-big img { width: min(62vw, 240px); height: auto; aspect-ratio: 900 / 1612; object-fit: contain; border-radius: 4px; }
+.charm-big img { width: min(62vw, 240px); height: auto; object-fit: contain; border-radius: 4px; }
 .charm-desc { font-size: 17px; line-height: 1.7; }
 
 

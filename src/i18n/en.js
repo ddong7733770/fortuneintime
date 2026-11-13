@@ -101,6 +101,16 @@ export default {
     ward: { name: "Evil-warding charm 辟邪", desc: "A charm that drives away bad energy and misfortune. Carry it when things keep going wrong or gossip worries you, to keep your energy clear." },
     wealth: { name: "Wealth charm 財運", desc: "A charm wishing for money to flow in freely and grow. When you start something new or want to change your money flow, it opens the road to wealth." },
     wish: { name: "Wish charm 所願", desc: "A charm praying for your heartfelt wish to come true. If you have held a wish for a long time, carry it while picturing that wish." },
+    yeonbun: { name: "Destined-bond charm 緣分", desc: "A charm praying for a good connection to find you. Carry it before a blind date or a new meeting." },
+    hwahap: { name: "Harmony charm 和合", desc: "A charm praying for a strained relationship to mend. If there is someone you want to make up with, carry it while picturing their face." },
+    dohwa: { name: "Peach-blossom charm 桃花", desc: "A charm praying for your charm to shine and eyes to linger on you. Carry it on days when first impressions matter, or before a gathering or posting on social media." },
+    munchang: { name: "Scholar charm 文昌", desc: "A charm praying for study and writing to flow without blocks. Carry it before an exam, a certification, or an important piece of writing." },
+    yonggi: { name: "Courage charm 勇氣", desc: "A charm praying for nerves to settle and only a steady voice to remain. Carry it for moments that need courage, like an interview, a presentation, or a confession." },
+    mugusul: { name: "No-gossip charm 無口舌", desc: "A charm praying for rumors, arguments and gossip to pass you by. Carry it when you worry about a talkative crowd or online disputes." },
+    haengro: { name: "Safe-journey charm 行路", desc: "A charm praying for safety on every road you take. Carry it on days you set out — travel, business trips or driving." },
+    singi: { name: "New-start charm 新起", desc: "A charm praying for new doors to open wide. Carry it before a fresh start such as a new job, a move, a startup or a new semester." },
+    beonchang: { name: "Prosperity charm 繁昌", desc: "A charm praying for customers to keep coming to your shop or business. Carry it before an opening or an expansion." },
+    anmyeon: { name: "Sound-sleep charm 安眠", desc: "A charm praying for you to set worries down and sleep deeply. Carry it the night before a big day, or when your sleep is light." },
   },
 
 

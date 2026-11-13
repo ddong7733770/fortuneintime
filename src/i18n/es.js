@@ -101,6 +101,16 @@ export default {
     ward: { name: "Amuleto contra el mal 辟邪", desc: "Un amuleto que aleja la mala energía y la desgracia. Llévalo cuando todo se complique o te preocupen los rumores, para mantener limpia tu energía." },
     wealth: { name: "Amuleto de la riqueza 財運", desc: "Un amuleto que pide que el dinero llegue libremente y crezca. Al empezar algo nuevo o querer cambiar tu flujo de dinero, abre el camino a la riqueza." },
     wish: { name: "Amuleto de los deseos 所願", desc: "Un amuleto que pide que se cumpla tu deseo más sincero. Si guardas un deseo desde hace tiempo, llévalo pensando en él." },
+    yeonbun: { name: "Amuleto del destino 緣分", desc: "Un amuleto que pide que llegue una buena conexión. Llévalo antes de una cita a ciegas o un nuevo encuentro." },
+    hwahap: { name: "Amuleto de la armonía 和合", desc: "Un amuleto que pide que una relación dañada se repare. Si quieres reconciliarte con alguien, llévalo pensando en su rostro." },
+    dohwa: { name: "Amuleto de la flor de durazno 桃花", desc: "Un amuleto que pide que tu encanto brille y atraiga miradas. Llévalo cuando importe la primera impresión, antes de una reunión o de publicar en redes." },
+    munchang: { name: "Amuleto del estudio 文昌", desc: "Un amuleto que pide que el estudio y la escritura fluyan sin bloqueos. Llévalo antes de un examen, una certificación o un texto importante." },
+    yonggi: { name: "Amuleto del valor 勇氣", desc: "Un amuleto que pide que los nervios se calmen y solo quede una voz firme. Llévalo en momentos que piden valor: una entrevista, una presentación o una declaración." },
+    mugusul: { name: "Amuleto contra chismes 無口舌", desc: "Un amuleto que pide que rumores, discusiones y habladurías pasen de largo. Llévalo cuando te preocupen los ambientes conflictivos o las polémicas en línea." },
+    haengro: { name: "Amuleto del buen viaje 行路", desc: "Un amuleto que pide que cada camino sea seguro. Llévalo los días que salgas: viajes, trabajo fuera o al conducir." },
+    singi: { name: "Amuleto del nuevo comienzo 新起", desc: "Un amuleto que pide que se abran nuevas puertas. Llévalo antes de empezar algo: un trabajo nuevo, una mudanza, un negocio o un nuevo curso." },
+    beonchang: { name: "Amuleto de la prosperidad 繁昌", desc: "Un amuleto que pide que nunca falten clientes en tu tienda o negocio. Llévalo antes de una apertura o una ampliación." },
+    anmyeon: { name: "Amuleto del buen dormir 安眠", desc: "Un amuleto que pide que sueltes las preocupaciones y duermas profundo. Llévalo la noche antes de un gran día o cuando duermas mal." },
   },
 
 
