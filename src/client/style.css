@@ -1349,3 +1349,6 @@ body.ds2 .sec p.cp-kind { color: var(--hn); }
 
 /* 영어 등: 개운법 활동 목록 첫 글자 대문자 (문장 속에서는 소문자로 쓰므로 표시에서만) */
 .kw dd::first-letter, .y-luck dd::first-letter { text-transform: uppercase; }
+/* 행운 부적: 이름은 글자 크기만큼 아래로 + 가운데 + 1.2배(18→21.6px), 설명은 80%(17→13.6px) */
+body.ds2 .sec.charm-view .charm-name, .sec.charm-view .charm-name { font-size: 21.6px; margin-top: 18px; text-align: center; justify-content: center; }
+body .charm-view .charm-desc { font-size: 13.6px; }
