@@ -1,7 +1,8 @@
 // 사주 화면 조각: 운세 탭의 '오늘의 사주 근거', 분야별 근거 문장, 내일 미리보기, 사주 탭
 import { SJ } from './engine.js';
 
-export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// 일본어·중국어: 문장을 이어 붙일 때 생긴 '。 ' 사이 공백을 지움 (한국어·영어에는 영향 없음)
+export const esc = s => String(s ?? '').replace(/([。！？])[ ]+/g, '$1').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // {키} 치환 + 한국어 조사 자동 선택: {키:은/는} → 앞말의 받침에 따라 '은' 또는 '는'
 export const hasBatchim = w => { const t = String(w).replace(/\([^)]*\)\s*$/, '').trim(); const c = t.charCodeAt(t.length - 1); return c >= 0xAC00 && c <= 0xD7A3 ? (c - 0xAC00) % 28 !== 0 : false; };
 export const fmt = (s, o = {}) => String(s).replace(/\{(\w+)(?::([^}/]+)\/([^}]+))?\}/g, (_, k, a, b) => { const v = o[k] ?? ''; return a ? v + (hasBatchim(v) ? a : b) : v; });
@@ -12,6 +13,7 @@ export const gzH = g => SJ.STEM_H[g.stem] + SJ.BRANCH_H[g.branch];
 export const sk = (S, i) => ((S && S.stemK) || SJ.STEM_K)[i];
 export const bk = (S, i) => ((S && S.branchK) || SJ.BRANCH_K)[i];
 export const gzK = (g, S = null) => sk(S, g.stem) + ((S && S.gzSep) || '') + bk(S, g.branch);
+const sp = S => (S.nameSp ?? (S.stemK ? ' ' : ''));
 export const tenName = (S, i) => S.ten[i].split('(')[0].trim();
 // 대운 설명(— 뒤)을 문장 앞에 쓸 때 첫 글자를 대문자로 (한글에는 영향 없음)
 export const daeDesc = t => { const x = String(t).split(' — ')[1] || ''; return x.charAt(0).toUpperCase() + x.slice(1); };
@@ -55,7 +57,7 @@ export function todayReading(S, d, P = null) {
   const weak = DOMS.reduce((a, k) => (d.domains[k] < d.domains[a] ? k : a));
   const Y = S.yong[chart.fav.yong];
   const advice = [pickR(H.adviceDom[weak], r[34])];
-  if (r[35] < 0.6) advice.push(fmt(pickR(H.adviceYong, r[36]), { act: Y.act.split(', ')[0], yong: S.el[chart.fav.yong] }));
+  if (r[35] < 0.6) advice.push(fmt(pickR(H.adviceYong, r[36]), { act: Y.act.split(/, |、|，/)[0], yong: S.el[chart.fav.yong] }));
   const closing = H.closing ? pickR(H.closing[d.band <= 0 ? 0 : d.band === 1 ? 1 : 2], r[37]) : '';
   return { flow, focus, advice: advice.join(' '), closing };
 }
@@ -116,12 +118,13 @@ export function domainReading(S, d, k, D = null) {
 export const domainReason = (S, d, k) => domainReading(S, d, k);
 
 // 한국어 이름: 계(癸·물), 미(未·양)
-export const stemName = (S, s) => `${sk(S, s)}${S.stemK ? ' ' : ''}(${SJ.STEM_H[s]}·${S.elShort[SJ.STEM_EL[s]]})`;
-export const branchName = (S, b) => `${bk(S, b)}${S.branchK ? ' ' : ''}(${SJ.BRANCH_H[b]}·${S.animal[b]})`;
+export const stemName = (S, s) => (S.stemFmt ? fmt(S.stemFmt, { h: SJ.STEM_H[s], k: sk(S, s), el: S.elShort[SJ.STEM_EL[s]] }) : `${sk(S, s)}${sp(S)}(${SJ.STEM_H[s]}·${S.elShort[SJ.STEM_EL[s]]})`);
+export const branchName = (S, b) => (S.branchFmt ? fmt(S.branchFmt, { h: SJ.BRANCH_H[b], k: bk(S, b), a: S.animal[b] }) : `${bk(S, b)}${sp(S)}(${SJ.BRANCH_H[b]}·${S.animal[b]})`);
 function basisChipsKo(S, d) {
   const { chart, ev, gz } = d.saju;
-  return [fmt(S.chip.day, { gz: gzK(gz, S) }), tenName(S, ev.tgS), fmt(S.chip.yong, { el: S.el[chart.fav.yong] }),
-    ...ev.rels.slice(0, 2).map(r => fmt(S.chip.rel[r.type], { a: bk(S, ev.branch), b: bk(S, r.with) }))];
+  const KJ = !!S.chipKanji; // 일본어·중국어: 칩에는 한자(辛卯·卯亥)가 더 읽기 쉬움
+  return [fmt(S.chip.day, { gz: KJ ? gzH(gz) : gzK(gz, S) }), tenName(S, ev.tgS), fmt(S.chip.yong, { el: S.el[chart.fav.yong] }),
+    ...ev.rels.slice(0, 2).map(r => fmt(S.chip.rel[r.type], { a: KJ ? SJ.BRANCH_H[ev.branch] : bk(S, ev.branch), b: KJ ? SJ.BRANCH_H[r.with] : bk(S, r.with) }))];
 }
 export function basisChips(d) {
   const { chart, ev, gz } = d.saju;
@@ -134,7 +137,7 @@ export function basisHTML(S, d, link) {
   const { gz } = d.saju;
   return `<section class="sec basis"><h2>${esc(S.ui.todayBasis)}</h2>
 <p class="basis-chips">${chips}</p>
-<p class="muted basis-note">${esc(fmt(S.ui.basisNote, { gz: `${gzK(gz, S)}${S.stemK ? ' ' : ''}(${gzH(gz)})` }))}</p>
+<p class="muted basis-note">${esc(fmt(S.ui.basisNote, { gz: `${gzK(gz, S)}${sp(S)}(${gzH(gz)})` }))}</p>
 <ul class="basis-list">${basisLines(S, d).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
 ${link ? `<a class="txt-link" href="${link}">${esc(S.ui.seeSaju)} →</a>` : ''}</section>`;
 }
@@ -213,7 +216,7 @@ export function lifeTexts(S, chart) {
 }
 function lifeHTML(S, chart) {
   const t = lifeTexts(S, chart);
-  return ['wealth', 'work', 'love', 'home'].map(k => `<section class="sec life life-${k}"><h2>${esc(S.life.titles[k])}</h2><p class="lead-s">${t[k].map(esc).join(' ')}</p></section>`).join('');
+  return ['wealth', 'work', 'love', 'home'].map(k => `<section class="sec life life-${k}"><h2>${esc(S.life.titles[k])}</h2><p class="lead-s">${esc(t[k].join(' '))}</p></section>`).join('');
 }
 
 // ── 해운정사의 종합 풀이: 타고난 기질 → 강점과 약점 → 지금의 흐름 → 앞으로의 변화 → 삶의 방향
@@ -222,14 +225,14 @@ export function overallTexts(S, chart, nowMs = Date.now(), O = null) {
   out.nature = S.dayMaster[chart.dayStem];
   const top = [...chart.tgCount.keys()].filter(i => chart.tgCount[i] > 0).sort((a, b) => chart.tgCount[b] - chart.tgCount[a])[0];
   const lackE = chart.count.findIndex(c => c === 0), manyE = chart.count.findIndex(c => c >= 3);
-  const st = S.strength[chart.strength + 2][1].split('. ');
-  out.strong = [S.tenTrait[top], st.slice(0, 2).join('. ') + '.', lackE >= 0 ? S.none[lackE] : manyE >= 0 ? S.many[manyE] : ''].filter(Boolean).join(' ');
+  const st = S.strength[chart.strength + 2][1].split(/(?<=[.。])\s*/).filter(Boolean); // 한국어·영어 '. ', 일본어·중국어 '。'
+  out.strong = [S.tenTrait[top], st.slice(0, 2).join(' '), lackE >= 0 ? S.none[lackE] : manyE >= 0 ? S.many[manyE] : ''].filter(Boolean).join(' ');
   const age = (nowMs - chart.birthMs) / (365.2425 * 864e5);
   const toneOf = ev => (ev.val >= 0.8 ? 0 : ev.val <= -0.8 ? 2 : 1);
   const now = new Date(nowMs);
   const yr = SJ.monthYearGZAt(now.getFullYear(), now.getMonth() + 1, now.getDate()).year;
   const yTone = toneOf(SJ.evalGZ(chart, yr.stem, yr.branch, chart.male));
-  const gz = g => `${gzK(g, S)}${S.stemK ? ' ' : ''}(${SJ.STEM_H[g.stem]}${SJ.BRANCH_H[g.branch]})`;
+  const gz = g => `${gzK(g, S)}${sp(S)}(${SJ.STEM_H[g.stem]}${SJ.BRANCH_H[g.branch]})`;
   const yearLine = fmt(O.year, { gz: gz(yr), tone: O.yearTone[yTone] });
   if (chart.daeun) {
     const list = chart.daeun.list, ci = list.findIndex(g => age >= g.age && age < g.age + 10);

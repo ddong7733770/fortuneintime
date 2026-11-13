@@ -7,7 +7,7 @@ const ANIMAL_SLUG = ['mouse', 'cow', 'tiger', 'rabbit', 'dragon', 'snake', 'hors
 export const EL_BG = ['#E3F3E6', '#FFE9D6', '#F8EDCF', '#EEF1F5', '#DFEAF8'];
 export const EL_AC = ['#2F855A', '#D2543A', '#B7791F', '#5F6F86', '#2B6CB0'];
 const ELK = ['목', '화', '토', '금', '수'];
-const e = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const e = s => String(s).replace(/([。！？])[ ]+/g, '$1').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const f = (t, o) => t.replace(/\{(\w+)\}/g, (_, k) => (k in o ? o[k] : ''));
 
 export const typeName = (T, t) => (T.nameFmt ? f(T.nameFmt, { img: T.stems[t.s].img, animal: T.branches[t.b].animal }) : `${T.stems[t.s].img}의 ${T.branches[t.b].animal}`);
@@ -45,7 +45,7 @@ export function typeDetailHTML(T, t, imgs, hrefBase, typeOfFn) {
   const best = { ...t.best, el: elOfStem(t.best.s), slug: slugOf(t.best.s, t.best.b) };
   const clash = { ...t.clash, el: elOfStem(t.clash.s), slug: slugOf(t.clash.s, t.clash.b) };
   return `<div class="tc-detail">
-<p>${e(S.desc)} ${e(B.desc)} ${e(T.combo[t.combo])}</p>
+<p>${e(`${S.desc} ${B.desc} ${T.combo[t.combo]}`)}</p>
 <dl class="tc-dl"><div><dt>${e(T.ui.strong)}</dt><dd>${e(S.kw.join(' · '))} · ${e(B.kw.join(' · '))}</dd></div>
 <div><dt>${e(T.ui.weak)}</dt><dd>${e(S.weak)}</dd></div>
 <div><dt>${e(T.ui.love)}</dt><dd>${e(B.love)}</dd></div>

@@ -89,7 +89,7 @@ export function yearDetailHTML(Y, yf, chart) {
     t.push(pickS(Y.month.dayTip, seed, i + 2));
     const tag = yf.best.includes(mo.m) ? ' is-best' : yf.worst.includes(mo.m) ? ' is-worst' : '';
     return `<li class="y-mo${tag}"><div class="y-mh"><b>${esc(mName(Y, mo.m))}</b><span class="y-gz">${SJ.STEM_H[mo.gz.stem]}${SJ.BRANCH_H[mo.gz.branch]}月</span><em>${mo.score}</em></div>
-<p>${t.map(esc).join(' ')}</p><p class="y-days"><small>${esc(Y.month.goodDays)}</small>${mo.good.map(d => `<span>${esc(fmt(Y.month.dayFmt, { m: mo.m, mn: mShort(Y, mo.m), d }))}</span>`).join('')}</p></li>`;
+<p>${esc(t.join(' '))}</p><p class="y-days"><small>${esc(Y.month.goodDays)}</small>${mo.good.map(d => `<span>${esc(fmt(Y.month.dayFmt, { m: mo.m, mn: mShort(Y, mo.m), d }))}</span>`).join('')}</p></li>`;
   }).join('')}</ol>`;
 }
 
