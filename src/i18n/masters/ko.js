@@ -1,3 +1,4 @@
+import TODAY from './ko-today.js';
 import TYPES from './ko-types.js';
 import YEAR from './ko-year.js';
 import { REL, FOCUS_NONE, ADVICE_DOM, ADVICE_YONG } from './ko-focus.js';
@@ -395,6 +396,7 @@ KO.hana.date = DATE; // 하나의 추천하는 데이트
 KO.ui.secs.date = DATE.title;
 // 눈여겨볼 점·조언 5배 묶음
 KO.fortune.rel = REL; KO.fortune.focusNone = FOCUS_NONE; KO.fortune.adviceDom = ADVICE_DOM; KO.fortune.adviceYong = ADVICE_YONG;
+KO.today = TODAY; // 오늘 탭 개편 문장
 KO.types = TYPES; // 60타입
 KO.year = YEAR; // 2027 신년운세
 export default KO;

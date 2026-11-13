@@ -516,6 +516,57 @@ function badgeOf(k) {
 }
 
 // ── 오늘 탭 (명인 구성): 점수·운명 바꾸기 → 오늘의 운세 → 명인 카드 → 7일 흐름 → 배너 → 장소 → 복권
+// ── 오늘 탭 개편 (결론 → 핵심 → 자세히)
+const DOMK = ['wealth', 'love', 'work', 'health'];
+const DOM_IC = {
+  wealth: '<path d="M4 7h16v10H4z"/><circle cx="12" cy="12" r="2.4"/><path d="M7 10v4M17 10v4"/>',
+  love: '<path d="M12 19s-6.5-4.2-6.5-9A3.6 3.6 0 0 1 12 7.6 3.6 3.6 0 0 1 18.5 10c0 4.8-6.5 9-6.5 9z"/>',
+  work: '<path d="M4 8h16v10H4zM9 8V6h6v2M4 12h16"/>',
+  health: '<path d="M4 12h4l2-4 4 8 2-4h4"/>',
+};
+const domIcon = k => `<i class="c2-ic c2-${k}" aria-hidden="true"><svg viewBox="0 0 24 24">${DOM_IC[k]}</svg></i>`;
+function basisChipLine(S, d) {
+  try { const box = document.createElement('div'); box.innerHTML = basisHTML(S, d, null); return [...box.querySelectorAll('.basis-chips span')].slice(0, 3).map(x => x.textContent).join(' · '); } catch { return ''; }
+}
+function todayParts(d, fr) {
+  const T = M.today, r = d.rolls;
+  const [, bText, bKind] = T.badge.find(([min]) => d.score >= min);
+  const badgeHTML = `<p class="c2-badge c2-b-${bKind}">${esc(bText)}</p>`;
+  // 3줄 요약
+  const order = [...DOMK].sort((a, b) => d.domains[b] - d.domains[a] || DOMK.indexOf(a) - DOMK.indexOf(b));
+  const best = order[0], care = order[order.length - 1];
+  const hour = d.best;
+  const summaryHTML = `<section class="c2-card c2-sum"><h2 class="c2-h">${esc(T.sumTitle)}</h2><ul>
+<li><span class="c2-sic s-good">${domIcon(best)}</span><div><small>${esc(T.sumBest)}</small><b>${esc(U.domains[best])} · ${esc(T.word[best][d.domains[best] - 1])}</b></div></li>
+<li><span class="c2-sic s-warn"><i class="c2-ic"><svg viewBox="0 0 24 24"><path d="M12 4 3 20h18L12 4zM12 10v4M12 17h.01"/></svg></i></span><div><small>${esc(T.sumCare)}</small><b>${d.domains[care] >= 4 ? esc(T.sumNone) : `${esc(U.domains[care])} · ${esc(T.care[care])}`}</b></div></li>
+<li><span class="c2-sic s-brand"><i class="c2-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></i></span><div><small>${esc(T.sumHour)}</small><b>${esc(L.sijin[hour])} (${sijinRange(hour)})</b></div></li></ul></section>`;
+  // 2×2 타일 + 분야 카드(하나씩 보임)
+  const sel = d.domains[care] <= 2 ? care : best;
+  const bar = (k, n) => `<span class="c2-bar">${[1, 2, 3, 4, 5].map(i => `<i${i <= n ? ' class="on"' : ''}></i>`).join('')}</span>`;
+  const tiles = DOMK.map(k => `<button type="button" class="c2-tile t-${k}${k === sel ? ' is-on' : ''}" data-dom="${k}" aria-pressed="${k === sel}"><span class="c2-tt">${domIcon(k)}${esc(U.domains[k])}</span><span class="c2-sc">${d.domains[k]}<small>/5</small></span>${bar(k, d.domains[k])}<span class="c2-w">${esc(T.word[k][d.domains[k] - 1])}</span></button>`).join('');
+  const cards = DOMK.map((k, i) => {
+    const n = d.domains[k], kind = n >= 4 ? 'good' : n === 3 ? 'mid' : 'warn';
+    const pool = T.todo[k][n >= 3 ? 'up' : 'down'];
+    const a = Math.floor(r[30 + i] * pool.length), b = (a + 1 + Math.floor(r[34 + i] * (pool.length - 1))) % pool.length;
+    const no = T.todo[k].no[Math.floor(r[26 + i] * T.todo[k].no.length)];
+    return `<article class="c2-card c2-dom d-${k}" data-dom="${k}"${k === sel ? '' : ' hidden'}>
+<div class="c2-dh"><h3>${esc(U.domains[k])}</h3><span class="c2-badge c2-b-${kind}">${esc(T.lvl[kind])}</span></div>
+<p class="c2-lead">${esc(T.lead[k][n - 1][Math.floor(r[20 + i] * 3)])}</p>
+<ul class="c2-todo"><li>${esc(pool[a])}</li><li>${esc(pool[b])}</li><li class="no">${esc(no)}</li></ul>
+<details class="c2-more"><summary><span class="o">${esc(T.more)}</span><span class="c">${esc(T.less)}</span></summary><p>${esc(MV.fortuneDomain(M, S, d, k))}</p></details></article>`;
+  }).join('');
+  const domainsHTML = `<section class="c2-doms"><div class="c2-hrow"><h2 class="c2-h">${esc(T.domTitle)}</h2><small>${esc(T.domHint)}</small></div><div class="c2-tiles">${tiles}</div>${cards}</section>`;
+  return { badgeHTML, summaryHTML, domainsHTML };
+}
+function bindDomTiles() {
+  $$('.c2-tile').forEach(t => t.addEventListener('click', () => {
+    const k = t.dataset.dom;
+    $$('.c2-tile').forEach(x => { const on = x === t; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', on); });
+    $$('.c2-dom').forEach(c => { c.hidden = c.dataset.dom !== k; });
+    const card = $(`.c2-dom[data-dom="${k}"]`);
+    if (card && card.getBoundingClientRect().top > innerHeight - 120) card.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
+  }));
+}
 function renderFortuneM(animate = true, mode = '') {
   const admin = isAdmin();
   const p = P(), per = E.period(), ts = turnsState(per.key), today = todayKey();
@@ -532,22 +583,20 @@ function renderFortuneM(animate = true, mode = '') {
     const [bc, bt] = badgeOf(k);
     return `<a class="mc mc-${k}" href="/${C}/result/master/?m=${k}">${imgTag(k, 56, 'mc-img')}<span class="mc-txt"><span class="mc-top"><b>${esc(M.ui.name[k])}</b><small>${esc(M.ui.field[k])}</small><em class="bdg bdg-${bc}">${esc(bt)}</em></span>${k === 'haewoon' ? `<span class="mc-q">${esc(M.ui.teaserSiun)}</span>` : ''}<span class="mc-line">${esc(MV.cardLine(M, d, k))}</span></span></a>`;
   };
+  const tz = todayParts(d, fr);
+  document.body.classList.add('ds2');
   app().innerHTML = `
-<section class="hero-score${mode === 'reveal' ? ' fate-reveal' : ''}">
+<section class="hero-score c2-hero${mode === 'reveal' ? ' fate-reveal' : ''}">
 ${mode === 'reveal' ? `<p class="fate-arrived" role="status">${esc(U.fateArrived)}</p><div class="fate-dust" aria-hidden="true">${Array.from({ length: 14 }, (_, i) => `<i style="--x:${(8 + (i * 47) % 84)}%;--y:${(10 + (i * 31) % 78)}%;--dl:${(i % 7) * 0.11}s"></i>`).join('')}</div>` : ''}
 <p class="who">${name ? `${name} · ` : ''}${esc(fmtDate(L, today))}</p>
 <p class="big-score" aria-label="${esc(U.todayScore)} ${d.score}"><span id="scoreNum">${animate ? 0 : d.score}</span><small>/100</small></p>
-<p class="score-label">${esc(U.todayScore)}</p>
+${tz.badgeHTML}
 <p class="lead">${esc(fr.flow)}</p>
 </section>
-
-
-
-<section class="sec m-basic${mode === 'reveal' ? ' fate-soft' : ''}"><h2>${esc(M.fortune.title)}</h2>
-${MV.fortuneBasicHTML(M, S, d, today)}
-<ul class="domains">${['wealth', 'love', 'work', 'health'].map(k => `<li><span class="d-label">${esc(U.domains[k])}</span>${pips(d.domains[k])}<span class="d-line">${esc(MV.fortuneDomain(M, S, d, k))}</span></li>`).join('')}</ul>
-</section>
-${basisHTML(S, d, `/${C}/result/master/?m=haewoon`)}
+${tz.summaryHTML}
+${tz.domainsHTML}
+<section class="m-basic${mode === 'reveal' ? ' fate-soft' : ''}">${MV.fortuneBasicHTML(M, S, d, today)}</section>
+<details class="c2-fold"><summary><span><b>${esc(M.today.basisFold)}</b><small>${esc(basisChipLine(S, d))}</small></span></summary>${basisHTML(S, d, `/${C}/result/master/?m=haewoon`)}</details>
 
 <section class="sec mcards"><h2>${esc(M.ui.cardsTitle)}</h2><div class="mc-list">${MASTERS.map(card).join('')}</div></section>
 
@@ -588,6 +637,7 @@ ${!admin && canReward() && ts.bonus < 1 ? `<button class="btn-ghost" type="butto
 ${ts.left <= 0 ? `<p class="fate-none">${esc(fmt(U.fateAllUsed, { t: hhmm(per.next) }))}</p>` : ''}
 </section>`;
 
+  bindDomTiles();
   if (animate || mode === 'reveal') countUp($('#scoreNum'), d.score); else $('#scoreNum').textContent = d.score;
   if (mode === 'reveal') setTimeout(() => { $('.fate-dust')?.remove(); $('.fate-arrived')?.classList.add('is-gone'); }, reduceMotion ? 1800 : 3200);
   $$('[data-count]').forEach(el => { el.textContent = clock(per.next - Date.now()); });
