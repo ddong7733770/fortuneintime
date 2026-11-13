@@ -543,7 +543,7 @@ function todayParts(d, fr) {
   // 2×2 타일 + 분야 카드(하나씩 보임)
   const sel = d.domains[care] <= 2 ? care : best;
   const bar = (k, n) => `<span class="c2-bar">${[1, 2, 3, 4, 5].map(i => `<i${i <= n ? ' class="on"' : ''}></i>`).join('')}</span>`;
-  const tiles = DOMK.map(k => `<button type="button" class="c2-tile t-${k}${k === sel ? ' is-on' : ''}" data-dom="${k}" aria-pressed="${k === sel}"><span class="c2-tt">${domIcon(k)}${esc(U.domains[k])}</span><span class="c2-sc">${d.domains[k]}<small>/5</small></span>${bar(k, d.domains[k])}<span class="c2-w">${esc(T.word[k][d.domains[k] - 1])}</span></button>`).join('');
+  const tiles = DOMK.map(k => `<button type="button" class="c2-tile t-${k}${k === sel ? ' is-on' : ''}" data-dom="${k}" aria-pressed="${k === sel}"><span class="c2-tt"><span class="c2-tn">${domIcon(k)}${esc(U.domains[k])}</span><span class="c2-sc">${d.domains[k]}<small>/5</small></span></span>${bar(k, d.domains[k])}<span class="c2-w">${esc(T.word[k][d.domains[k] - 1])}</span></button>`).join('');
   const cards = DOMK.map((k, i) => {
     const n = d.domains[k], kind = n >= 4 ? 'good' : n === 3 ? 'mid' : 'warn';
     const pool = T.todo[k][n >= 3 ? 'up' : 'down'];
@@ -655,6 +655,18 @@ ${ts.left <= 0 ? `<p class="fate-none">${esc(fmt(U.fateAllUsed, { t: hhmm(per.ne
 }
 
 // ── 명인 탭: 위에서 명인을 고르면 제목·색·내용이 함께 바뀜
+// 긴 명인 화면: 맨 위 목차 칩 (섹션이 6개 이상일 때) → 누르면 그 섹션으로 이동
+function buildToc() {
+  const view = $('.mview'); if (!view) return;
+  const secs = $$('section.sec', view).filter(s => $('h2', s) && !s.classList.contains('tcard'));
+  if (secs.length < 6) return;
+  const nav = document.createElement('nav');
+  nav.className = 'c2-toc'; nav.setAttribute('aria-label', '목차');
+  nav.innerHTML = secs.map((s, i) => { s.id = s.id || `sec-${i}`; const t = $('h2', s).textContent.split(/\s[—·-]\s/)[0].replace(/\(.*?\)/g, '').trim(); return `<a href="#${s.id}">${esc(t.length > 9 ? t.slice(0, 9) + '…' : t)}</a>`; }).join('');
+  const anchor = $('.tcard', view) || secs[0];
+  anchor.before(nav);
+  nav.addEventListener('click', e => { const a = e.target.closest('a'); if (!a) return; e.preventDefault(); document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' }); });
+}
 function renderMaster() {
   const tab = body.dataset.tab;
   const inv = qs.get('inv') ? b64d(qs.get('inv')) : null;
@@ -687,6 +699,7 @@ function renderMaster() {
   const ty = m === 'haewoon' && M.types ? typeOf(chart.dayStem, chart.pillars.day.branch) : null;
   const typeCard = ty ? TV.typeCardHTML(M.types, ty, D.typeImgs, `/${C}/type/`) : '';
   app().innerHTML = `<nav class="mpick" aria-label="${esc(MU.pick)}">${pick}</nav><div class="mview m-${m}">${head}${typeCard}${content}</div>`;
+  buildToc();
   $('#typeShare')?.addEventListener('click', () => makeAndShowCard($('#typeShare'), () => TV.makeTypeCard(M.types, ty, D.typeImgs, location.host), `type-${ty.slug}.png`, `나의 60타입은 ${TV.typeName(M.types, ty)} ${location.origin}/${C}/type/${ty.slug}/`));
   $('#unlockBtn')?.addEventListener('click', () => unlockWithAd(m, () => renderMaster()));
   // 시운 다이얼: 칸(시간대)을 누르면 그 시간의 풀이 하나만 아래에 보여 줌 (화면은 움직이지 않음)

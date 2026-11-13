@@ -255,7 +255,7 @@ function buildInput(c) {
   const rest = Object.entries(Lc.countries).filter(([k]) => k !== 'OTHER').sort((a, b) => coll.compare(a[1], b[1]));
   const countryOpts = rest.map(([k, v]) => `<option value="${k}"${k === Lc.defaultCountry ? ' selected' : ''}>${esc(v)}</option>`).join('');
   const body = `${head({ lang: c, title: `${BRAND} ${Lc.subBrand} | ${Lc.tagline}`, desc: Lc.siteDesc, canonical: `/${c}/`, alts: langAlts('/') })}
-<body class="page-input" data-lang="${c}">
+<body class="page-input ds2" data-lang="${c}">
 ${header(c)}
 <main class="wrap">
 <section class="now-card" aria-live="polite">
@@ -333,7 +333,7 @@ function buildResult(c) {
     const ico = x => (x === 'master' ? `<img class="tab-face" src="${config.images.master}" alt="" width="26" height="26">` : `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICON[x]}</svg>`);
     const nav = NAV.map(x => `<a href="/${c}/result/${x}/" class="tab${x === on ? ' is-on' : ''}"${x === on ? ' aria-current="page"' : ''}>${ico(x)}<span>${esc(U.tabs[x])}</span></a>`).join('');
     const html = `${head({ lang: c, title: `${U.tabs[t]} | ${BRAND} ${Lc.subBrand}`, desc: Lc.siteDesc, canonical: `/${c}/`, noindex: true })}
-<body class="page-result has-bnav tab-${t}" data-lang="${c}" data-tab="${t}">
+<body class="page-result ds2 has-bnav tab-${t}" data-lang="${c}" data-tab="${t}">
 ${header(c, { edit: true })}
 <nav class="tabs" aria-label="menu">${nav}</nav>
 <main class="wrap" id="app" aria-live="polite"><div class="loading"><span></span></div></main>
@@ -350,7 +350,7 @@ ${footer(c)}
 // ── 4) 정적 운세 페이지 (띠, 별자리, 시진, 혈액형) — 매일 재빌드, 브라우저에서 날짜가 다르면 다시 계산
 function staticShell(c, { title, desc, canonical, alts, h1, bodyHTML, crumbs = '', bnav = false, sticky = true, cls = '', script = '' }) {
   return `${head({ lang: c, title, desc, canonical, alts })}
-<body class="page-static${bnav ? ' has-bnav' : ''}${cls ? ` ${cls}` : ''}" data-lang="${c}">
+<body class="page-static ds2${bnav ? ' has-bnav' : ''}${cls ? ` ${cls}` : ''}" data-lang="${c}">
 ${header(c)}
 ${bnav ? `<nav class="tabs" aria-label="menu">${bottomNav(c)}</nav>` : ''}
 <main class="wrap static">
@@ -489,7 +489,7 @@ function buildTypes(c) {
     const list = TYPES60.filter(x => x.s === si).sort((a, b) => a.b - b.b).map(x => typeOf(x.s, x.b));
     return `<section class="sec t-group"><h2>${esc(st.ko)}(${'甲乙丙丁戊己庚辛壬癸'[si]}) · ${esc(st.img)}</h2><div class="t-grid">${list.map(t => `<a class="tc-mini" data-slug="${t.slug}" style="--ta:${TV.EL_AC[t.el]};--tb:${TV.EL_BG[t.el]}" href="${base}${t.slug}/">${TV.typeBadge(t, TYPE_IMGS, 'sm')}<span><b>${esc(TV.typeKo(T, t))}일주</b><small>${esc(TV.typeName(T, t))}</small></span></a>`).join('')}</div></section>`;
   }).join('');
-  const hub = `<h1 class="page-h">${esc(T.hubTitle)}</h1><p class="lead">${esc(T.hubLead)}</p>${cta}${groups}${adSlot('content', L[c].ui.ad)}`;
+  const hub = `<section class="sec t-intro"><h1 class="page-h">${esc(T.hubTitle)}</h1><p class="lead">${esc(T.hubLead)}</p>${cta}</section>${groups}${adSlot('content', L[c].ui.ad)}`;
   write(`${c}/type/index.html`, staticShell(c, { title: `${T.hubTitle} | ${BRAND}`, desc: T.hubDesc, canonical: base, alts: null, h1: '', bodyHTML: hub, bnav: true, sticky: false, cls: 'page-type', script: tScript }));
   addPage(base, null);
   TYPES60.forEach(x => {
@@ -526,7 +526,7 @@ function buildPolicy(c) {
 <p class="muted small">${esc(F.alt)}</p><p class="mail"><a href="mailto:${esc(config.contactEmail)}">${esc(config.contactEmail)}</a></p>
 <script type="module" src="/assets/contact.js?v=${VERSION}"></script>` : '';
     const body = `${head({ lang: c, title: `${U[key]} | ${BRAND}`, desc: `${U[key]} – ${BRAND} ${Lc.subBrand}`, canonical: `/${c}/${key}/`, alts: langAlts(`/${key}/`) })}
-<body class="page-policy" data-lang="${c}">
+<body class="page-policy ds2" data-lang="${c}">
 ${header(c)}
 <main class="wrap prose"><h1 class="page-h">${esc(U[key])}</h1>${secs}${extra}${key !== 'contact' ? `<p class="disc-inline">${esc(Lc.disclaimer)}</p>` : ''}</main>
 ${footer(c)}
