@@ -156,7 +156,9 @@ const KW_HARD = [
   ['결단', '실행', '정리', '홀로서기', '첫걸음', '미니멀'],
 ];
 const REL_KW = { hap: ['귀인', '인연'], samhap: ['협력', '팀워크'], chung: ['변화', '이동'], hyeong: ['꼼꼼함', '재확인'], hae: ['오해 풀기', '대화'] };
-export function yearFortune(chart, y = 2027) {
+// P: 언어별 키워드 묶음(L.masters.year.kw). 없으면 한국어
+export function yearFortune(chart, y = 2027, P = null) {
+  const G = (P && P.good) || KW_GOOD, HD = (P && P.hard) || KW_HARD, RK = (P && P.rel) || REL_KW;
   const yi = yearInfo(chart, y);
   const mid = Date.UTC(y, 6, 1);
   const dae = currentDaeun(chart, mid);
@@ -187,15 +189,15 @@ export function yearFortune(chart, y = 2027) {
   // 키워드 3개: 천간의 기운, 지지의 기운, 원국과의 관계(없으면 신살·용신)
   const seed = (chart.dayStem * 7 + chart.pillars.day.branch * 3 + (chart.pillars.month?.branch || 0)) % 6;
   const kw = [];
-  const pick = (g, i) => (favG(chart, g) ? KW_GOOD : KW_HARD)[g][i % 6];
+  const pick = (g, i) => (favG(chart, g) ? G : HD)[g][i % 6];
   kw.push(pick(yi.grpS, seed));
   const k2 = pick(yi.grpB, seed + 1); if (!kw.includes(k2)) kw.push(k2);
   const rel = ev.rels.find(r => r.pos === 'day') || ev.rels.find(r => r.pos === 'month');
-  const rk = rel && REL_KW[rel.type][(seed + chart.pillars.year.branch) % 2];
+  const rk = rel && RK[rel.type][(seed + chart.pillars.year.branch) % 2];
   if (rk && !kw.includes(rk)) kw.push(rk);
-  else if (ev.dohwa) kw.push(seed % 2 ? '매력' : '설렘');
-  else if (ev.yeokma) kw.push(seed % 2 ? '이동' : '여행');
-  const FILL = ['성장', '균형', '새 출발', '용기', '여유', '단단함', '반전', '꾸준함', '설렘', '단짠', '레벨업', '행운'];
+  else if (ev.dohwa) kw.push(((P && P.dohwa) || ['설렘', '매력'])[seed % 2]);
+  else if (ev.yeokma) kw.push(((P && P.yeokma) || ['여행', '이동'])[seed % 2]);
+  const FILL = (P && P.fill) || ['성장', '균형', '새 출발', '용기', '여유', '단단함', '반전', '꾸준함', '설렘', '단짠', '레벨업', '행운'];
   for (let j = 0; j < FILL.length; j++) { const extra = FILL[(seed * 2 + chart.pillars.year.branch + j) % FILL.length]; if (kw.length < 3 && !kw.includes(extra)) kw.push(extra); }
   return { y, gz: yi.gz, ev, grpS: yi.grpS, grpB: yi.grpB, favS: favG(chart, yi.grpS), favB: favG(chart, yi.grpB), dae, score, band, dom, months, best, worst, kw: kw.slice(0, 3), rel };
 }

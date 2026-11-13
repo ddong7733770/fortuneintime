@@ -8,14 +8,20 @@ export const fmt = (s, o = {}) => String(s).replace(/\{(\w+)(?::([^}/]+)\/([^}]+
 export const pickR = (arr, r) => arr[Math.floor((r || 0) * arr.length) % arr.length];
 export const EL_CLS = ['el-wood', 'el-fire', 'el-earth', 'el-metal', 'el-water'];
 export const gzH = g => SJ.STEM_H[g.stem] + SJ.BRANCH_H[g.branch];
-export const gzK = g => SJ.STEM_K[g.stem] + SJ.BRANCH_K[g.branch];
+// 천간·지지의 읽는 이름: 언어 데이터(S.stemK·branchK)가 있으면 그것으로 (영어 Gap-Ja 등)
+export const sk = (S, i) => ((S && S.stemK) || SJ.STEM_K)[i];
+export const bk = (S, i) => ((S && S.branchK) || SJ.BRANCH_K)[i];
+export const gzK = (g, S = null) => sk(S, g.stem) + ((S && S.gzSep) || '') + bk(S, g.branch);
+export const tenName = (S, i) => S.ten[i].split('(')[0].trim();
+// 대운 설명(— 뒤)을 문장 앞에 쓸 때 첫 글자를 대문자로 (한글에는 영향 없음)
+export const daeDesc = t => { const x = String(t).split(' — ')[1] || ''; return x.charAt(0).toUpperCase() + x.slice(1); };
 const POS_ORDER = ['day', 'month', 'year', 'hour'];
 
 // 오늘 근거 문장(한국어). 다른 언어는 한자 요약만
 export function basisLines(S, d) {
   const { chart, ev } = d.saju;
   const out = [];
-  const ten = S.ten[ev.tgS].split('(')[0];
+  const ten = tenName(S, ev.tgS);
   out.push(fmt(S.dayIntro, { s: stemName(S, ev.stem), d: stemName(S, chart.dayStem), ten, mean: S.tenMean[ev.tgS] }));
   const els = [...new Set([SJ.STEM_EL[ev.stem], SJ.BRANCH_EL[ev.branch]])].map(e => S.el[e]).join('·');
   const mood = ev.val >= 1.5 ? 'good' : ev.val <= -1.5 ? 'bad' : 'mid';
@@ -85,7 +91,8 @@ export function domainReading(S, d, k, D = null) {
     out.push(why); if (c <= 1) out.push(pickR(D.caution, r(1))); if (ext) out.push(pickR(D.act[c], r2(2))); out.push(pickR(D.tip, r(2)));
   } else if (k === 'love') {
     const g = chart.male === false ? 3 : 2;
-    const star = chart.male === false ? '이성을 뜻하는 관성(官星)' : chart.male ? '이성을 뜻하는 재성(財星)' : '인연의 별';
+    const LS = S.loveStar || { m: '이성을 뜻하는 재성(財星)', f: '이성을 뜻하는 관성(官星)', none: '인연의 별' };
+    const star = chart.male === false ? LS.f : chart.male ? LS.m : LS.none;
     if (has(g)) why = fav(g) ? fmt(W(D.why.star), { star }) : W(D.why.bad);
     else if (ev.dohwa) why = W(D.why.dohwa); else if (relAt('day', 'hap')) why = W(D.why.dayHap); else if (relAt('day', 'chung')) why = W(D.why.dayChung);
     else if (ev.stemHapDay) why = W(D.why.stemHap); else why = W(D.why.none);
@@ -109,12 +116,12 @@ export function domainReading(S, d, k, D = null) {
 export const domainReason = (S, d, k) => domainReading(S, d, k);
 
 // 한국어 이름: 계(癸·물), 미(未·양)
-export const stemName = (S, s) => `${SJ.STEM_K[s]}(${SJ.STEM_H[s]}·${S.elShort[SJ.STEM_EL[s]]})`;
-export const branchName = (S, b) => `${SJ.BRANCH_K[b]}(${SJ.BRANCH_H[b]}·${S.animal[b]})`;
+export const stemName = (S, s) => `${sk(S, s)}${S.stemK ? ' ' : ''}(${SJ.STEM_H[s]}·${S.elShort[SJ.STEM_EL[s]]})`;
+export const branchName = (S, b) => `${bk(S, b)}${S.branchK ? ' ' : ''}(${SJ.BRANCH_H[b]}·${S.animal[b]})`;
 function basisChipsKo(S, d) {
   const { chart, ev, gz } = d.saju;
-  return [fmt(S.chip.day, { gz: gzK(gz) }), S.ten[ev.tgS].split('(')[0], fmt(S.chip.yong, { el: S.el[chart.fav.yong] }),
-    ...ev.rels.slice(0, 2).map(r => fmt(S.chip.rel[r.type], { a: SJ.BRANCH_K[ev.branch], b: SJ.BRANCH_K[r.with] }))];
+  return [fmt(S.chip.day, { gz: gzK(gz, S) }), tenName(S, ev.tgS), fmt(S.chip.yong, { el: S.el[chart.fav.yong] }),
+    ...ev.rels.slice(0, 2).map(r => fmt(S.chip.rel[r.type], { a: bk(S, ev.branch), b: bk(S, r.with) }))];
 }
 export function basisChips(d) {
   const { chart, ev, gz } = d.saju;
@@ -127,7 +134,7 @@ export function basisHTML(S, d, link) {
   const { gz } = d.saju;
   return `<section class="sec basis"><h2>${esc(S.ui.todayBasis)}</h2>
 <p class="basis-chips">${chips}</p>
-<p class="muted basis-note">${esc(fmt(S.ui.basisNote, { gz: `${gzK(gz)}(${gzH(gz)})` }))}</p>
+<p class="muted basis-note">${esc(fmt(S.ui.basisNote, { gz: `${gzK(gz, S)}${S.stemK ? ' ' : ''}(${gzH(gz)})` }))}</p>
 <ul class="basis-list">${basisLines(S, d).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
 ${link ? `<a class="txt-link" href="${link}">${esc(S.ui.seeSaju)} →</a>` : ''}</section>`;
 }
@@ -222,17 +229,17 @@ export function overallTexts(S, chart, nowMs = Date.now(), O = null) {
   const now = new Date(nowMs);
   const yr = SJ.monthYearGZAt(now.getFullYear(), now.getMonth() + 1, now.getDate()).year;
   const yTone = toneOf(SJ.evalGZ(chart, yr.stem, yr.branch, chart.male));
-  const gz = g => `${SJ.STEM_K[g.stem]}${SJ.BRANCH_K[g.branch]}(${SJ.STEM_H[g.stem]}${SJ.BRANCH_H[g.branch]})`;
+  const gz = g => `${gzK(g, S)}${S.stemK ? ' ' : ''}(${SJ.STEM_H[g.stem]}${SJ.BRANCH_H[g.branch]})`;
   const yearLine = fmt(O.year, { gz: gz(yr), tone: O.yearTone[yTone] });
   if (chart.daeun) {
     const list = chart.daeun.list, ci = list.findIndex(g => age >= g.age && age < g.age + 10);
     const cur = list[Math.max(0, ci)], nxt = list[Math.max(0, ci) + 1];
     const evC = SJ.evalGZ(chart, cur.stem, cur.branch, chart.male), tC = toneOf(evC);
     const grpC = SJ.groupOf(SJ.tenGod(chart.dayStem, cur.stem));
-    out.now = `${fmt(O.now, { age: Math.floor(cur.age), gz: gz(cur), desc: S.daeunText[grpC][tC === 2 ? 1 : 0].split(' — ')[1] })} ${O.nowTone[tC]} ${yearLine}`;
+    out.now = `${fmt(O.now, { age: Math.floor(cur.age), gz: gz(cur), desc: daeDesc(S.daeunText[grpC][tC === 2 ? 1 : 0]) })} ${O.nowTone[tC]} ${yearLine}`;
     if (nxt) {
       const tN = toneOf(SJ.evalGZ(chart, nxt.stem, nxt.branch, chart.male)), grpN = SJ.groupOf(SJ.tenGod(chart.dayStem, nxt.stem));
-      out.next = fmt(O.next, { age: Math.floor(nxt.age), gz: gz(nxt), desc: S.daeunText[grpN][tN === 2 ? 1 : 0].split(' — ')[1], tone: O.nextTone[tN] });
+      out.next = fmt(O.next, { age: Math.floor(nxt.age), gz: gz(nxt), desc: daeDesc(S.daeunText[grpN][tN === 2 ? 1 : 0]), tone: O.nextTone[tN] });
     }
   } else out.now = yearLine;
   const Y = S.yong[chart.fav.yong];
@@ -253,14 +260,15 @@ function pillarCell(S, chart, pos) {
   const t = chart.tens[pos];
   const sE = SJ.STEM_EL[pl.stem], bE = SJ.BRANCH_EL[pl.branch];
   return `<div class="pc${pos === 'day' ? ' pc-me' : ''}"><p class="pc-pos">${esc(label)}</p>
-<p class="pc-ten">${pos === 'day' ? esc(S.ui.me) : esc(S.ten[t.stem].split('(')[0])}</p>
-<p class="pc-ch ${EL_CLS[sE]}"><b>${SJ.STEM_H[pl.stem]}</b><small>${SJ.STEM_K[pl.stem]}·${esc(S.elShort[sE])}</small></p>
-<p class="pc-ch ${EL_CLS[bE]}"><b>${SJ.BRANCH_H[pl.branch]}</b><small>${SJ.BRANCH_K[pl.branch]}·${esc(S.elShort[bE])}</small></p>
-<p class="pc-ten">${esc(S.ten[t.branch].split('(')[0])}</p></div>`;
+<p class="pc-ten">${pos === 'day' ? esc(S.ui.me) : esc(tenName(S, t.stem))}</p>
+<p class="pc-ch ${EL_CLS[sE]}"><b>${SJ.STEM_H[pl.stem]}</b><small>${sk(S, pl.stem)}${S.stemK ? '<br>' : '·'}${esc(S.elShort[sE])}</small></p>
+<p class="pc-ch ${EL_CLS[bE]}"><b>${SJ.BRANCH_H[pl.branch]}</b><small>${bk(S, pl.branch)}${S.branchK ? '<br>' : '·'}${esc(S.elShort[bE])}</small></p>
+<p class="pc-ten">${esc(tenName(S, t.branch))}</p></div>`;
 }
 // 사주 화면을 섹션 단위로: 해운정사 화면에서 방문 횟수에 따라 순서를 바꿈
 export function sajuSections(S, chart, { O = null, overallTitle = null, nowMs = Date.now() } = {}) {
   const U = S.ui;
+  const LK = U.lucky || { color: '색', dir: '방향', num: '숫자', act: '활동' };
   const pad = n => String(n).padStart(2, '0');
   const max = Math.max(...chart.count, 1);
   const many = chart.count.map((c, i) => (c >= 3 ? i : -1)).filter(i => i >= 0);
@@ -287,7 +295,7 @@ ${chart.solarHM ? `<p class="muted small">${esc(fmt(U.solar, { t: `${pad(chart.s
 ${chart.hasHour ? '' : `<p class="muted small">${esc(U.unknownHour)}</p>`}</section>`,
     overall: overallHTML(S, chart, O, overallTitle),
     basic: `<section class="sec"><h2>${esc(U.dayMaster)}</h2>
-<p class="dm"><b class="${EL_CLS[chart.me]}">${SJ.STEM_H[chart.dayStem]}</b><span>${esc(SJ.STEM_K[chart.dayStem])}${esc(S.el[chart.me].slice(0, 1))} · ${esc(S.el[chart.me])}</span></p>
+<p class="dm"><b class="${EL_CLS[chart.me]}">${SJ.STEM_H[chart.dayStem]}</b><span>${esc(S.stemFull ? `${sk(S, chart.dayStem)} · ${S.stemFull[chart.dayStem]}` : `${SJ.STEM_K[chart.dayStem]}${S.el[chart.me].slice(0, 1)} · ${S.el[chart.me]}`)}</span></p>
 <p class="lead-s">${esc(S.dayMaster[chart.dayStem])}</p></section>
 <section class="sec"><h2>${esc(U.elements)}</h2>
 <ul class="el-bars">${chart.count.map((c, i) => `<li><span class="${EL_CLS[i]}">${esc(S.el[i])}</span><i><b class="bar ${EL_CLS[i]}" style="width:${(c / max) * 100}%"></b></i><em>${c}</em></li>`).join('')}</ul>
@@ -298,7 +306,7 @@ ${many.map(i => `<p class="lead-s">${esc(S.many[i])}</p>`).join('')}${none.map(i
 <section class="sec"><h2>${esc(U.yongsin)}</h2>
 <p class="dm"><b class="${EL_CLS[chart.fav.yong]}">${SJ.EL_H[chart.fav.yong]}</b><span>${esc(S.el[chart.fav.yong])}</span></p>
 <p class="lead-s">${esc(Y.why)}</p>${yongBasisHTML(S, chart)}
-<h3>${esc(U.luckyTitle)}</h3><dl class="kw"><div><dt>색</dt><dd>${esc(Y.color)}</dd></div><div><dt>방향</dt><dd>${esc(Y.dir)}</dd></div><div><dt>숫자</dt><dd>${esc(Y.num)}</dd></div><div><dt>활동</dt><dd>${esc(Y.act)}</dd></div></dl></section>
+<h3>${esc(U.luckyTitle)}</h3><dl class="kw"><div><dt>${esc(LK.color)}</dt><dd>${esc(Y.color)}</dd></div><div><dt>${esc(LK.dir)}</dt><dd>${esc(Y.dir)}</dd></div><div><dt>${esc(LK.num)}</dt><dd>${esc(Y.num)}</dd></div><div><dt>${esc(LK.act)}</dt><dd>${esc(Y.act)}</dd></div></dl></section>
 <section class="sec"><h2>${esc(U.tenGods)}</h2>${topTen.map(i => `<p class="lead-s"><b>${esc(S.ten[i])}</b> ${esc(S.tenTrait[i])}</p>`).join('')}</section>
 ${sal.length ? `<section class="sec"><h2>${esc(U.sinsal)}</h2>${sal.map(([n, t]) => `<p class="lead-s"><b>${esc(n)}</b> ${esc(t)}</p>`).join('')}</section>` : ''}
 ${lifeHTML(S, chart)}
@@ -308,5 +316,5 @@ ${dae ? `<section class="sec"><h2>${esc(U.daeun)}</h2><ol class="daeun">${dae}</
 // 예전 사주 탭(한 번에 전부)
 export function sajuTabHTML(S, chart, name, nowMs = Date.now()) {
   const U = S.ui, x = sajuSections(S, chart, { nowMs });
-  return `<section class="sec"><h1 class="page-h">${esc(name ? `${name}의 ${U.title.replace('나의 ', '')}` : U.title)}</h1><p class="muted">${esc(U.sub)}</p></section>${x.pillars}${x.overall}${x.basic}<section class="sec"><p class="disc-inline">${esc(U.disclaimer)}</p></section>`;
+  return `<section class="sec"><h1 class="page-h">${esc(name ? (U.titleOf ? fmt(U.titleOf, { name }) : `${name}의 ${U.title.replace('나의 ', '')}`) : U.title)}</h1><p class="muted">${esc(U.sub)}</p></section>${x.pillars}${x.overall}${x.basic}<section class="sec"><p class="disc-inline">${esc(U.disclaimer)}</p></section>`;
 }

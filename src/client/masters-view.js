@@ -4,14 +4,19 @@ import { SJ } from './engine.js';
 import * as MS from './masters.js';
 import { DATE_ICONS } from './date-icons.js';
 import { dialSVG, dialLabels, sijinRange, pips as gauge } from './content.js';
-import { esc, fmt, pickR, todayReading, domainReading, sajuSections, stemName } from './saju-view.js';
+import { esc, fmt, pickR, todayReading, domainReading, sajuSections, stemName, gzK, tenName, daeDesc } from './saju-view.js';
 
 const DOMS = ['wealth', 'love', 'work', 'health'];
 const lvl = v => (v <= 2 ? 0 : v === 3 ? 1 : 2);
 const first = (t, n = 2) => String(t).split(/(?<=[.!?])\s+/).slice(0, n).join(' ');
 const sec = (id, title, body, cls = '') => `<section class="sec m-sec${cls ? ` ${cls}` : ''}" id="sec-${id}"><h2>${esc(title)}</h2>${body}</section>`;
 const p = t => (t ? `<p class="m-p">${esc(t)}</p>` : '');
-const loveStar = chart => (chart.male === false ? '이성을 뜻하는 관성(官星)' : chart.male ? '이성을 뜻하는 재성(財星)' : '인연의 별');
+const LS_KO = { m: '이성을 뜻하는 재성(財星)', f: '이성을 뜻하는 관성(官星)', none: '인연의 별' };
+const loveStar = (chart, M) => { const L2 = (M && M.ui.loveStar) || LS_KO; return chart.male === false ? L2.f : chart.male ? L2.m : L2.none; };
+// 달 이름: 언어 데이터(monthNames)가 있으면 그것, 없으면 '{m}월'
+// 띠 목록: 영어 등은 'Goat, Tiger or Dog', 한국어는 '양·호랑이·개'
+const joinAn = (M, S, bs) => { const a = bs.map(b => S.animal[b]); return M.ui.or && a.length > 1 ? `${a.slice(0, -1).join(', ')}${M.ui.or}${a[a.length - 1]}` : a.join('·'); };
+export const monthLabel = (M, m) => (M && M.ui.monthNames ? M.ui.monthNames[m - 1] : `${m}월`);
 const hourName = (L, i) => `${L.sijin[i]} ${sijinRange(i)}`;
 
 // ════════ 오늘 탭 (중립 안내형) ════════
@@ -19,7 +24,7 @@ export function fortuneReading(M, S, d) { return todayReading(S, d, M.fortune); 
 export function fortuneDomain(M, S, d, k) {
   const D = M.fortune.dom[k];
   const t = domainReading(S, d, k, D);
-  return k === 'love' ? t.replace('{star}', loveStar(d.saju.chart)) : t;
+  return k === 'love' ? t.replace('{star}', loveStar(d.saju.chart, M)) : t;
 }
 export function fortuneBasicHTML(M, S, d, dateK = null) {
   const t = fortuneReading(M, S, d), F = M.fortune;
@@ -82,7 +87,7 @@ export function hanaSections(M, S, d, chart, now = new Date(), L = null) {
   const H = M.hana, U = M.ui, ds = chart.dayStem, tg = chart.tgCount, gw = chart.gw;
   const loveG = chart.male === false ? 3 : 2;
   const pe = MS.peopleOf(chart);
-  const an = bs => bs.map(b => S.animal[b]).join('·');
+  const an = bs => joinAn(M, S, bs);
   // 1) 연애 기질
   const starN = chart.male === false ? tg[6] + tg[7] : tg[4] + tg[5];
   const temper = [H.temper.palace[pe.dayGrp], gw[1] >= 2 ? H.temper.express : gw[4] >= 2.5 ? H.temper.think : '', starN >= 3 ? H.temper.many : starN === 0 ? H.temper.none : '', chart.sal.dohwa ? H.temper.dohwa : ''].filter(Boolean);
@@ -90,13 +95,13 @@ export function hanaSections(M, S, d, chart, now = new Date(), L = null) {
   const atEl = SJ.elOfGroup(ds, loveG), yEl = chart.fav.yong;
   const type = [fmt(H.type.attract, { p: H.elPerson[atEl], el: S.el[atEl] }), fmt(H.type.match, { p: H.elPerson[yEl], el: S.el[yEl] }), fmt(H.type.animals, { a: an(pe.match) }), atEl !== yEl ? H.type.tip : ''].filter(Boolean);
   // 3) 오늘의 인연 흐름
-  const todayT = domainReading(S, d, 'love', H.today).replace('{star}', loveStar(chart));
+  const todayT = domainReading(S, d, 'love', H.today).replace('{star}', loveStar(chart, M));
   const pips = `<p class="m-level"><span>${esc(M.fortune.domName.love)}</span>${gauge(d.domains.love)}</p>`;
   // 4) 인연 시기: 앞으로 6개월 + 올해
   const ms = MS.monthScan(chart, now.getFullYear(), now.getMonth() + 1, 6).map(mo => ({ mo, ...MS.loveSignals(chart, mo) }));
   const keep = ms.filter(x => x.sig.length || x.warn.includes('dayChung'));
   const rowsSrc = keep.length ? keep : ms.filter(x => x.warn.length).slice(0, 2);
-  const rows = rowsSrc.map(x => `<li class="${x.sig.length ? 'up' : 'down'}"><b>${x.mo.m}월</b><span>${esc(x.sig.length ? H.timing.sig[x.sig[0]] : H.timing.warn[x.warn.includes('dayChung') ? 'dayChung' : x.warn[0]])}</span></li>`).join('');
+  const rows = rowsSrc.map(x => `<li class="${x.sig.length ? 'up' : 'down'}"><b>${esc(monthLabel(M, x.mo.m))}</b><span>${esc(x.sig.length ? H.timing.sig[x.sig[0]] : H.timing.warn[x.warn.includes('dayChung') ? 'dayChung' : x.warn[0]])}</span></li>`).join('');
   const yi = MS.yearInfo(chart, now.getFullYear()), ys = MS.loveSignals(chart, yi);
   const yearT = ys.sig.length ? H.timing.year.good : ys.warn.length ? H.timing.year.warn : H.timing.year.mid;
   const timing = `${p(H.timing.lead)}${rows ? `<ul class="m-months">${rows}</ul>` : p(H.timing.none)}<p class="m-p"><b>${esc(U.thisYear)}</b> ${esc(yearT)}</p>`;
@@ -122,9 +127,9 @@ export function hanaDate(M, S, L, d, chart, now = new Date()) {
   const mood = pickR(D.mood[grp][fav], r[19]);
   const bi = [4, 5, 6, 7, 8, 9, 10, 11].reduce((a, i) => (d.hours[i] > d.hours[a] ? i : a), 5);
   const slot = bi <= 5 ? 0 : bi <= 7 ? 1 : bi <= 9 ? 2 : 3;
-  const hName = `${L.sijin[bi]}(${sijinRange(bi)})`;
+  const hName = /\)$/.test(L.sijin[bi]) ? `${L.sijin[bi]} ${sijinRange(bi)}` : `${L.sijin[bi]}(${sijinRange(bi)})`;
   const mo = now.getMonth() + 1, sea = mo >= 3 && mo <= 5 ? 0 : mo >= 6 && mo <= 8 ? 1 : mo >= 9 && mo <= 11 ? 2 : 3;
-  const seaName = ['봄', '여름', '가을', '겨울'][sea];
+  const seaName = (M.ui.seasons || ['봄', '여름', '가을', '겨울'])[sea];
   const wl = lvl(d.domains.wealth);
   const pick = (a, j) => a[(Math.floor((r[(20 + j) % r.length] || 0) * 997) + j) % a.length];
   const dayRel = ev.rels.filter(x => x.pos === 'day').map(x => x.type);
@@ -132,11 +137,11 @@ export function hanaDate(M, S, L, d, chart, now = new Date()) {
   const chips = [[U.mood, D.moodShort[grp][fav]], [U.time, `${L.sijin[bi]} ${sijinRange(bi)}`], [U.form, pl.form], [U.cost, D.costLv[pl.cost]], [U.season, seaName]];
   const stages = ['some', 'early', 'long'];
   const body = `<div class="dt-card"><p class="dt-intro">${esc(pick(D.intro[lv], 1))}</p>
-<div class="dt-head">${DATE_ICONS[pl.name] ? `<span class="dt-ico">${DATE_ICONS[pl.name]}</span>` : ''}<h3 class="dt-name">${esc(pl.name)}</h3></div>
+<div class="dt-head">${DATE_ICONS[pl.key || pl.name] ? `<span class="dt-ico">${DATE_ICONS[pl.key || pl.name]}</span>` : ''}<h3 class="dt-name">${esc(pl.name)}</h3></div>
 <ul class="dt-chips">${chips.map(([k, v]) => `<li><span>${esc(k)}</span>${esc(v)}</li>`).join('')}</ul>
 <h4>${esc(U.why)}</h4><p class="m-p">${esc(pick(D.elWhy[el], 2))} ${esc(pick(pl.feature, 3))} ${esc(pick(pl.feature.filter(x => x !== pick(pl.feature, 3)), 4))}</p>
 <h4>${esc(U.how)}</h4><p class="m-p">${esc(fmt(D.moodLine, { m: mood }))} ${esc(fmt(pick(D.time[slot], 5), { h: hName }))} ${esc(pick(pl.course, 6))} ${esc(pick(pl.course.filter(x => x !== pick(pl.course, 6)), 7))}</p>
-<h4>${esc(U.stage)}</h4><ul class="dt-stage">${stages.map((k, i) => `<li><b>${esc(U.stageName[k])}</b><span>${esc(D.stageLead[i])} ${esc(pl.effect[k])}</span></li>`).join('')}</ul>
+<h4>${esc(U.stage)}</h4><ul class="dt-stage">${stages.map((k, i) => `<li><b>${esc(U.stageName[k])}</b><span>${esc(D.stageLead[i])} ${esc(/,$/.test(D.stageLead[i]) ? pl.effect[k].charAt(0).toLowerCase() + pl.effect[k].slice(1) : pl.effect[k])}</span></li>`).join('')}</ul>
 <p class="m-p">${esc(pl.costNote)} ${esc(pick(D.cost[wl], 8))} ${esc(D.season[sea][el])} ${esc(pick(D.elTip[el], 9))}</p>
 <h4>${esc(U.talk)}</h4><ul class="dt-talk">${pl.talk.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
 ${careK ? `<h4>${esc(U.care)}</h4><p class="m-p">${esc(pick(D.care[careK], 10))}</p>` : ''}
@@ -184,13 +189,13 @@ export function compatReading(M, S, a, b, kind) {
 export function dohanSections(M, S, L, d, chart, now = new Date()) {
   const DH = M.dohan, U = M.ui, Y = chart.fav.yong, gw = chart.gw;
   const pe = MS.peopleOf(chart);
-  const an = bs => bs.map(b => S.animal[b]).join('·');
+  const an = bs => joinAn(M, S, bs);
   // 1) 일하는 스타일
   const ws = MS.workStyle(chart);
   const style = [DH.style[ws.type], ws.close ? fmt(DH.style.mix, { t: DH.style.name[ws.second] }) : ''].filter(Boolean);
   // 2) 맞는 업종과 역할
   const topTen = [...chart.tgCount.keys()].filter(i => chart.tgCount[i] > 0).sort((a, b) => chart.tgCount[b] - chart.tgCount[a])[0];
-  const fields = [`${fmt(DH.fields.lead, { el: S.el[Y] })} (${DH.fields.list[Y]})`, fmt(DH.fields.roleLine, { r: DH.fields.role[Y] }), fmt(DH.fields.strength, { t: S.ten[topTen].split('(')[0], trait: S.tenTrait[topTen] })];
+  const fields = [`${fmt(DH.fields.lead, { el: S.el[Y] })} (${DH.fields.list[Y]})`, fmt(DH.fields.roleLine, { r: DH.fields.role[Y] }), fmt(DH.fields.strength, { t: tenName(S, topTen), trait: S.tenTrait[topTen] })];
   // 3) 보고·회의·계약 시간
   const wh = MS.workHours(chart, d);
   const H2 = DH.hours2;
@@ -246,10 +251,10 @@ export function dohanSections(M, S, L, d, chart, now = new Date()) {
   const yT = yi.tone === 0 ? 1 : 0;
   const yearT = [at(F2.year[yi.grpS][yT], yk), at(F2.yDetail[yi.grpS], yk + 1), at(F2.yClose[yT], yk + 2)].join(' ');
   const flow = `<h3>${esc(U.thisMonth)}</h3>${p(monthT)}
-<h3>${esc(U.next3)}</h3><ul class="m-months m-months-l">${ms.slice(1).map(x => { const k = x.gz.stem * 12 + x.gz.branch; return `<li class="t${x.tone}"><b>${x.m}월</b><span><em>${esc(DH.flow.short[x.grpS])} · ${esc(DH.flow.tone[x.tone])}</em> ${esc(at(F2.hint[x.grpS], k))} ${esc(at(F2.toneAdv[toneIx(x.tone)], k + 1))}</span></li>`; }).join('')}</ul>
+<h3>${esc(U.next3)}</h3><ul class="m-months m-months-l">${ms.slice(1).map(x => { const k = x.gz.stem * 12 + x.gz.branch; return `<li class="t${x.tone}"><b>${esc(monthLabel(M, x.m))}</b><span><em>${esc(DH.flow.short[x.grpS])} · ${esc(DH.flow.tone[x.tone])}</em> ${esc(at(F2.hint[x.grpS], k))} ${esc(at(F2.toneAdv[toneIx(x.tone)], k + 1))}</span></li>`; }).join('')}</ul>
 <h3>${esc(U.thisYear)}</h3>${p(yearT)}
 ${sigs.length ? sigs.map((sg, i) => p(at(F2.sig[sg], yk + mk + i))).join('') : p(at(F2.noSig, yk))}
-${da ? p(fmt(DH.flow.daeun, { gz: `${SJ.STEM_K[da.stem]}${SJ.BRANCH_K[da.branch]}(${SJ.STEM_H[da.stem]}${SJ.BRANCH_H[da.branch]})`, desc: S.daeunText[da.grp][da.tone === 0 ? 1 : 0].split(' — ')[1] })) : ''}`;
+${da ? p(fmt(DH.flow.daeun, { gz: `${gzK(da, S)}${S.stemK ? ' ' : ''}(${SJ.STEM_H[da.stem]}${SJ.BRANCH_H[da.branch]})`, desc: daeDesc(S.daeunText[da.grp][da.tone === 0 ? 1 : 0]) })) : ''}`;
   // 5) 협업
   const collab = [fmt(DH.collab.noble, { a: an(pe.noble) }), fmt(DH.collab.match, { a: an(pe.match) }), fmt(DH.collab.clash, { a: an(pe.clash) }), gw[0] >= 3 ? DH.collab.rob : gw[0] <= 0.5 ? DH.collab.alone : DH.collab.mid];
   return {

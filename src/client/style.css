@@ -709,7 +709,9 @@ html.fate-on #app { opacity: .18; transition: opacity .5s cubic-bezier(.4,0,.2,1
 .siun-dial .dial { width: min(100%, 300px); }
 .hr-list { display: grid; gap: 8px; margin-top: 14px; }
 .hr { padding: 12px 14px; border-radius: 14px; background: #fff; border: 1px solid var(--ink-3); scroll-margin: 120px; transition: box-shadow .3s; }
-.hr header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.hr header { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 6px; }
+/* 시진 이름이 긴 언어(영어 등)에서도 시각·점수·배지가 쪼개지지 않게 */
+.hr-t, .hr header em, .hr-s, .hr-band { white-space: nowrap; flex-shrink: 0; }
 .hr header b { font-family: var(--serif); font-size: 16px; }
 .hr-t { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .hr header em { font-style: normal; font-size: 11px; color: #fff; background: var(--hanji); padding: 0 7px; border-radius: 99px; }
@@ -1209,7 +1211,7 @@ html.leaving main, html.leaving .foot { opacity: 0; transition: opacity .17s eas
 .page-type .y-cta .btn-primary { font-size: 14.4px; }
 /* 내 타입 강조 */
 .tc-mini.is-mine { position: relative; border: 2px solid var(--ta); background: var(--tb); box-shadow: 0 6px 18px color-mix(in srgb, var(--ta) 30%, transparent); animation: mineGlow 1.6s ease-in-out 2; }
-.tc-mini.is-mine::after { content: '나의 타입'; position: absolute; top: -9px; right: 8px; padding: 2px 8px; border-radius: 999px; background: var(--ta); color: #fff; font-size: 10.5px; font-weight: 700; }
+.tc-mini.is-mine::after { content: attr(data-mine); position: absolute; top: -9px; right: 8px; padding: 2px 8px; border-radius: 999px; background: var(--ta); color: #fff; font-size: 10.5px; font-weight: 700; }
 @keyframes mineGlow { 0%, 100% { transform: none; } 50% { transform: scale(1.04); } }
 @media (prefers-reduced-motion: reduce) { .tc-mini.is-mine { animation: none; } }
 .yb-src { margin: 4px 0 0; font-size: 12.5px; color: #9A958B; }
@@ -1344,3 +1346,6 @@ body.ds2 .sec p.cp-kind { color: var(--hn); }
 .tc-btns .btn-ghost.sm { font-size: 13.5px; }
 /* 미래: 빠른 날짜 버튼 90% */
 .quick button { font-size: 12.2px; } .quick button small { font-size: 9.9px; }
+
+/* 영어 등: 개운법 활동 목록 첫 글자 대문자 (문장 속에서는 소문자로 쓰므로 표시에서만) */
+.kw dd::first-letter, .y-luck dd::first-letter { text-transform: uppercase; }

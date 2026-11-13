@@ -7,8 +7,10 @@ export { GOAT };
 
 const DOMS = ['wealth', 'love', 'work', 'health'];
 const dots = n => `<span class="y-dots" aria-label="${n}/5">${[1, 2, 3, 4, 5].map(i => `<i${i <= n ? ' class="on"' : ''}></i>`).join('')}</span>`;
-const mName = (Y, m) => fmt(Y.monthName, { m });
+const mName = (Y, m) => (Y.monthNames ? Y.monthNames[m - 1] : fmt(Y.monthName, { m }));
+const mShort = (Y, m) => (Y.monthShort ? Y.monthShort[m - 1] : mName(Y, m));
 const ms = (Y, list) => list.map(m => mName(Y, m)).join(' · ');
+const msShort = (Y, list) => list.map(m => mShort(Y, m)).join(' · ');
 // 문장 고르기: 같은 사람이면 늘 같은 문장
 const seedOf = chart => chart.dayStem * 31 + chart.pillars.day.branch * 7 + (chart.pillars.month?.branch || 0) * 3 + (chart.pillars.year?.branch || 0);
 const pickS = (arr, seed, salt = 0) => arr[Math.abs(seed * 13 + salt * 7) % arr.length];
@@ -87,12 +89,13 @@ export function yearDetailHTML(Y, yf, chart) {
     t.push(pickS(Y.month.dayTip, seed, i + 2));
     const tag = yf.best.includes(mo.m) ? ' is-best' : yf.worst.includes(mo.m) ? ' is-worst' : '';
     return `<li class="y-mo${tag}"><div class="y-mh"><b>${esc(mName(Y, mo.m))}</b><span class="y-gz">${SJ.STEM_H[mo.gz.stem]}${SJ.BRANCH_H[mo.gz.branch]}月</span><em>${mo.score}</em></div>
-<p>${t.map(esc).join(' ')}</p><p class="y-days"><small>${esc(Y.month.goodDays)}</small>${mo.good.map(d => `<span>${esc(fmt(Y.month.dayFmt, { m: mo.m, d }))}</span>`).join('')}</p></li>`;
+<p>${t.map(esc).join(' ')}</p><p class="y-days"><small>${esc(Y.month.goodDays)}</small>${mo.good.map(d => `<span>${esc(fmt(Y.month.dayFmt, { m: mo.m, mn: mShort(Y, mo.m), d }))}</span>`).join('')}</p></li>`;
   }).join('')}</ol>`;
 }
 
 export function yearLockHTML(Y) {
-  return `<div class="y-lock"><div class="y-lock-blur" aria-hidden="true">${Array.from({ length: 3 }, (_, i) => `<div class="y-mo"><div class="y-mh"><b>${i + 1}월</b><em>··</em></div><p>■■■■ ■■■ ■■■■■ ■■ ■■■■ ■■■■■■ ■■■</p></div>`).join('')}</div>
+  // 흐린 미리보기 달 이름도 언어에 맞춤
+  return `<div class="y-lock"><div class="y-lock-blur" aria-hidden="true">${Array.from({ length: 3 }, (_, i) => `<div class="y-mo"><div class="y-mh"><b>${esc(mName(Y, i + 1))}</b><em>··</em></div><p>■■■■ ■■■ ■■■■■ ■■ ■■■■ ■■■■■■ ■■■</p></div>`).join('')}</div>
 <div class="y-lock-box"><b>${esc(Y.lock.title)}</b><p>${esc(Y.lock.desc)}</p><button type="button" class="btn-primary y-btn" id="yUnlock">${esc(Y.lock.btn)}</button><small>${esc(Y.lock.note)}</small></div></div>`;
 }
 
@@ -112,18 +115,19 @@ export async function makeCard(Y, S, chart, yf) {
   for (let i = 0; i < 26; i++) { ctx.beginPath(); ctx.arc((i * 233) % W, (i * 397) % 900, 30 + (i % 4) * 14, 0, Math.PI * 2); ctx.fill(); }
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = '#B5652F'; ctx.font = `600 38px ${sans}`; ctx.fillText(Y.hero.kicker, W / 2, 150);
-  ctx.fillStyle = '#C8372D'; ctx.font = `700 92px ${serif}`; ctx.fillText(Y.hero.kwTitle, W / 2, 262);
+  ctx.fillStyle = '#C8372D'; { let sz = 92; ctx.font = `700 ${sz}px ${serif}`; while (sz > 50 && ctx.measureText(Y.hero.kwTitle).width > W - 120) { sz -= 4; ctx.font = `700 ${sz}px ${serif}`; } } ctx.fillText(Y.hero.kwTitle, W / 2, 262);
   try { const img = await loadImg(SHEEP_PNG); const h = 540, w = Math.round(h * img.naturalWidth / img.naturalHeight); ctx.drawImage(img, W / 2 - w / 2, 290, w, h); } catch { /* */ }
   // 크림 패널
   ctx.fillStyle = '#FFFFFF'; ctx.shadowColor = 'rgba(160,80,40,.18)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12; rrect(ctx, 70, 850, W - 140, 860, 48); ctx.fill(); ctx.shadowColor = 'transparent';
   ctx.fillStyle = '#C8372D';
-  yf.kw.forEach((k, i) => { ctx.font = `700 ${k.length > 4 ? 84 : 100}px ${serif}`; ctx.fillText(`#${k}`, W / 2, 1010 + i * 150); });
+  // 키워드가 길면(영어 등) 패널 너비에 맞게 글자 크기를 줄임
+  yf.kw.forEach((k, i) => { let sz = k.length > 4 ? 84 : 100; ctx.font = `700 ${sz}px ${serif}`; while (sz > 40 && ctx.measureText(`#${k}`).width > W - 220) { sz -= 4; ctx.font = `700 ${sz}px ${serif}`; } ctx.fillText(`#${k}`, W / 2, 1010 + i * 150); });
   ctx.strokeStyle = '#EAD7C0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(170, 1380); ctx.lineTo(W - 170, 1380); ctx.stroke();
-  const rows = [[Y.hero.scoreLabel, `${yf.score} · ${Y.hero.bandName[yf.band]}`], [Y.card.best, ms(Y, yf.best)], [Y.card.color, S.yong[chart.fav.yong].color]];
+  const rows = [[Y.hero.scoreLabel, `${yf.score} · ${Y.hero.bandName[yf.band]}`], [Y.card.best, msShort(Y, yf.best)], [Y.card.color, S.yong[chart.fav.yong].color]];
   rows.forEach(([a, b], i) => {
     const y = 1462 + i * 82;
     ctx.textAlign = 'left'; ctx.fillStyle = '#9A7F68'; ctx.font = `600 36px ${sans}`; ctx.fillText(a, 170, y);
-    ctx.textAlign = 'right'; ctx.fillStyle = '#3B2320'; ctx.font = `700 40px ${sans}`; ctx.fillText(b, W - 170, y);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#3B2320'; let sz = 40; ctx.font = `700 ${sz}px ${sans}`; while (sz > 24 && ctx.measureText(b).width > 520) { sz -= 2; ctx.font = `700 ${sz}px ${sans}`; } ctx.fillText(b, W - 170, y);
   });
   ctx.textAlign = 'center'; ctx.fillStyle = '#8E1D17'; ctx.font = `700 40px ${serif}`; ctx.fillText(Y.card.brand, W / 2, 1800);
   ctx.font = `500 30px ${sans}`; ctx.fillStyle = '#9A7F68'; ctx.fillText(Y.card.site, W / 2, 1850);

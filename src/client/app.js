@@ -662,7 +662,7 @@ function buildToc() {
   const secs = $$('section.sec', view).filter(s => $('h2', s) && !s.classList.contains('tcard'));
   if (secs.length < 6) return;
   const nav = document.createElement('nav');
-  nav.className = 'c2-toc'; nav.setAttribute('aria-label', '목차');
+  nav.className = 'c2-toc'; nav.setAttribute('aria-label', (M && M.ui.toc) || '목차');
   nav.innerHTML = secs.map((s, i) => { s.id = s.id || `sec-${i}`; const t = $('h2', s).textContent.split(/\s[—·-]\s/)[0].replace(/\(.*?\)/g, '').trim(); return `<a href="#${s.id}">${esc(t.length > 9 ? t.slice(0, 9) + '…' : t)}</a>`; }).join('');
   const anchor = $('.tcard', view) || secs[0];
   anchor.before(nav);
@@ -701,7 +701,7 @@ function renderMaster() {
   const typeCard = ty ? TV.typeCardHTML(M.types, ty, D.typeImgs, `/${C}/type/`) : '';
   app().innerHTML = `<nav class="mpick" aria-label="${esc(MU.pick)}">${pick}</nav><div class="mview m-${m}">${head}${typeCard}${content}</div>`;
   buildToc();
-  $('#typeShare')?.addEventListener('click', () => makeAndShowCard($('#typeShare'), () => TV.makeTypeCard(M.types, ty, D.typeImgs, location.host), `type-${ty.slug}.png`, `나의 60타입은 ${TV.typeName(M.types, ty)} ${location.origin}/${C}/type/${ty.slug}/`));
+  $('#typeShare')?.addEventListener('click', () => makeAndShowCard($('#typeShare'), () => TV.makeTypeCard(M.types, ty, D.typeImgs, location.host), `type-${ty.slug}.png`, `${M.types.shareText ? M.types.shareText.replace('{name}', TV.typeName(M.types, ty)) : `나의 60타입은 ${TV.typeName(M.types, ty)}`} ${location.origin}/${C}/type/${ty.slug}/`));
   $('#unlockBtn')?.addEventListener('click', () => unlockWithAd(m, () => renderMaster()));
   // 시운 다이얼: 칸(시간대)을 누르면 그 시간의 풀이 하나만 아래에 보여 줌 (화면은 움직이지 않음)
   const selHour = i => {
@@ -782,7 +782,7 @@ function bindCompat(p, inv) {
     const partner = E.profileFrom({ name: pt.name || '', y: pt.y, m: pt.m, d: pt.d, sijin: pt.sijin ?? null, timeMode: pt.sijin === null || pt.sijin === undefined ? 'unknown' : 'sijin', country: raw.country, gender: pt.gender || null });
     const cp = MV.compatReading(M, S, p, partner, kind);
     const key = pairKey(p, partner, kind), opened = compatOpen(key);
-    const nm1 = p.name || U.me || '나', nm2 = pt.name || M.ui.relKinds[kind];
+    const nm1 = p.name || U.me || (S && S.ui.me) || '나', nm2 = pt.name || M.ui.relKinds[kind];
     // 무료 요약
     let html = `<div class="love-res cp-sum"><p class="cp-kind">${esc(M.ui.relKinds[kind])}</p>
 <p class="pair"><span>${esc(nm1)}</span><i aria-hidden="true">${kind === 'idol' ? '★' : '+'}</i><span>${esc(nm2)}</span></p>
@@ -1233,10 +1233,10 @@ function adThen(done) {
 }
 // 같은 사람(이름·생년월일·시간·국가·성별)이 다시 와도 점수·문장이 바뀌지 않도록 처음 결과를 기기에 고정
 function fixedYear(chart) {
-  const raw = activeRaw(), key = `${(raw?.name || '').trim()}|${E.profileSeed(raw || {})}`;
+  const raw = activeRaw(), k0 = `${(raw?.name || '').trim()}|${E.profileSeed(raw || {})}`, key = C === 'ko' ? k0 : `${C}|${k0}`; // 키워드는 언어마다 다르므로 언어별로 고정
   const all = store.get(`y${YEAR}fix`, {});
   if (all[key] && all[key].v === 1) return all[key].yf;
-  const yf = yearFortune(chart, YEAR);
+  const yf = yearFortune(chart, YEAR, M.year.kw);
   const keys = Object.keys(all); if (keys.length >= 6) delete all[keys[0]]; // 최근 6명만
   all[key] = { v: 1, yf };
   try { store.set(`y${YEAR}fix`, all); } catch { /* 저장 공간이 없으면 그대로 계산값 사용 */ }

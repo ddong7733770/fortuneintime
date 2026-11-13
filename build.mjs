@@ -4,10 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import config from './site.config.mjs';
-import Z27 from './src/i18n/masters/ko-zodiac27.js';
 import { GOAT } from './src/client/goat.js';
 import { branchRel } from './src/saju.js';
-import T60 from './src/i18n/masters/ko-types.js';
 import { typeOf, TYPES60 } from './src/masters.js';
 import * as TV from './src/client/types-view.js';
 import { LANGS, TZ, SLUG, SIGN_GLYPH, BLOOD_LABEL, fmt, esc, sijinRange, dialLabels, dialSVG, todayIn, genericReading, readingHTML, indexListHTML, fmtDate } from './src/content.js';
@@ -263,7 +261,7 @@ ${header(c)}
 <div class="now-text"><p class="now-is" id="nowIs"></p><p class="now-until">${esc(U.untilChange)} <b id="nowCount">--:--:--</b></p></div>
 </section>
 <h1 class="page-h">${esc(Lc.tagline)}</h1>
-${c === 'ko' ? `<a class="y-promo" href="/${c}/${Y27}/"><span class="y-promo-g">${GOAT}</span><span><b>${esc(Z27.promo.title)}</b><small>${esc(Z27.promo.sub)}</small></span><i aria-hidden="true">›</i></a>` : ''}
+${Z27S[c] ? `<a class="y-promo" href="/${c}/${Y27}/"><span class="y-promo-g">${GOAT}</span><span><b>${esc(Z27S[c].promo.title)}</b><small>${esc(Z27S[c].promo.sub)}</small></span><i aria-hidden="true">›</i></a>` : ''}
 <p class="invite-banner" id="inviteBanner" hidden></p>
 <section class="saved-card" id="savedCard" hidden>
 <h2>${esc(U.savedTitle)}</h2><p class="muted">${esc(U.savedNote)}</p>
@@ -432,6 +430,9 @@ function otherIndexLinks(c, except) {
 // ── 4-2) 2027 정미년 띠별 운세 (한국어 먼저) — 검색 노출용 공개 페이지
 // 좋은 달: 그 달(15일 기준 월지)이 내 띠와 합·삼합 / 조심할 달: 충·형. 양력 1월=丑 … 12월=子
 const Y27 = 2027;
+// 언어별 띠별 2027 문장 (src/i18n/masters/{언어}-zodiac27.js 가 있는 언어만 페이지를 만듦)
+const Z27S = {};
+for (const c of LANGS) { const f = path.join(ROOT, `src/i18n/masters/${c}-zodiac27.js`); if (fs.existsSync(f)) Z27S[c] = (await import(`./src/i18n/masters/${c}-zodiac27.js`)).default; }
 // 60타입 띠 동물 그림: public/images/animals/{rat,ox,…}.webp 가 있는 것만 씀 (없으면 한자 배지)
 const TYPE_IMGS = ['mouse', 'cow', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'sheep', 'monkey', 'cock', 'dog', 'pig'].filter(a => fs.existsSync(path.join(ROOT, 'public/images/animals', `${a}.webp`)));
 function monthsFor(a) {
@@ -440,12 +441,12 @@ function monthsFor(a) {
   return { good, care };
 }
 function buildYear(c) {
-  if (c !== 'ko') return;
-  const Lc = L[c], Z = Z27, names = Lc.animals;
+  if (!Z27S[c]) return;
+  const Lc = L[c], Z = Z27S[c], names = Z.animalName || Lc.animals;
   const star = n => `<span class="y-stars" aria-label="${n}/5">${'★'.repeat(n)}<i>${'★'.repeat(5 - n)}</i></span>`;
   const years = i => { const ys = []; for (let y = 2014; y >= 1950; y--) if ((((y - 4) % 12) + 12) % 12 === i) ys.push(y); return ys.slice(0, 5).map(y => fmt(Z.bornIn, { y })).join(' · '); };
   const cta = `<div class="y-cta"><a class="btn-primary y-btn" href="/${c}/result/year/">${esc(Z.cta)}</a></div>`;
-  const hero = (h, sub) => `<section class="y-hero y-hero-s"><p class="y-kick">2027 丁未年 · 붉은 양의 해</p><div class="y-goat sm">${GOAT}</div><h1 class="y-title">${esc(h)}</h1>${sub ? `<p class="y-who">${esc(sub)}</p>` : ''}</section>`;
+  const hero = (h, sub) => `<section class="y-hero y-hero-s"><p class="y-kick">${esc(Lc.masters?.year?.hero.kicker || '2027 丁未年 · 붉은 양의 해')}</p><div class="y-goat sm">${GOAT}</div><h1 class="y-title">${esc(h)}</h1>${sub ? `<p class="y-who">${esc(sub)}</p>` : ''}</section>`;
   // 모음
   const grid = names.map((n, i) => `<a class="y-zc" href="/${c}/${Y27}/${SLUG.zodiac[i]}/"><b>${esc(n)}</b>${star(Z.animals[i].stars)}<small>${esc(Z.animals[i].hook)}</small></a>`).join('');
   const hubBody = `<div class="y27 y-static">${hero(Z.hubTitle)}
@@ -458,7 +459,7 @@ ${adSlot('content', Lc.ui.ad)}
   addPage(`/${c}/${Y27}/`, null);
   names.forEach((n, i) => {
     const A = Z.animals[i], { good, care } = monthsFor(i), lb = Z.labels;
-    const mm = list => list.length ? list.map(m => fmt(Z.monthFmt, { m })).join(' · ') : '—';
+    const mm = list => list.length ? list.map(m => (Z.monthNames ? Z.monthNames[m - 1] : fmt(Z.monthFmt, { m }))).join(' · ') : '—';
     const title = fmt(Z.pageTitle, { a: n });
     const rows = [['money', A.money], ['love', A.love], ['work', A.work], ['health', A.health]];
     const bodyHTML = `<div class="y27 y-static">${hero(title, A.hook)}
@@ -480,14 +481,14 @@ ${adSlot('content', Lc.ui.ad)}
 
 // ── 4-3) 60타입(일주) 공개 페이지 (한국어 먼저)
 function buildTypes(c) {
-  if (c !== 'ko') return;
-  const T = T60, base = `/${c}/type/`;
+  const T = L[c].masters?.types; if (!T) return;
+  const base = `/${c}/type/`;
   const cta = `<div class="y-cta"><a class="btn-primary t-find" href="/${c}/" data-hub="${base}">${esc(T.cta)}</a></div>`;
   const tScript = `<script type="module" src="/assets/type-find.js?v=${VERSION}"></script>`;
   // 모음: 천간(10)별로 묶어 6개씩
   const groups = T.stems.map((st, si) => {
     const list = TYPES60.filter(x => x.s === si).sort((a, b) => a.b - b.b).map(x => typeOf(x.s, x.b));
-    return `<section class="sec t-group"><h2>${esc(st.ko)}(${'甲乙丙丁戊己庚辛壬癸'[si]}) · ${esc(st.img)}</h2><div class="t-grid">${list.map(t => `<a class="tc-mini" data-slug="${t.slug}" style="--ta:${TV.EL_AC[t.el]};--tb:${TV.EL_BG[t.el]}" href="${base}${t.slug}/">${TV.typeBadge(t, null, 'sm')}<span><b>${esc(TV.typeKo(T, t))}일주</b><small>${esc(TV.typeName(T, t))}</small></span></a>`).join('')}</div></section>`;
+    return `<section class="sec t-group"><h2>${esc(st.ko)}${T.sep ? ' ' : ''}(${'甲乙丙丁戊己庚辛壬癸'[si]}) · ${esc(st.img)}</h2><div class="t-grid">${list.map(t => `<a class="tc-mini" data-slug="${t.slug}" data-mine="${esc(T.ui.title)}" style="--ta:${TV.EL_AC[t.el]};--tb:${TV.EL_BG[t.el]}" href="${base}${t.slug}/">${TV.typeBadge(t, null, 'sm')}<span><b>${esc(TV.typePillar(T, t))}</b><small>${esc(TV.typeName(T, t))}</small></span></a>`).join('')}</div></section>`;
   }).join('');
   const hub = `<section class="sec t-intro"><h1 class="page-h">${esc(T.hubTitle)}</h1><p class="lead">${esc(T.hubLead)}</p>${cta}</section>${groups}${adSlot('content', L[c].ui.ad)}`;
   write(`${c}/type/index.html`, staticShell(c, { title: `${T.hubTitle} | ${BRAND}`, desc: T.hubDesc, canonical: base, alts: null, h1: '', bodyHTML: hub, bnav: true, sticky: false, cls: 'page-type', script: tScript }));
@@ -497,7 +498,7 @@ function buildTypes(c) {
     const title = fmt(T.pageTitle, { ko: TV.typeKo(T, t), h: TV.typeH(t), name: TV.typeName(T, t) });
     const body = `<nav class="crumbs"><a href="${base}">${esc(T.hubTitle.split(' —')[0])}</a></nav>
 <section class="sec tcard" style="--ta:${TV.EL_AC[t.el]};--tb:${TV.EL_BG[t.el]}">
-<div class="tc-top">${TV.typeBadge(t, null, 'lg')}<div><p class="tc-ko">${esc(TV.typeKo(T, t))}일주 <small>${TV.typeH(t)}</small></p><h1 class="tc-name">${esc(TV.typeName(T, t))}</h1><p class="tc-tag">${esc(TV.typeTag(T, t))}</p></div></div>
+<div class="tc-top">${TV.typeBadge(t, null, 'lg')}<div><p class="tc-ko">${esc(TV.typePillar(T, t))} <small>${TV.typeH(t)}</small></p><h1 class="tc-name">${esc(TV.typeName(T, t))}</h1><p class="tc-tag">${esc(TV.typeTag(T, t))}</p></div></div>
 <ul class="tc-kw">${TV.typeKw(T, t).map(k => `<li>#${esc(k)}</li>`).join('')}</ul>
 ${TV.typeDetailHTML(T, t, null, base)}</section>
 ${cta}${adSlot('content', L[c].ui.ad)}`;
