@@ -433,7 +433,7 @@ function otherIndexLinks(c, except) {
 // 좋은 달: 그 달(15일 기준 월지)이 내 띠와 합·삼합 / 조심할 달: 충·형. 양력 1월=丑 … 12월=子
 const Y27 = 2027;
 // 60타입 띠 동물 그림: public/images/animals/{rat,ox,…}.webp 가 있는 것만 씀 (없으면 한자 배지)
-const TYPE_IMGS = ['rat', 'ox', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'goat', 'monkey', 'rooster', 'dog', 'pig'].filter(a => fs.existsSync(path.join(ROOT, 'public/images/animals', `${a}.webp`)));
+const TYPE_IMGS = ['mouse', 'cow', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'sheep', 'monkey', 'cock', 'dog', 'pig'].filter(a => fs.existsSync(path.join(ROOT, 'public/images/animals', `${a}.webp`)));
 function monthsFor(a) {
   const good = [], care = [];
   for (let m = 1; m <= 12; m++) { const r = branchRel(m % 12, a); if (r === 'hap' || r === 'samhap') good.push(m); if (r === 'chung' || r === 'hyeong') care.push(m); }
@@ -487,7 +487,7 @@ function buildTypes(c) {
   // 모음: 천간(10)별로 묶어 6개씩
   const groups = T.stems.map((st, si) => {
     const list = TYPES60.filter(x => x.s === si).sort((a, b) => a.b - b.b).map(x => typeOf(x.s, x.b));
-    return `<section class="sec t-group"><h2>${esc(st.ko)}(${'甲乙丙丁戊己庚辛壬癸'[si]}) · ${esc(st.img)}</h2><div class="t-grid">${list.map(t => `<a class="tc-mini" data-slug="${t.slug}" style="--ta:${TV.EL_AC[t.el]};--tb:${TV.EL_BG[t.el]}" href="${base}${t.slug}/">${TV.typeBadge(t, TYPE_IMGS, 'sm')}<span><b>${esc(TV.typeKo(T, t))}일주</b><small>${esc(TV.typeName(T, t))}</small></span></a>`).join('')}</div></section>`;
+    return `<section class="sec t-group"><h2>${esc(st.ko)}(${'甲乙丙丁戊己庚辛壬癸'[si]}) · ${esc(st.img)}</h2><div class="t-grid">${list.map(t => `<a class="tc-mini" data-slug="${t.slug}" style="--ta:${TV.EL_AC[t.el]};--tb:${TV.EL_BG[t.el]}" href="${base}${t.slug}/">${TV.typeBadge(t, null, 'sm')}<span><b>${esc(TV.typeKo(T, t))}일주</b><small>${esc(TV.typeName(T, t))}</small></span></a>`).join('')}</div></section>`;
   }).join('');
   const hub = `<section class="sec t-intro"><h1 class="page-h">${esc(T.hubTitle)}</h1><p class="lead">${esc(T.hubLead)}</p>${cta}</section>${groups}${adSlot('content', L[c].ui.ad)}`;
   write(`${c}/type/index.html`, staticShell(c, { title: `${T.hubTitle} | ${BRAND}`, desc: T.hubDesc, canonical: base, alts: null, h1: '', bodyHTML: hub, bnav: true, sticky: false, cls: 'page-type', script: tScript }));
@@ -497,9 +497,9 @@ function buildTypes(c) {
     const title = fmt(T.pageTitle, { ko: TV.typeKo(T, t), h: TV.typeH(t), name: TV.typeName(T, t) });
     const body = `<nav class="crumbs"><a href="${base}">${esc(T.hubTitle.split(' —')[0])}</a></nav>
 <section class="sec tcard" style="--ta:${TV.EL_AC[t.el]};--tb:${TV.EL_BG[t.el]}">
-<div class="tc-top">${TV.typeBadge(t, TYPE_IMGS, 'lg')}<div><p class="tc-ko">${esc(TV.typeKo(T, t))}일주 <small>${TV.typeH(t)}</small></p><h1 class="tc-name">${esc(TV.typeName(T, t))}</h1><p class="tc-tag">${esc(TV.typeTag(T, t))}</p></div></div>
+<div class="tc-top">${TV.typeBadge(t, null, 'lg')}<div><p class="tc-ko">${esc(TV.typeKo(T, t))}일주 <small>${TV.typeH(t)}</small></p><h1 class="tc-name">${esc(TV.typeName(T, t))}</h1><p class="tc-tag">${esc(TV.typeTag(T, t))}</p></div></div>
 <ul class="tc-kw">${TV.typeKw(T, t).map(k => `<li>#${esc(k)}</li>`).join('')}</ul>
-${TV.typeDetailHTML(T, t, TYPE_IMGS, base)}</section>
+${TV.typeDetailHTML(T, t, null, base)}</section>
 ${cta}${adSlot('content', L[c].ui.ad)}`;
     const desc = fmt(T.pageDesc, { ko: TV.typeKo(T, t), h: TV.typeH(t), tag: TV.typeTag(T, t) }).slice(0, 155);
     write(`${c}/type/${t.slug}/index.html`, staticShell(c, { title: `${title} | ${BRAND}`, desc, canonical: `${base}${t.slug}/`, alts: null, h1: '', bodyHTML: body, bnav: true, sticky: false, cls: 'page-type', script: tScript }));

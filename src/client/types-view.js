@@ -1,7 +1,8 @@
 // 60타입(일주) 카드 — 해운 화면과 공개 페이지가 함께 씀 (다른 모듈에 기대지 않음)
 const STEM_H = '甲乙丙丁戊己庚辛壬癸';
 const BRANCH_H = '子丑寅卯辰巳午未申酉戌亥';
-const ANIMAL_SLUG = ['rat', 'ox', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'goat', 'monkey', 'rooster', 'dog', 'pig'];
+// 띠 동물 그림 파일 이름 (子丑寅卯辰巳午未申酉戌亥 순, public/images/animals/{이름}.webp·png)
+const ANIMAL_SLUG = ['mouse', 'cow', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'sheep', 'monkey', 'cock', 'dog', 'pig'];
 // 오행별 배경·강조색 (화는 붉은 양과 겹치지 않게 살구색)
 export const EL_BG = ['#E3F3E6', '#FFE9D6', '#F8EDCF', '#EEF1F5', '#DFEAF8'];
 export const EL_AC = ['#2F855A', '#D2543A', '#B7791F', '#5F6F86', '#2B6CB0'];
