@@ -3,7 +3,7 @@ export default {
   subBrand: "K-saju · 時運",
   tagline: 'Your fortune, hour by hour',
   siteDesc: 'Your daily horoscope and Korean-style fortune by birth date and hour. A 12-hour destiny dial, love compatibility, a fortune time machine and lucky charm wallpapers, refreshed twice a day.',
-  intro: 'Fortune in Time blends your Western star sign with the Korean and Chinese zodiac and the twelve traditional two-hour periods (sijin) to show how your luck flows hour by hour. You can change your destiny once every morning and evening at 6.',
+  intro: 'forTime blends your Western star sign with the Korean and Chinese zodiac and the twelve traditional two-hour periods (sijin) to show how your luck flows hour by hour. You can change your destiny once every morning and evening at 6.',
   disclaimer: 'All fortunes are for entertainment only and should not be used as the basis for important decisions.',
 
   contactForm: {"name": "Name (optional)", "email": "Email for our reply", "kind": "Topic", "kinds": ["Using the service", "Bug report", "Partnership / ads", "Other"], "msg": "Message", "send": "Send message", "ok": "Your message has been received. We will reply to the email you left.", "alt": "Or email us directly at the address below.", "need": "Please enter your email and a message (5+ characters).", "err": "Please try again in a moment.", "limit": "Too many messages at once. Please try again later."},

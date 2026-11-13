@@ -3,7 +3,7 @@ export default {
   subBrand: "K-saju · 時運",
   tagline: 'Keberuntunganmu, jam demi jam',
   siteDesc: 'Ramalan zodiak dan shio harian berdasarkan tanggal dan jam lahir. Dial takdir 12 waktu, kecocokan pasangan, mesin waktu, dan wallpaper keberuntungan, diperbarui dua kali sehari.',
-  intro: 'Fortune in Time memadukan zodiak, shio, dan dua belas waktu tradisional Korea untuk menunjukkan bagaimana keberuntunganmu mengalir jam demi jam. Kamu bisa mengubah takdir sekali setiap pukul 6 pagi dan 6 sore.',
+  intro: 'forTime memadukan zodiak, shio, dan dua belas waktu tradisional Korea untuk menunjukkan bagaimana keberuntunganmu mengalir jam demi jam. Kamu bisa mengubah takdir sekali setiap pukul 6 pagi dan 6 sore.',
   disclaimer: 'Semua ramalan hanya untuk hiburan dan tidak boleh dijadikan dasar keputusan penting.',
 
   contactForm: {"name": "Nama (opsional)", "email": "Email untuk balasan", "kind": "Topik", "kinds": ["Penggunaan layanan", "Laporan masalah", "Kerja sama / iklan", "Lainnya"], "msg": "Pesan", "send": "Kirim pesan", "ok": "Pesanmu sudah kami terima. Kami akan membalas ke email yang kamu tinggalkan.", "alt": "Atau kirim email langsung ke alamat di bawah.", "need": "Isi email dan pesan (min. 5 karakter).", "err": "Coba lagi sebentar lagi.", "limit": "Terlalu banyak pesan sekaligus. Coba lagi nanti."},

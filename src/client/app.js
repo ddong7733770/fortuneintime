@@ -1,4 +1,4 @@
-// Fortune in Time 화면 동작: 입력 페이지와 결과 4탭(운세, 궁합, 타임머신, 부적)
+// forTime 화면 동작: 입력 페이지와 결과 4탭(운세, 궁합, 타임머신, 부적)
 import * as E from './engine.js';
 import { mountPlace } from './place.js';
 import { mountBoard } from './board.js';
@@ -6,6 +6,7 @@ import { basisHTML, domainReading, sajuTabHTML, todayReading, todayReadingHTML }
 import * as MV from './masters-view.js';
 import { freeMaster, MASTERS, yearFortune } from './masters.js';
 import * as YV from './year-view.js';
+import * as SFX from './sfx.js';
 import * as TV from './types-view.js';
 import { typeOf } from './masters.js';
 import { dialSVG, dialLabels, fmt, esc, pips, sijinRange, fmtDate, BLOOD_LABEL, SIGN_GLYPH, domainText, hourText, summaryText, loveTexts, startHands } from './content.js';
@@ -895,7 +896,7 @@ function renderAdmin() {
       const items = [...r.items].sort((a, b) => a.read - b.read || b.id - a.id);
       out.innerHTML = items.length ? items.map(i => `<details class="inq${i.read ? '' : ' is-new'}" data-id="${i.id}"><summary>${i.read ? '' : '<b class="inq-dot">NEW</b>'}<span class="inq-k">${esc(i.kind || '문의')}</span><span class="inq-s">${esc(i.msg.slice(0, 40))}</span><time>${new Date(i.created).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time></summary>
 <dl class="inq-meta"><div><dt>이름</dt><dd>${esc(i.name || '-')}</dd></div><div><dt>이메일</dt><dd>${esc(i.email)}</dd></div><div><dt>언어·국가</dt><dd>${esc(KD[i.lang] || i.lang || '-')} · ${esc(i.country ? ((dn && dn.of(i.country)) || i.country) : '-')}</dd></div></dl>
-<p class="inq-msg">${esc(i.msg)}</p><p class="inq-act"><a class="btn-primary sm" href="mailto:${encodeURIComponent(i.email)}?subject=${encodeURIComponent('[Fortune in Time] 문의 답변')}">메일로 답장</a><button type="button" class="btn-ghost sm" data-del="${i.id}">삭제</button></p></details>`).join('') : '<p class="muted">아직 들어온 문의가 없습니다.</p>';
+<p class="inq-msg">${esc(i.msg)}</p><p class="inq-act"><a class="btn-primary sm" href="mailto:${encodeURIComponent(i.email)}?subject=${encodeURIComponent('[forTime] 문의 답변')}">메일로 답장</a><button type="button" class="btn-ghost sm" data-del="${i.id}">삭제</button></p></details>`).join('') : '<p class="muted">아직 들어온 문의가 없습니다.</p>';
       $$('details.inq', out).forEach(d => d.addEventListener('toggle', async () => {
         if (!d.open || !d.classList.contains('is-new')) return;
         d.classList.remove('is-new'); $('.inq-dot', d)?.remove();
@@ -953,6 +954,7 @@ async function changeFate() {
   if (before.left <= 0) return;
   fateBusy = true;
   const btn = $('#changeBtn'); if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
+  if (SFX.begin()) SFX.mystic(0); // 신비로운 효과음 (소리 끔 설정이면 울리지 않음)
   const wait = ms => new Promise(r => setTimeout(r, reduceMotion ? Math.min(ms, 150) : ms));
   const ov = fateOverlay();
   document.body.append(ov);

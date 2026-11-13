@@ -83,3 +83,14 @@ export function flight(dur) {
   if (nf) { nf.frequency.setValueAtTime(500, t); nf.frequency.linearRampToValueAtTime(1600, t + dur * 0.5); nf.frequency.linearRampToValueAtTime(600, t + dur); }
   chime(dur + 0.05);
 }
+// 운명 바꾸기: 신비로운 소리 — 낮은 울림 위로 반짝이는 종소리가 흩어지고, 바람이 휘감아 오름
+export const mystic = at => {
+  tone('sine', at, 2.2, N(45), N(45), 0.35);                 // 낮은 울림
+  tone('sine', at + 0.05, 2.0, N(52), N(52), 0.22);
+  noise(at, 1.6, { f0: 300, f1: 2400, q: 3, vol: 0.12, attack: 0.5, release: 0.8 }); // 휘감는 바람
+  [76, 83, 88, 91, 95, 100, 103].forEach((n, i) => {           // 반짝이는 종소리(오음계)
+    tone('sine', at + 0.25 + i * 0.13, 1.4, N(n), N(n), 0.16);
+    tone('triangle', at + 0.25 + i * 0.13, 0.6, N(n + 12), N(n + 12), 0.05);
+  });
+  tone('sine', at + 1.25, 1.6, N(88), N(88.3), 0.12);          // 마지막 여운
+};

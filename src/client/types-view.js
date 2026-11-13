@@ -88,7 +88,7 @@ export async function makeTypeCard(T, t, imgs, site) {
   ctx.fillStyle = '#FFFFFF'; rr(ctx, 140, 1400, W - 280, 200, 36); ctx.fill();
   ctx.fillStyle = '#6E6A62'; ctx.font = `600 36px ${sans}`; ctx.fillText(T.ui.best, W / 2, 1468);
   ctx.fillStyle = '#1A1A1A'; ctx.font = `700 54px ${serif}`; ctx.fillText(`${typeKo(T, best)}일주 · ${typeName(T, best)}`, W / 2, 1548);
-  ctx.fillStyle = ac; ctx.font = `700 40px ${serif}`; ctx.fillText('Fortune in Time', W / 2, 1790);
+  ctx.fillStyle = ac; ctx.font = `700 40px ${serif}`; ctx.fillText('forTime', W / 2, 1790);
   ctx.fillStyle = '#6E6A62'; ctx.font = `500 30px ${sans}`; ctx.fillText(site, W / 2, 1840);
   return new Promise(ok => cv.toBlob(ok, 'image/png'));
 }

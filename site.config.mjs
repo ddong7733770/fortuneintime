@@ -1,8 +1,8 @@
-// Fortune in Time 사이트 설정 — 배포 전에 이 파일만 고치면 됩니다.
+// forTime 사이트 설정 — 배포 전에 이 파일만 고치면 됩니다.
 export default {
   // 실제 구매한 도메인 (끝에 / 없이)
   siteUrl: 'https://fortuneintime.pages.dev', // 도메인을 사면 그 주소(https://도메인)로 바꾸세요
-  brand: 'Fortune in Time',
+  brand: 'forTime',
 
   // 문의 이메일 (정책 페이지와 문의 페이지에 표시됨)
   contactEmail: 'contact@fortuneintime.com',

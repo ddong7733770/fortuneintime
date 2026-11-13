@@ -59,7 +59,7 @@ export function siunHTML(M, L, d, chart, nowMinute) {
     const rl = h.rel ? H.rel[h.rel] : '';
     const avoid = h.rel === 'chung' ? H.avoidChung : H.avoid[h.grp];
     const body = h.dawn ? `<p class="m-p">${esc(H.dawn)} ${esc(g)}</p>`
-      : `<p class="m-p">${esc(g)}${rl ? ` ${esc(rl)}` : ''}</p><p class="hr-do"><span>${esc(H.doLabel)}</span>${esc(H.doIt[h.tg])}<span>${esc(H.avoidLabel)}</span>${esc(avoid)}</p>`;
+      : `<p class="m-p">${esc(g)}${rl ? ` ${esc(rl)}` : ''}</p><p class="hr-do"><span>${esc(H.doLabel)}</span>${esc(H.doIt[h.tg])}</p><p class="hr-do hr-avoid"><span>${esc(H.avoidLabel)}</span>${esc(avoid)}</p>`;
     const bw = h.i === best.i ? 'best' : h.i === worst.i ? 'worst' : '';
     return `<article class="hr hr-b${h.band}${h.i === cur ? ' is-now' : ''}${h.dawn ? ' is-dawn' : ''}${bw ? ` is-${bw}` : ''}" id="hr-${h.i}"${h.i === cur ? '' : ' hidden'}>
 ${bw ? `<p class="hr-tagrow"><em class="hr-tag t-${bw}">${esc(U[bw === 'best' ? 'bestTag' : 'worstTag'])}</em></p>` : ''}<header><b>${esc(L.sijin[h.i])}</b><span class="hr-t">${sijinRange(h.i)}</span>${h.i === cur ? `<em>${esc(U.siunNow)}</em>` : ''}<span class="hr-s">${h.score}</span><span class="hr-band">${esc(U.band[h.band])}</span></header>
@@ -299,7 +299,7 @@ export async function makeCompatCard(M, cp, n1, n2, kind, site) {
     ctx.textAlign = 'left'; ctx.fillStyle = '#6E5A60'; ctx.fillText(t, 200, yy);
     for (let j = 0; j < 5; j++) { ctx.beginPath(); ctx.arc(560 + j * 70, yy - 13, 20, 0, Math.PI * 2); ctx.fillStyle = j < cp.axes[k] ? pk : 'rgba(192,86,107,.18)'; ctx.fill(); }
   });
-  ctx.textAlign = 'center'; ctx.fillStyle = pk; ctx.font = `700 40px ${serif}`; ctx.fillText('Fortune in Time', W / 2, 1790);
+  ctx.textAlign = 'center'; ctx.fillStyle = pk; ctx.font = `700 40px ${serif}`; ctx.fillText('forTime', W / 2, 1790);
   ctx.fillStyle = '#8A6A72'; ctx.font = `500 30px ${sans}`; ctx.fillText(site, W / 2, 1840);
   return new Promise(ok => cv.toBlob(ok, 'image/png'));
 }

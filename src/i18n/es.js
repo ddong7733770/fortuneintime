@@ -3,7 +3,7 @@ export default {
   subBrand: "K-saju · 時運",
   tagline: 'Tu suerte, hora por hora',
   siteDesc: 'Tu horóscopo diario y la fortuna coreana según tu fecha y hora de nacimiento. Reloj del destino de 12 horas, compatibilidad, máquina del tiempo y amuletos de la suerte, dos veces al día.',
-  intro: 'Fortune in Time combina tu signo del zodiaco, el horóscopo chino y las doce horas tradicionales coreanas para mostrarte cómo fluye tu suerte hora por hora. Puedes cambiar tu destino una vez cada día a las 6 de la mañana y a las 6 de la tarde.',
+  intro: 'forTime combina tu signo del zodiaco, el horóscopo chino y las doce horas tradicionales coreanas para mostrarte cómo fluye tu suerte hora por hora. Puedes cambiar tu destino una vez cada día a las 6 de la mañana y a las 6 de la tarde.',
   disclaimer: 'Todas las predicciones son solo para entretenimiento y no deben usarse para tomar decisiones importantes.',
 
   contactForm: {"name": "Nombre (opcional)", "email": "Correo para responderte", "kind": "Tema", "kinds": ["Uso del servicio", "Reportar un error", "Alianzas / publicidad", "Otro"], "msg": "Mensaje", "send": "Enviar mensaje", "ok": "Hemos recibido tu mensaje. Te responderemos al correo que dejaste.", "alt": "O escríbenos directamente a esta dirección.", "need": "Escribe tu correo y un mensaje (5+ caracteres).", "err": "Inténtalo de nuevo en un momento.", "limit": "Demasiados mensajes seguidos. Inténtalo más tarde."},

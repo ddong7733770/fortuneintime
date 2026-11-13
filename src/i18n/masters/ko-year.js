@@ -164,7 +164,7 @@ export default {
     '한 해는 열두 번의 기회입니다. 좋은 달을 기억해 두십시오.',
     '정미년의 불은 촛불입니다. 크게 태우기보다 오래 밝히십시오.',
   ],
-  card: { brand: 'Fortune in Time', site: 'fortuneintime.pages.dev', best: '최고의 달', color: '행운의 색', saved: '카드를 저장했습니다.', making: '카드를 만드는 중…', shareText: '2027 정미년, 나의 키워드는?', shareBtn: '공유하기', saveBtn: '이미지 저장', close: '닫기', hold: '이미지를 길게 눌러도 저장할 수 있습니다.', saveHint: '저장 창에서 \'이미지 저장\'을 누르면 사진첩(갤러리)에 저장됩니다.', fail: '카드를 만들지 못했습니다. 잠시 후 다시 시도해 주세요.' },
+  card: { brand: 'forTime', site: 'fortuneintime.pages.dev', best: '최고의 달', color: '행운의 색', saved: '카드를 저장했습니다.', making: '카드를 만드는 중…', shareText: '2027 정미년, 나의 키워드는?', shareBtn: '공유하기', saveBtn: '이미지 저장', close: '닫기', hold: '이미지를 길게 눌러도 저장할 수 있습니다.', saveHint: '저장 창에서 \'이미지 저장\'을 누르면 사진첩(갤러리)에 저장됩니다.', fail: '카드를 만들지 못했습니다. 잠시 후 다시 시도해 주세요.' },
   zodiacCta: '띠별 2027 운세 보기',
   guestCta: '내 사주로 보는 2027 신년운세',
 };

@@ -2,7 +2,7 @@ import { COUNTRY_SOLAR } from './countries.js';
 import * as SJ from './saju.js';
 export { SJ };
 
-// Fortune in Time 운세 엔진 — 브라우저와 빌드(Node) 양쪽에서 같은 코드를 씁니다.
+// forTime 운세 엔진 — 브라우저와 빌드(Node) 양쪽에서 같은 코드를 씁니다.
 // 같은 입력·같은 날짜·같은 회차면 언제나 같은 결과가 나옵니다(서버 저장 없음).
 
 export const MBTI = ['ISTJ','ISFJ','INFJ','INTJ','ISTP','ISFP','INFP','INTP','ESTP','ESFP','ENFP','ENTP','ESTJ','ESFJ','ENFJ','ENTJ'];

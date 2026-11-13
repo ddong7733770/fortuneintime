@@ -1,4 +1,4 @@
-// Fortune in Time 정적 사이트 빌드: `node build.mjs` → dist/ 폴더
+// forTime 정적 사이트 빌드: `node build.mjs` → dist/ 폴더
 // Cloudflare Pages 설정: 빌드 명령 `node build.mjs`, 출력 폴더 `dist`
 import fs from 'node:fs';
 import path from 'node:path';
