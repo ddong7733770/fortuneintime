@@ -1,4 +1,5 @@
 // 60타입(일주) 카드 — 해운 화면과 공개 페이지가 함께 씀 (다른 모듈에 기대지 않음)
+import { drawTypeBg } from './type-bg.js';
 const STEM_H = '甲乙丙丁戊己庚辛壬癸';
 const BRANCH_H = '子丑寅卯辰巳午未申酉戌亥';
 // 띠 동물 그림 파일 이름 (子丑寅卯辰巳午未申酉戌亥 순, public/images/animals/{이름}.webp·png)
@@ -58,7 +59,7 @@ const BR_SLUG = ['ja', 'chuk', 'in', 'myo', 'jin', 'sa', 'o', 'mi', 'sin', 'yu',
 const slugOf = (s, b) => `${ST_SLUG[s]}-${BR_SLUG[b]}`;
 const elOfStem = s => Math.floor(s / 2);
 
-// 공유 카드 (1080×1920): 이름 없이 타입만
+// 공유 카드 (1080×1920): 이름 없이 타입만. 천간별 하단 배경(type-bg.js), 큰 한자·동물 원형 없음
 const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
 function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 // 너비를 넘으면 글자 크기를 줄여서 한 줄에 맞춤
@@ -70,11 +71,10 @@ export async function makeTypeCard(T, t, imgs, site) {
   const ctx = cv.getContext('2d'), ac = EL_AC[t.el];
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#FFFFFF'); g.addColorStop(1, EL_BG[t.el]);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  ctx.globalAlpha = 0.08; ctx.fillStyle = ac; ctx.font = `700 1100px ${serif}`; ctx.textAlign = 'center'; ctx.fillText(BRANCH_H[t.b], W / 2, 1250); ctx.globalAlpha = 1;
+  ctx.textAlign = 'center';
+  drawTypeBg(ctx, W, H, t.s); // 천간별 하단 배경 (숲·꽃·태양…)
   ctx.fillStyle = '#6E6A62'; ctx.font = `600 38px ${sans}`; ctx.fillText(T.ui.cardTitle, W / 2, 170);
   // 그림
-  ctx.fillStyle = EL_BG[t.el]; ctx.beginPath(); ctx.arc(W / 2, 520, 270, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = ac; ctx.lineWidth = 6; ctx.stroke();
   const src = animalImg(imgs, t.b);
   let drawn = false;
   if (src) { try { const im = await loadImg(src.replace('.webp', '.png')).catch(() => loadImg(src)); const h = 440, w = Math.round(h * im.naturalWidth / im.naturalHeight); ctx.drawImage(im, W / 2 - w / 2, 300, w, h); drawn = true; } catch { /* */ } }
@@ -88,14 +88,19 @@ export async function makeTypeCard(T, t, imgs, site) {
   let ksz = 46, ws, tot;
   for (;;) { ctx.font = `700 ${ksz}px ${sans}`; ws = kw.map(k => ctx.measureText(k).width + 64); tot = ws.reduce((a, b) => a + b, 0) + (kw.length - 1) * 20; if (tot <= W - 100 || ksz <= 26) break; ksz -= 2; }
   let x = (W - tot) / 2;
-  kw.forEach((k, i) => { ctx.fillStyle = '#FFFFFF'; rr(ctx, x, 1220, ws[i], 92, 46); ctx.fill(); ctx.strokeStyle = ac; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = ac; ctx.fillText(k, x + ws[i] / 2, 1282); x += ws[i] + 20; });
+  kw.forEach((k, i) => { ctx.fillStyle = 'rgba(255,255,255,.85)'; rr(ctx, x, 1220, ws[i], 92, 46); ctx.fill(); ctx.strokeStyle = ac; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = ac; ctx.fillText(k, x + ws[i] / 2, 1282); x += ws[i] + 20; });
   // 찰떡 타입
   const best = { s: t.best.s, b: t.best.b };
-  ctx.fillStyle = '#FFFFFF'; rr(ctx, 140, 1400, W - 280, 200, 36); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; rr(ctx, 140, 1400, W - 280, 200, 36); ctx.fill(); // 박스 투명도 15%
   ctx.fillStyle = '#6E6A62'; ctx.font = `600 36px ${sans}`; ctx.fillText(T.ui.best, W / 2, 1468);
   ctx.fillStyle = '#1A1A1A'; ctx.font = `700 54px ${serif}`; fitText(ctx, `${typePillar(T, best)} · ${typeName(T, best)}`, W / 2, 1548, W - 320, 54, serif);
-  ctx.fillStyle = ac; ctx.font = `700 40px ${serif}`; ctx.fillText('forTime', W / 2, 1790);
-  ctx.fillStyle = '#6E6A62'; ctx.font = `500 30px ${sans}`; ctx.fillText(site, W / 2, 1840);
+  if (t.s === 3) { // 촛불(丁): 가운데 초를 피해 아래 양 끝에 밝은 글자
+    ctx.fillStyle = '#FFE2B8'; ctx.font = `700 40px ${serif}`; ctx.textAlign = 'left'; ctx.fillText('forTime', 60, 1880);
+    ctx.fillStyle = 'rgba(255,232,205,.85)'; ctx.font = `500 30px ${sans}`; ctx.textAlign = 'right'; ctx.fillText(site, W - 60, 1878); ctx.textAlign = 'center';
+  } else {
+    ctx.fillStyle = ac; ctx.font = `700 40px ${serif}`; ctx.fillText('forTime', W / 2, 1790);
+    ctx.fillStyle = '#6E6A62'; ctx.font = `500 30px ${sans}`; ctx.fillText(site, W / 2, 1840);
+  }
   return new Promise(ok => cv.toBlob(ok, 'image/png'));
 }
 export { ELK };
