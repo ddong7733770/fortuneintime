@@ -4,13 +4,13 @@ import { SJ } from './engine.js';
 import * as MS from './masters.js';
 import { DATE_ICONS } from './date-icons.js';
 import { dialSVG, dialLabels, sijinRange, pips as gauge } from './content.js';
-import { esc, fmt, pickR, todayReading, domainReading, sajuSections, stemName, gzK, tenName, daeDesc } from './saju-view.js';
+import { esc, fmt, pickR, todayReading, domainReading, sajuSections, stemName, gzK, gzLabel, tenName, daeDesc } from './saju-view.js';
 
 const DOMS = ['wealth', 'love', 'work', 'health'];
 const lvl = v => (v <= 2 ? 0 : v === 3 ? 1 : 2);
 const first = (t, n = 2) => String(t).split(/(?<=[.!?])\s+|(?<=[。！？])\s*/).filter(Boolean).slice(0, n).join(' ');
 // 일본어·중국어: 따로 이어 붙인 문장 사이('。 '·'、 ')의 공백을 지움
-const cjk = h => h.replace(/([。！？、])[ ]+(?=[^\s<])/g, '$1');
+const cjk = h => h.replace(/([。！？、，：])[ ]+(?=[^\s<])/g, '$1');
 const sec = (id, title, body, cls = '') => `<section class="sec m-sec${cls ? ` ${cls}` : ''}" id="sec-${id}"><h2>${esc(title)}</h2>${cjk(body)}</section>`;
 const p = t => (t ? `<p class="m-p">${esc(t)}</p>` : '');
 const LS_KO = { m: '이성을 뜻하는 재성(財星)', f: '이성을 뜻하는 관성(官星)', none: '인연의 별' };
@@ -256,7 +256,7 @@ export function dohanSections(M, S, L, d, chart, now = new Date()) {
 <h3>${esc(U.next3)}</h3><ul class="m-months m-months-l">${ms.slice(1).map(x => { const k = x.gz.stem * 12 + x.gz.branch; return `<li class="t${x.tone}"><b>${esc(monthLabel(M, x.m))}</b><span><em>${esc(DH.flow.short[x.grpS])} · ${esc(DH.flow.tone[x.tone])}</em> ${esc(at(F2.hint[x.grpS], k))} ${esc(at(F2.toneAdv[toneIx(x.tone)], k + 1))}</span></li>`; }).join('')}</ul>
 <h3>${esc(U.thisYear)}</h3>${p(yearT)}
 ${sigs.length ? sigs.map((sg, i) => p(at(F2.sig[sg], yk + mk + i))).join('') : p(at(F2.noSig, yk))}
-${da ? p(fmt(DH.flow.daeun, { gz: `${gzK(da, S)}${(S.nameSp ?? (S.stemK ? ' ' : ''))}(${SJ.STEM_H[da.stem]}${SJ.BRANCH_H[da.branch]})`, desc: daeDesc(S.daeunText[da.grp][da.tone === 0 ? 1 : 0]) })) : ''}`;
+${da ? p(fmt(DH.flow.daeun, { gz: gzLabel(da, S), desc: daeDesc(S.daeunText[da.grp][da.tone === 0 ? 1 : 0]) })) : ''}`;
   // 5) 협업
   const collab = [fmt(DH.collab.noble, { a: an(pe.noble) }), fmt(DH.collab.match, { a: an(pe.match) }), fmt(DH.collab.clash, { a: an(pe.clash) }), gw[0] >= 3 ? DH.collab.rob : gw[0] <= 0.5 ? DH.collab.alone : DH.collab.mid];
   return {

@@ -16,7 +16,7 @@ export default {
     country: '出生地', blood: '血型', none: '不清楚', mbti: 'MBTI',
     localOnly: '你输入的信息只保存在本设备上，不会上传到服务器。',
     submit: '查看我的运势', edit: '修改信息', required: '请输入出生日期。',
-    tabs: { fortune: '今日', love: '配对', time: '未来', charm: '开运符&聊聊', admin: '管理员' },
+    tabs: { fortune: '今日', master: '命理师', year: '2027', love: '配对', time: '未来', charm: '开运符&聊聊', admin: '管理员' },
     master: '大师', masterName: '海云精舍', power: '神通力', todayScore: '今日运势分数',
     dialTitle: '时辰表盘', dialHint: '点击时辰查看该时段的运势', best: '最佳时辰', worst: '需留意的时辰', now: '现在',
     changeTitle: '改运', changeLeft: '本时段剩余次数', changeBtn: '立即改运', changeAd: '看广告再改一次',

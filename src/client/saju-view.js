@@ -14,6 +14,8 @@ export const sk = (S, i) => ((S && S.stemK) || SJ.STEM_K)[i];
 export const bk = (S, i) => ((S && S.branchK) || SJ.BRANCH_K)[i];
 export const gzK = (g, S = null) => sk(S, g.stem) + ((S && S.gzSep) || '') + bk(S, g.branch);
 const sp = S => (S.nameSp ?? (S.stemK ? ' ' : ''));
+// 간지 표기: '갑자(甲子)' · 'Gap-Ja (甲子)', 중국어처럼 읽는 이름이 한자 그대로면 '甲子'만
+export const gzLabel = (g, S) => { const k = gzK(g, S), h = SJ.STEM_H[g.stem] + SJ.BRANCH_H[g.branch]; return k === h ? h : `${k}${sp(S)}(${h})`; };
 export const tenName = (S, i) => S.ten[i].split('(')[0].trim();
 // 대운 설명(— 뒤)을 문장 앞에 쓸 때 첫 글자를 대문자로 (한글에는 영향 없음)
 export const daeDesc = t => { const x = String(t).split(' — ')[1] || ''; return x.charAt(0).toUpperCase() + x.slice(1); };
@@ -137,7 +139,7 @@ export function basisHTML(S, d, link) {
   const { gz } = d.saju;
   return `<section class="sec basis"><h2>${esc(S.ui.todayBasis)}</h2>
 <p class="basis-chips">${chips}</p>
-<p class="muted basis-note">${esc(fmt(S.ui.basisNote, { gz: `${gzK(gz, S)}${sp(S)}(${gzH(gz)})` }))}</p>
+<p class="muted basis-note">${esc(fmt(S.ui.basisNote, { gz: gzLabel(gz, S) }))}</p>
 <ul class="basis-list">${basisLines(S, d).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
 ${link ? `<a class="txt-link" href="${link}">${esc(S.ui.seeSaju)} →</a>` : ''}</section>`;
 }
@@ -232,7 +234,7 @@ export function overallTexts(S, chart, nowMs = Date.now(), O = null) {
   const now = new Date(nowMs);
   const yr = SJ.monthYearGZAt(now.getFullYear(), now.getMonth() + 1, now.getDate()).year;
   const yTone = toneOf(SJ.evalGZ(chart, yr.stem, yr.branch, chart.male));
-  const gz = g => `${gzK(g, S)}${sp(S)}(${SJ.STEM_H[g.stem]}${SJ.BRANCH_H[g.branch]})`;
+  const gz = g => gzLabel(g, S);
   const yearLine = fmt(O.year, { gz: gz(yr), tone: O.yearTone[yTone] });
   if (chart.daeun) {
     const list = chart.daeun.list, ci = list.findIndex(g => age >= g.age && age < g.age + 10);
@@ -264,8 +266,8 @@ function pillarCell(S, chart, pos) {
   const sE = SJ.STEM_EL[pl.stem], bE = SJ.BRANCH_EL[pl.branch];
   return `<div class="pc${pos === 'day' ? ' pc-me' : ''}"><p class="pc-pos">${esc(label)}</p>
 <p class="pc-ten">${pos === 'day' ? esc(S.ui.me) : esc(tenName(S, t.stem))}</p>
-<p class="pc-ch ${EL_CLS[sE]}"><b>${SJ.STEM_H[pl.stem]}</b><small>${sk(S, pl.stem)}${S.stemK ? '<br>' : '·'}${esc(S.elShort[sE])}</small></p>
-<p class="pc-ch ${EL_CLS[bE]}"><b>${SJ.BRANCH_H[pl.branch]}</b><small>${bk(S, pl.branch)}${S.branchK ? '<br>' : '·'}${esc(S.elShort[bE])}</small></p>
+<p class="pc-ch ${EL_CLS[sE]}"><b>${SJ.STEM_H[pl.stem]}</b><small>${sk(S, pl.stem) === SJ.STEM_H[pl.stem] ? '' : `${sk(S, pl.stem)}${S.stemK ? '<br>' : '·'}`}${esc(S.elShort[sE])}</small></p>
+<p class="pc-ch ${EL_CLS[bE]}"><b>${SJ.BRANCH_H[pl.branch]}</b><small>${bk(S, pl.branch) === SJ.BRANCH_H[pl.branch] ? '' : `${bk(S, pl.branch)}${S.branchK ? '<br>' : '·'}`}${esc(S.elShort[bE])}</small></p>
 <p class="pc-ten">${esc(tenName(S, t.branch))}</p></div>`;
 }
 // 사주 화면을 섹션 단위로: 해운정사 화면에서 방문 횟수에 따라 순서를 바꿈
@@ -298,7 +300,7 @@ ${chart.solarHM ? `<p class="muted small">${esc(fmt(U.solar, { t: `${pad(chart.s
 ${chart.hasHour ? '' : `<p class="muted small">${esc(U.unknownHour)}</p>`}</section>`,
     overall: overallHTML(S, chart, O, overallTitle),
     basic: `<section class="sec"><h2>${esc(U.dayMaster)}</h2>
-<p class="dm"><b class="${EL_CLS[chart.me]}">${SJ.STEM_H[chart.dayStem]}</b><span>${esc(S.stemFull ? `${sk(S, chart.dayStem)} · ${S.stemFull[chart.dayStem]}` : `${SJ.STEM_K[chart.dayStem]}${S.el[chart.me].slice(0, 1)} · ${S.el[chart.me]}`)}</span></p>
+<p class="dm"><b class="${EL_CLS[chart.me]}">${SJ.STEM_H[chart.dayStem]}</b><span>${esc(S.stemFull ? (sk(S, chart.dayStem) === SJ.STEM_H[chart.dayStem] ? S.stemFull[chart.dayStem] : `${sk(S, chart.dayStem)} · ${S.stemFull[chart.dayStem]}`) : `${SJ.STEM_K[chart.dayStem]}${S.el[chart.me].slice(0, 1)} · ${S.el[chart.me]}`)}</span></p>
 <p class="lead-s">${esc(S.dayMaster[chart.dayStem])}</p></section>
 <section class="sec"><h2>${esc(U.elements)}</h2>
 <ul class="el-bars">${chart.count.map((c, i) => `<li><span class="${EL_CLS[i]}">${esc(S.el[i])}</span><i><b class="bar ${EL_CLS[i]}" style="width:${(c / max) * 100}%"></b></i><em>${c}</em></li>`).join('')}</ul>
@@ -307,7 +309,7 @@ ${many.map(i => `<p class="lead-s">${esc(S.many[i])}</p>`).join('')}${none.map(i
 <div class="meter"><i style="left:${meterPos(chart.ratio)}%"></i></div><p class="meter-ax"><span>${esc(S.strength[0][0].replace(/\(.*\)/, ''))}</span><span>${esc(S.strength[2][0].replace(/\(.*\)/, ''))}</span><span>${esc(S.strength[4][0].replace(/\(.*\)/, ''))}</span></p>
 <p class="tag-line"><b>${esc(st[0])}</b></p><p class="lead-s">${esc(st[1])}</p></section>
 <section class="sec"><h2>${esc(U.yongsin)}</h2>
-<p class="dm"><b class="${EL_CLS[chart.fav.yong]}">${SJ.EL_H[chart.fav.yong]}</b><span>${esc(S.el[chart.fav.yong])}</span></p>
+<p class="dm"><b class="${EL_CLS[chart.fav.yong]}">${SJ.EL_H[chart.fav.yong]}</b>${S.el[chart.fav.yong] === SJ.EL_H[chart.fav.yong] ? '' : `<span>${esc(S.el[chart.fav.yong])}</span>`}</p>
 <p class="lead-s">${esc(Y.why)}</p>${yongBasisHTML(S, chart)}
 <h3>${esc(U.luckyTitle)}</h3><dl class="kw"><div><dt>${esc(LK.color)}</dt><dd>${esc(Y.color)}</dd></div><div><dt>${esc(LK.dir)}</dt><dd>${esc(Y.dir)}</dd></div><div><dt>${esc(LK.num)}</dt><dd>${esc(Y.num)}</dd></div><div><dt>${esc(LK.act)}</dt><dd>${esc(Y.act)}</dd></div></dl></section>
 <section class="sec"><h2>${esc(U.tenGods)}</h2>${topTen.map(i => `<p class="lead-s"><b>${esc(S.ten[i])}</b> ${esc(S.tenTrait[i])}</p>`).join('')}</section>

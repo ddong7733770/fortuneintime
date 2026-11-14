@@ -4,6 +4,7 @@ export default {
   nameFmt: '{img}の{animal}',
   pillarFmt: '日柱「{ko}」',
   sep: '',
+  tagSep: '',
   shareText: '私の60タイプは「{name}」',
   ui: {
     title: '私のタイプ',

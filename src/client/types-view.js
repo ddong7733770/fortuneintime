@@ -15,7 +15,7 @@ export const typeKo = (T, t) => `${T.stems[t.s].ko}${T.sep || ''}${T.branches[t.
 // '갑자일주' / 'Gap-Ja Day Pillar'
 export const typePillar = (T, t) => (T.pillarFmt ? f(T.pillarFmt, { ko: typeKo(T, t) }) : `${typeKo(T, t)}일주`);
 export const typeH = t => `${STEM_H[t.s]}${BRANCH_H[t.b]}`;
-export const typeTag = (T, t) => `${T.stems[t.s].vibe} ${T.branches[t.b].persona}`;
+export const typeTag = (T, t) => `${T.stems[t.s].vibe}${T.tagSep ?? ' '}${T.branches[t.b].persona}`;
 export const typeKw = (T, t) => [T.stems[t.s].kw[t.b % 3], T.branches[t.b].kw[t.s % 3], T.stems[t.s].kw[(t.b + 1) % 3]].filter((x, i, a) => a.indexOf(x) === i).slice(0, 3);
 export const animalImg = (imgs, b) => (imgs && imgs.includes(ANIMAL_SLUG[b]) ? `/images/animals/${ANIMAL_SLUG[b]}.webp` : '');
 
