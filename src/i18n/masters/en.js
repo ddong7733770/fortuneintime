@@ -7,6 +7,11 @@ import { REL, FOCUS_NONE, ADVICE_DOM, ADVICE_YONG } from './en-focus.js';
 // · haewoon: direct, clipped, weighty / hana: bright and warm / dohan: concise and strategic, never absolute
 import MORE from './en-more.js';
 import { FORTUNE_DOM, HANA_TODAY } from './en-dom.js';
+import W5 from './en5-wealth.js';
+import L5 from './en5-love.js';
+import K5 from './en5-work.js';
+import H5 from './en5-health.js';
+import { LEAD5, TODO5 } from './en5-card.js';
 import DATE from './en-date.js';
 const EN = {
   ui: {
@@ -339,10 +344,22 @@ function mergeDom(base, add) {
 }
 for (const k of Object.keys(FORTUNE_DOM)) mergeDom(EN.fortune.dom[k], FORTUNE_DOM[k]);
 mergeDom(EN.hana.today, HANA_TODAY);
+// 5× domain lines: appended after the existing sets (used with the anti-repeat rotation)
+function add5(base, add) {
+  for (const k of ['flow', 'more', 'act']) if (add[k]) base[k] = base[k].map((a, c) => [...a, ...add[k][c]]);
+  for (const [k, v] of Object.entries(add.why || {})) base.why[k] = [...base.why[k], ...v];
+  for (const k of ['caution', 'chance', 'tip']) if (add[k]) base[k] = [...(base[k] || []), ...add[k]];
+  if (add.tipLow) { base.tip = base.tip.slice(1); base.tipLow = add.tipLow; }
+}
+for (const [k, v] of Object.entries({ wealth: W5, love: L5, work: K5, health: H5 })) add5(EN.fortune.dom[k], v);
 EN.hana.date = DATE;
 EN.ui.secs.date = DATE.title;
 EN.fortune.rel = REL; EN.fortune.focusNone = FOCUS_NONE; EN.fortune.adviceDom = ADVICE_DOM; EN.fortune.adviceYong = ADVICE_YONG;
 EN.today = TODAY;
+for (const k of Object.keys(LEAD5)) {
+  TODAY.lead[k] = TODAY.lead[k].map((a, n) => [...a, ...LEAD5[k][n]]);
+  for (const t of ['up', 'down', 'no']) TODAY.todo[k][t] = [...TODAY.todo[k][t], ...TODO5[k][t]];
+}
 EN.types = TYPES;
 EN.year = YEAR;
 export default EN;

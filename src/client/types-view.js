@@ -11,7 +11,7 @@ const ELK = ['목', '화', '토', '금', '수'];
 const e = s => String(s).replace(/([。！？])[ ]+/g, '$1').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const f = (t, o) => t.replace(/\{(\w+)\}/g, (_, k) => (k in o ? o[k] : ''));
 
-export const typeName = (T, t) => (T.nameFmt ? f(T.nameFmt, { img: T.stems[t.s].img, animal: T.branches[t.b].animal }) : `${T.stems[t.s].img}의 ${T.branches[t.b].animal}`);
+export const typeName = (T, t) => (T.nameFmt ? f(T.nameFmt, { img: T.stems[t.s].imgOf || T.stems[t.s].img, animal: T.branches[t.b].animal }) : `${T.stems[t.s].img}의 ${T.branches[t.b].animal}`);
 export const typeKo = (T, t) => `${T.stems[t.s].ko}${T.sep || ''}${T.branches[t.b].ko}`;
 // '갑자일주' / 'Gap-Ja Day Pillar'
 export const typePillar = (T, t) => (T.pillarFmt ? f(T.pillarFmt, { ko: typeKo(T, t) }) : `${typeKo(T, t)}일주`);

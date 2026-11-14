@@ -7,6 +7,11 @@ import { REL, FOCUS_NONE, ADVICE_DOM, ADVICE_YONG } from './ja-focus.js';
 // · haewoon：短く言い切る、重みのある です・ます調 / hana：明るくやさしい口調 / dohan：簡潔・戦略的な敬語、断定しない
 import MORE from './ja-more.js';
 import { FORTUNE_DOM, HANA_TODAY } from './ja-dom.js';
+import W5 from './ja5-wealth.js';
+import L5 from './ja5-love.js';
+import K5 from './ja5-work.js';
+import H5 from './ja5-health.js';
+import { LEAD5, TODO5 } from './ja5-card.js';
 import DATE from './ja-date.js';
 const JA = {
   ui: {
@@ -334,10 +339,22 @@ function mergeDom(base, add) {
 }
 for (const k of Object.keys(FORTUNE_DOM)) mergeDom(JA.fortune.dom[k], FORTUNE_DOM[k]);
 mergeDom(JA.hana.today, HANA_TODAY);
+// 5× domain lines: appended after the existing sets (used with the anti-repeat rotation)
+function add5(base, add) {
+  for (const k of ['flow', 'more', 'act']) if (add[k]) base[k] = base[k].map((a, c) => [...a, ...add[k][c]]);
+  for (const [k, v] of Object.entries(add.why || {})) base.why[k] = [...base.why[k], ...v];
+  for (const k of ['caution', 'chance', 'tip']) if (add[k]) base[k] = [...(base[k] || []), ...add[k]];
+  if (add.tipLow) { base.tip = base.tip.slice(1); base.tipLow = add.tipLow; }
+}
+for (const [k, v] of Object.entries({ wealth: W5, love: L5, work: K5, health: H5 })) add5(JA.fortune.dom[k], v);
 JA.hana.date = DATE;
 JA.ui.secs.date = DATE.title;
 JA.fortune.rel = REL; JA.fortune.focusNone = FOCUS_NONE; JA.fortune.adviceDom = ADVICE_DOM; JA.fortune.adviceYong = ADVICE_YONG;
 JA.today = TODAY;
+for (const k of Object.keys(LEAD5)) {
+  TODAY.lead[k] = TODAY.lead[k].map((a, n) => [...a, ...LEAD5[k][n]]);
+  for (const t of ['up', 'down', 'no']) TODAY.todo[k][t] = [...TODAY.todo[k][t], ...TODO5[k][t]];
+}
 JA.types = TYPES;
 JA.year = YEAR;
 export default JA;
