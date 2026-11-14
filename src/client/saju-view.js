@@ -1,5 +1,5 @@
 // 사주 화면 조각: 운세 탭의 '오늘의 사주 근거', 분야별 근거 문장, 내일 미리보기, 사주 탭
-import { SJ } from './engine.js';
+import { SJ, rotPick } from './engine.js';
 
 // 일본어·중국어: 문장을 이어 붙일 때 생긴 '。 ' 사이 공백을 지움 (한국어·영어에는 영향 없음)
 export const esc = s => String(s ?? '').replace(/([。！？])[ ]+/g, '$1').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -84,15 +84,17 @@ export function domainReading(S, d, k, D = null) {
   const relAt = (pos, t) => ev.rels.some(x => x.pos === pos && x.type === t);
   // 확장 묶음(more·act가 있는 오늘 탭·하나): 문장 수 2배 — 흐름 → 풀어 쓰기 → 근거 → 주의/기회 → 행동 → 팁
   const ext = !!D.more, r2 = j => d.rolls[(21 + i * 4 + j) % 40];
-  const W = x => (Array.isArray(x) ? pickR(x, r2(0)) : x);
-  const out = [pickR(D.flow[c], r(0))];
-  if (ext) out.push(pickR(D.more[c], r2(1)));
+  // 반복 방지: d.rot이 있으면 사람별로 섞은 순서를 날짜마다 한 칸씩 넘김(같은 묶음 안에서 묶음 크기만큼의 날 동안 겹치지 않음)
+  const R = (arr, roll) => (d.rot ? rotPick(d.rot, `${k}|${arr[0].slice(0, 8)}|${arr.length}`, arr) : pickR(arr, roll));
+  const W = x => (Array.isArray(x) ? R(x, r2(0)) : x);
+  const out = [R(D.flow[c], r(0))];
+  if (ext) out.push(R(D.more[c], r2(1)));
   let why;
   if (k === 'wealth') {
     if (has(2)) why = fav(2) ? (ev.tgS === 4 || ev.tgB === 4 ? W(D.why.pyeon) : W(D.why.jeong)) : W(D.why.bad);
     else if (ev.tgS === 1 || ev.tgB === 1) why = W(D.why.rob);
     else if (has(1) && chart.gw[2] >= 0.6 && chart.strength >= 0) why = W(D.why.output); else if (has(4)) why = W(D.why.doc); else why = W(D.why.none); // 식상생재는 재성이 있고 감당할 힘이 있을 때만
-    out.push(why); if (c <= 1) out.push(pickR(D.caution, r(1))); if (ext) out.push(pickR(D.act[c], r2(2))); out.push(pickR(D.tip, r(2)));
+    out.push(why); if (c <= 1) out.push(R(D.caution, r(1))); if (ext) out.push(R(D.act[c], r2(2))); out.push(R(D.tip, r(2)));
   } else if (k === 'love') {
     const g = chart.male === false ? 3 : 2;
     const LS = S.loveStar || { m: '이성을 뜻하는 재성(財星)', f: '이성을 뜻하는 관성(官星)', none: '인연의 별' };
@@ -100,19 +102,19 @@ export function domainReading(S, d, k, D = null) {
     if (has(g)) why = fav(g) ? fmt(W(D.why.star), { star }) : W(D.why.bad);
     else if (ev.dohwa) why = W(D.why.dohwa); else if (relAt('day', 'hap')) why = W(D.why.dayHap); else if (relAt('day', 'chung')) why = W(D.why.dayChung);
     else if (ev.stemHapDay) why = W(D.why.stemHap); else why = W(D.why.none);
-    out.push(why); if (c === 0 && D.caution) out.push(pickR(D.caution, r(1))); else if (c >= 1 || r(1) < 0.5) out.push(pickR(D.chance, r(3))); if (ext) out.push(pickR(D.act[c], r2(2))); out.push(pickR(D.tip, r(2)));
+    out.push(why); if (c === 0 && D.caution) out.push(R(D.caution, r(1))); else if (c >= 1 || r(1) < 0.5) out.push(R(D.chance, r(3))); if (ext) out.push(R(D.act[c], r2(2))); out.push(R(D.tip, r(2)));
   } else if (k === 'work') {
     if (has(3)) why = fav(3) ? W(D.why.kwan) : W(D.why.kwanBad);
     else if (relAt('month', 'chung')) why = W(D.why.monthChung);
     else if (has(1)) why = W(D.why.output); else if (has(4)) why = W(D.why.study); else if (has(0)) why = W(D.why.rob); else why = W(D.why.none);
-    out.push(why); if (c <= 1) out.push(pickR(D.caution, r(1))); if (ext) out.push(pickR(D.act[c], r2(2))); out.push(pickR(D.tip, r(2)));
+    out.push(why); if (c <= 1) out.push(R(D.caution, r(1))); if (ext) out.push(R(D.act[c], r2(2))); out.push(R(D.tip, r(2)));
   } else {
     const els = [SJ.STEM_EL[ev.stem], SJ.BRANCH_EL[ev.branch]];
     const ex = els.find(e => chart.count[e] >= 3 && SJ.elValue(chart, e) < 0), lk = els.find(e => chart.count[e] === 0);
     if (ex !== undefined) why = fmt(W(D.why.excess), { el: S.el[ex], organ: S.organ[ex] });
     else if (lk !== undefined) why = fmt(W(D.why.lack), { el: S.el[lk] });
     else if (relAt('day', 'chung')) why = W(D.why.chung); else if (ev.rels.some(x => x.type === 'hyeong')) why = W(D.why.hyeong); else why = W(D.why.none);
-    out.push(why); if (ext) out.push(pickR(D.act[c], r2(2))); out.push(c === 0 ? D.tip[0] : pickR(D.tip.slice(1), r(2)));
+    out.push(why); if (ext) out.push(R(D.act[c], r2(2))); out.push(c === 0 ? (D.tipLow ? R(D.tipLow, r(2)) : D.tip[0]) : R(D.tipLow ? D.tip : D.tip.slice(1), r(2)));
   }
   return out.join(' ');
 }

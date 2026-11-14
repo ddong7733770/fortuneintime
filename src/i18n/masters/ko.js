@@ -8,6 +8,11 @@ import { REL, FOCUS_NONE, ADVICE_DOM, ADVICE_YONG } from './ko-focus.js';
 // · 모든 문장은 계산된 사주 데이터에 연결해 고름. {키:은/는}은 받침에 따라 조사를 고름
 import MORE from './ko-more.js';
 import { FORTUNE_DOM, HANA_TODAY } from './ko-dom.js';
+import W5 from './ko5-wealth.js';
+import L5 from './ko5-love.js';
+import K5 from './ko5-work.js';
+import H5 from './ko5-health.js';
+import { LEAD5, TODO5 } from './ko5-card.js';
 import DATE from './ko-date.js';
 const KO = {
   ui: {
@@ -392,11 +397,23 @@ function mergeDom(base, add) {
 }
 for (const k of Object.keys(FORTUNE_DOM)) mergeDom(KO.fortune.dom[k], FORTUNE_DOM[k]);
 mergeDom(KO.hana.today, HANA_TODAY);
+// 분야별 문장 5배 확장: 기존 묶음 뒤에 덧붙임(반복 방지 순환과 함께 씀)
+function add5(base, add) {
+  for (const k of ['flow', 'more', 'act']) if (add[k]) base[k] = base[k].map((a, c) => [...a, ...add[k][c]]);
+  for (const [k, v] of Object.entries(add.why || {})) base.why[k] = [...base.why[k], ...v];
+  for (const k of ['caution', 'chance', 'tip']) if (add[k]) base[k] = [...(base[k] || []), ...add[k]];
+  if (add.tipLow) { base.tip = base.tip.slice(1); base.tipLow = add.tipLow; } // 건강: 첫 팁(진료 안내)은 낮은 날 전용 묶음으로
+}
+for (const [k, v] of Object.entries({ wealth: W5, love: L5, work: K5, health: H5 })) add5(KO.fortune.dom[k], v);
 KO.hana.date = DATE; // 하나의 추천하는 데이트
 KO.ui.secs.date = DATE.title;
 // 눈여겨볼 점·조언 5배 묶음
 KO.fortune.rel = REL; KO.fortune.focusNone = FOCUS_NONE; KO.fortune.adviceDom = ADVICE_DOM; KO.fortune.adviceYong = ADVICE_YONG;
 KO.today = TODAY; // 오늘 탭 개편 문장
+for (const k of Object.keys(LEAD5)) {
+  TODAY.lead[k] = TODAY.lead[k].map((a, n) => [...a, ...LEAD5[k][n]]);
+  for (const t of ['up', 'down', 'no']) TODAY.todo[k][t] = [...TODAY.todo[k][t], ...TODO5[k][t]];
+}
 KO.types = TYPES; // 60타입
 KO.year = YEAR; // 2027 신년운세
 export default KO;

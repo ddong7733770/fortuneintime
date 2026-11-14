@@ -548,12 +548,15 @@ function todayParts(d, fr) {
   const cards = DOMK.map((k, i) => {
     const n = d.domains[k], kind = n >= 4 ? 'good' : n === 3 ? 'mid' : 'warn';
     const pool = T.todo[k][n >= 3 ? 'up' : 'down'];
-    const a = Math.floor(r[30 + i] * pool.length), b = (a + 1 + Math.floor(r[34 + i] * (pool.length - 1))) % pool.length;
-    const no = T.todo[k].no[Math.floor(r[26 + i] * T.todo[k].no.length)];
+    // 반복 방지: 할 일 두 개는 섞은 순서에서 하루 두 칸씩(2일·2일+1번째) → 묶음 크기의 절반만큼의 날 동안 겹치지 않음
+    const ud = n >= 3 ? 'up' : 'down', RK = (nm, arr, st, of) => E.rotPick(d.rot, `td|${k}|${nm}`, arr, st, of);
+    const A = RK(ud, pool, 2, 0), B = RK(ud, pool, 2, 1);
+    const no = RK('no', T.todo[k].no, 1, 0);
+    const leadPool = T.lead[k][n - 1];
     return `<article class="c2-card c2-dom d-${k}" data-dom="${k}"${k === sel ? '' : ' hidden'}>
 <div class="c2-dh"><h3>${esc(U.domains[k])}</h3><span class="c2-badge c2-b-${kind}">${esc(T.lvl[kind])}</span></div>
-<p class="c2-lead">${esc(T.lead[k][n - 1][Math.floor(r[20 + i] * 3)])}</p>
-<ul class="c2-todo"><li>${esc(pool[a])}</li><li>${esc(pool[b])}</li><li class="no">${esc(no)}</li></ul>
+<p class="c2-lead">${esc(RK(`lead${n}`, leadPool, 1, 0))}</p>
+<ul class="c2-todo"><li>${esc(A)}</li><li>${esc(B)}</li><li class="no">${esc(no)}</li></ul>
 <details class="c2-more"><summary><span class="o">${esc(T.more)}</span><span class="c">${esc(T.less)}</span></summary><p>${esc(MV.fortuneDomain(M, S, d, k))}</p></details></article>`;
   }).join('');
   const domainsHTML = `<section class="c2-doms"><div class="c2-hrow"><h2 class="c2-h">${esc(T.domTitle)}</h2><small>${esc(T.domHint)}</small></div><div class="c2-tiles">${tiles}</div>${cards}</section>`;

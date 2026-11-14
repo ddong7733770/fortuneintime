@@ -193,7 +193,24 @@ export function daily(p, dateK, turn = 0, lang = 'ko') {
     charm: CHARMS[Math.floor(r() * CHARMS.length)],
     rolls: Array.from({ length: 40 }, () => r()), // 같은 뜻 안에서 문장 표현을 고르는 난수
     saju: { chart, ev, evM, evY, kai, gz: today },
+    // 반복 방지: 사람마다 고정된 순서로 날짜에 따라 한 칸씩 넘김 → 같은 묶음에서 n일 안에 같은 문장 없음
+    rot: { seed: profileSeed(P), day: Math.round(Date.UTC(y, m - 1, d) / 864e5) + turn * 7 },
   };
+}
+
+// 묶음 arr에서 오늘 문장 고르기: (사람·묶음 이름)으로 섞은 순서에서 날짜 번째. step·off로 같은 날 여러 개를 겹치지 않게 뽑음
+const PERM = new Map();
+export function rotPick(rot, key, arr, step = 1, off = 0) {
+  const n = arr.length; if (!n) return undefined;
+  if (!rot) return arr[0];
+  const id = `${rot.seed}|${key}|${n}`;
+  let pm = PERM.get(id);
+  if (!pm) {
+    const r = rng(id); pm = Array.from({ length: n }, (_, i) => i);
+    for (let i = n - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [pm[i], pm[j]] = [pm[j], pm[i]]; }
+    if (PERM.size > 400) PERM.clear(); PERM.set(id, pm);
+  }
+  return arr[pm[(((rot.day * step + off) % n) + n) % n]];
 }
 
 // 일본식 '오늘의 별자리 순위' — 별자리별 오늘 점수가 높은 순서 (정적 페이지 점수와 일치)
